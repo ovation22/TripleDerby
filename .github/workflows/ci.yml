@@ -52,5 +52,5 @@ jobs:
             toolpath: '~/.dotnet/tools/reportgenerator'
 
         - name: Upload coverage report artifact
-          run: cat CoverageReport/Summary.md >> $GITHUB_STEP_SUMMARY
+          run: cat CoverageReport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
           shell: bash
