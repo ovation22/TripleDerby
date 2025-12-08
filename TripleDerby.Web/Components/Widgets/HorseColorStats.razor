@@ -109,7 +109,7 @@
         try
         {
             var dtos = await StatsApi.GetHorseColorStatsAsync();
-            Stats = dtos.Select(d => new ColorStat(d.ColorId, d.ColorName, d.Count, d.Percentage)).ToList();
+            Stats = dtos.Select(d => new ColorStat(d.ColorId, d.ColorName ?? string.Empty, d.Count, d.Percentage)).ToList();
             UpdateDisplayFromStats();
         }
         finally

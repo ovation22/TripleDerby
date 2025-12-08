@@ -27,7 +27,7 @@ public abstract class PaginatedSpecification<T>(int pageNumber, int pageSize) : 
     /// </summary>
     /// <param name="propertyName">The name of the property to check.</param>
     /// <returns>True if the property exists; otherwise, false.</returns>
-    protected static bool IsEntityProperty(string propertyName)
+    private static bool IsEntityProperty(string propertyName)
     {
         return GetPropertyExpression(propertyName) != null;
     }
@@ -65,7 +65,7 @@ public abstract class PaginatedSpecification<T>(int pageNumber, int pageSize) : 
     /// <param name="filter">The filter object containing the operator and value.</param>
     /// <param name="propertyMappings">The custom property mappings dictionary.</param>
     /// <returns>An expression representing the filter condition.</returns>
-    protected virtual Expression<Func<T, bool>> BuildFilterExpression(string filterBy, Filter filter, Dictionary<string, string> propertyMappings)
+    private static Expression<Func<T, bool>> BuildFilterExpression(string filterBy, Filter filter, Dictionary<string, string> propertyMappings)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
 
@@ -151,40 +151,28 @@ public abstract class PaginatedSpecification<T>(int pageNumber, int pageSize) : 
     /// <typeparam name="T">The type of entity.</typeparam>
     /// <param name="filterExpressions">The filter expressions to combine.</param>
     /// <returns>The combined filter expression with an OR operator.</returns>
-    protected Expression<Func<T, bool>> CombineFilterExpressionsWithOr(IEnumerable<Expression<Func<T, bool>>> filterExpressions)
+    private static Expression<Func<T, bool>> CombineFilterExpressionsWithOr(IEnumerable<Expression<Func<T, bool>>> filterExpressions)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
 
         // Start with 'false' so OR chain works
-        Expression? combined = Expression.Constant(false);
+        Expression combined = Expression.Constant(false);
 
-        foreach (var expr in filterExpressions)
-        {
-            // Replace expr parameter with our single parameter instance so EF can translate it
-            var replacedBody = (new ParameterReplacer(expr.Parameters[0], parameter)).Visit(expr.Body)!;
-            combined = Expression.OrElse(combined, replacedBody);
-        }
+        combined = filterExpressions
+            .Select(expr => new ParameterReplacer(expr.Parameters[0], parameter).Visit(expr.Body)).Aggregate(combined,
+                Expression.OrElse);
 
-        return Expression.Lambda<Func<T, bool>>(combined!, parameter);
+        return Expression.Lambda<Func<T, bool>>(combined, parameter);
     }
 
     /// <summary>
     /// ExpressionVisitor that replaces one parameter expression with another.
     /// </summary>
-    private sealed class ParameterReplacer : ExpressionVisitor
+    private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
     {
-        private readonly ParameterExpression _from;
-        private readonly ParameterExpression _to;
-
-        public ParameterReplacer(ParameterExpression from, ParameterExpression to)
-        {
-            _from = from;
-            _to = to;
-        }
-
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            return node == _from ? _to : base.VisitParameter(node);
+            return node == from ? to : base.VisitParameter(node);
         }
     }
 
@@ -276,7 +264,7 @@ public abstract class PaginatedSpecification<T>(int pageNumber, int pageSize) : 
     {
         var filterList = filters.ToList();
         var filterExpressions = filterList.Select(filter =>
-            BuildFilterExpression(filter.Key, filter.Value, propertyMappings));
+            PaginatedSpecification<T>.BuildFilterExpression(filter.Key, filter.Value, propertyMappings));
 
         var combinedFilterExpression = CombineFilterExpressionsWithOr(filterExpressions);
         Query.Where(combinedFilterExpression);
@@ -299,7 +287,7 @@ public abstract class PaginatedSpecification<T>(int pageNumber, int pageSize) : 
     protected void ApplyAndFilters(Dictionary<string, Filter> filters, Dictionary<string, string> propertyMappings)
     {
         foreach (var filterExpression in filters.Select(filter =>
-                    BuildFilterExpression(filter.Key, filter.Value, propertyMappings)))
+                    PaginatedSpecification<T>.BuildFilterExpression(filter.Key, filter.Value, propertyMappings)))
         {
             Query.Where(filterExpression);
         }
@@ -317,7 +305,7 @@ public abstract class PaginatedSpecification<T, TResult>(int pageNumber, int pag
     public int PageNumber { get; } = pageNumber;
     public int PageSize { get; } = pageSize;
 
-    protected static bool IsEntityProperty(string propertyName)
+    private static bool IsEntityProperty(string propertyName)
         => GetPropertyExpression(propertyName) != null;
 
     private static PropertyInfo? GetPropertyExpression(string propertyName)
@@ -329,27 +317,37 @@ public abstract class PaginatedSpecification<T, TResult>(int pageNumber, int pag
         foreach (var prop in properties)
         {
             property = type.GetProperty(prop, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            if (property == null) return null;
+            if (property == null)
+            {
+                return null;
+            }
+
             type = property.PropertyType;
         }
 
         return property;
     }
 
-    protected virtual Expression<Func<T, bool>> BuildFilterExpression(string filterBy, Filter filter, Dictionary<string, string> propertyMappings)
+    private static Expression<Func<T, bool>> BuildFilterExpression(string filterBy, Filter filter, Dictionary<string, string> propertyMappings)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
-        if (propertyMappings.TryGetValue(filterBy, out var actualPropertyPath)) filterBy = actualPropertyPath;
+        if (propertyMappings.TryGetValue(filterBy, out var actualPropertyPath))
+        {
+            filterBy = actualPropertyPath;
+        }
 
-        Expression property = parameter;
-        foreach (var member in filterBy.Split('.')) property = Expression.Property(property, member);
+        Expression property = filterBy.Split('.')
+            .Aggregate<string?, Expression>(parameter, Expression.Property!);
 
         var propertyType = Nullable.GetUnderlyingType(property.Type) ?? property.Type;
         Expression body;
 
         if (filter.Operator != FilterOperator.Between)
         {
-            if (filter.Value == null) throw new InvalidOperationException("Value is required for the selected operator.");
+            if (filter.Value == null)
+            {
+                throw new InvalidOperationException("Value is required for the selected operator.");
+            }
 
             var constantValue = Convert.ChangeType(filter.Value, propertyType);
             var constant = Expression.Constant(constantValue, propertyType);
@@ -375,7 +373,10 @@ public abstract class PaginatedSpecification<T, TResult>(int pageNumber, int pag
         }
         else
         {
-            if (filter.ValueFrom == null || filter.ValueTo == null) throw new InvalidOperationException("ValueFrom and ValueTo are required for the selected operator.");
+            if (filter.ValueFrom == null || filter.ValueTo == null)
+            {
+                throw new InvalidOperationException("ValueFrom and ValueTo are required for the selected operator.");
+            }
 
             var fromConstantValue = Convert.ChangeType(filter.ValueFrom, propertyType);
             var toConstantValue = Convert.ChangeType(filter.ValueTo, propertyType);
@@ -397,23 +398,33 @@ public abstract class PaginatedSpecification<T, TResult>(int pageNumber, int pag
         return Expression.Lambda<Func<T, bool>>(body, parameter);
     }
 
-    protected Expression<Func<T, object>> CreateOrderByExpression(string propertyPath)
+    private static Expression<Func<T, object>> CreateOrderByExpression(string propertyPath)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
-        Expression property = parameter;
-        foreach (var member in propertyPath.Split('.')) property = Expression.Property(property, member);
+        Expression property = propertyPath.Split('.')
+            .Aggregate<string?, Expression>(parameter, Expression.Property!);
         var propertyAsObject = Expression.Convert(property, typeof(object));
+        
         return Expression.Lambda<Func<T, object>>(propertyAsObject, parameter);
     }
 
     protected void ApplySorting(string sortBy, SortDirection sortDirection, Dictionary<string, string> propertyMappings)
     {
-        if (propertyMappings.TryGetValue(sortBy, out var mapped)) sortBy = mapped;
+        if (propertyMappings.TryGetValue(sortBy, out var mapped))
+        {
+            sortBy = mapped;
+        }
 
         if (IsEntityProperty(sortBy))
         {
-            if (sortDirection == SortDirection.Desc) Query.OrderByDescending(CreateOrderByExpression(sortBy));
-            else Query.OrderBy(CreateOrderByExpression(sortBy));
+            if (sortDirection == SortDirection.Desc)
+            {
+                Query.OrderByDescending(CreateOrderByExpression(sortBy)!);
+            }
+            else
+            {
+                Query.OrderBy(CreateOrderByExpression(sortBy)!);
+            }
         }
         else
         {
@@ -421,16 +432,15 @@ public abstract class PaginatedSpecification<T, TResult>(int pageNumber, int pag
         }
     }
 
-    protected Expression<Func<T, bool>> CombineFilterExpressionsWithOr(IEnumerable<Expression<Func<T, bool>>> filterExpressions)
+    private static Expression<Func<T, bool>> CombineFilterExpressionsWithOr(IEnumerable<Expression<Func<T, bool>>> filterExpressions)
     {
         var parameter = Expression.Parameter(typeof(T), "x");
-        Expression? combined = Expression.Constant(false);
-        foreach (var expr in filterExpressions)
-        {
-            var replacedBody = (new ParameterReplacer(expr.Parameters[0], parameter)).Visit(expr.Body)!;
-            combined = Expression.OrElse(combined, replacedBody);
-        }
-        return Expression.Lambda<Func<T, bool>>(combined!, parameter);
+        Expression combined = Expression.Constant(false);
+        combined = filterExpressions
+            .Select(expr => new ParameterReplacer(expr.Parameters[0], parameter).Visit(expr.Body)!).Aggregate(combined,
+                Expression.OrElse);
+        
+        return Expression.Lambda<Func<T, bool>>(combined, parameter);
     }
 
     protected void ApplyOrFilters(Dictionary<string, Filter> filters, Dictionary<string, string> propertyMappings)
@@ -447,11 +457,8 @@ public abstract class PaginatedSpecification<T, TResult>(int pageNumber, int pag
             Query.Where(filterExpression);
     }
 
-    private sealed class ParameterReplacer : ExpressionVisitor
+    private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
     {
-        private readonly ParameterExpression _from;
-        private readonly ParameterExpression _to;
-        public ParameterReplacer(ParameterExpression from, ParameterExpression to) { _from = from; _to = to; }
-        protected override Expression VisitParameter(ParameterExpression node) => node == _from ? _to : base.VisitParameter(node);
+        protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : base.VisitParameter(node);
     }
 }

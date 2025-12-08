@@ -41,6 +41,6 @@ public static class PaginationRequestExtensions
             .Where(kv => kv.Value is not null)
             .ToDictionary(kv => kv.Key, kv => kv.Value!, StringComparer.Ordinal);
 
-        return QueryHelpers.AddQueryString(basePath, dict);
+        return QueryHelpers.AddQueryString(basePath, dict!);
     }
 }

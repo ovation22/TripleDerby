@@ -10,26 +10,20 @@ using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Core.Services;
 
-public class FeedingService : IFeedingService
+public class FeedingService(
+    ICacheManager cache,
+    IRandomGenerator randomGenerator,
+    ITripleDerbyRepository repository)
+    : IFeedingService
 {
-    private readonly ICacheManager _cache;
-    private readonly IRandomGenerator _randomGenerator;
-    private readonly ITripleDerbyRepository _repository;
-
-    public FeedingService(
-        ICacheManager cache,
-        IRandomGenerator randomGenerator,
-        ITripleDerbyRepository repository
-    )
-    {
-        _cache = cache;
-        _repository = repository;
-        _randomGenerator = randomGenerator;
-    }
-
     public async Task<FeedingResult> Get(byte id)
     {
-        var feeding = await _repository.SingleOrDefaultAsync(new FeedingSpecification(id));
+        var feeding = await repository.SingleOrDefaultAsync(new FeedingSpecification(id));
+
+        if (feeding is null)
+        {
+            throw new KeyNotFoundException($"Feeding with ID '{id}' was not found.");
+        }
 
         return new FeedingResult
         {
@@ -41,12 +35,12 @@ public class FeedingService : IFeedingService
 
     public async Task<IEnumerable<FeedingsResult>> GetAll()
     {
-        return await _cache.GetOrCreate(CacheKeys.Feedings, async () => await GetFeedings());
+        return await cache.GetOrCreate(CacheKeys.Feedings, async () => await GetFeedings());
     }
 
     private async Task<IEnumerable<FeedingsResult>> GetFeedings()
     {
-        var feedings = await _repository.GetAllAsync<Feeding>();
+        var feedings = await repository.GetAllAsync<Feeding>();
 
         return feedings.Select(x => new FeedingsResult
         {
@@ -58,12 +52,18 @@ public class FeedingService : IFeedingService
 
     public async Task<FeedingSessionResult> Feed(byte feedingId, Guid horseId)
     {
-        const SharedKernel.Enums.FeedResponse result = SharedKernel.Enums.FeedResponse.Accepted;
+        const FeedResponse result = FeedResponse.Accepted;
 
         // Get Horse, with Stats, and with prior feedings of type
         // Save horse, with updated stats (Actual)
         // [] check feeding type past results to determine result, etc.
-        var horse = await _repository.SingleOrDefaultAsync(new HorseWithHappinessAndPriorFeedingsSpecification(horseId, feedingId));
+        var horse = await repository.SingleOrDefaultAsync(new HorseWithHappinessAndPriorFeedingsSpecification(horseId, feedingId));
+
+        if (horse is null)
+        {
+            throw new KeyNotFoundException($"Horse with ID '{horseId}' was not found.");
+        }
+
         var horseHappiness = horse.Statistics.Single(x => x.StatisticId == StatisticId.Happiness);
 
         horseHappiness.Actual = AffectHorseStatistic(horseHappiness, 0, 1, 0);
@@ -76,7 +76,7 @@ public class FeedingService : IFeedingService
         
         horse.FeedingSessions.Add(feedingSession);
 
-        await _repository.UpdateAsync(horse);
+        await repository.UpdateAsync(horse);
 
         return new FeedingSessionResult { Result = result };
     }
@@ -88,7 +88,7 @@ public class FeedingService : IFeedingService
         int actualMin
     )
     {
-        return (byte) Math.Clamp(stat.Actual + _randomGenerator.Next(min, max),
+        return (byte) Math.Clamp(stat.Actual + randomGenerator.Next(min, max),
             actualMin,
             stat.DominantPotential);
     }

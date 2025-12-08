@@ -1,4 +1,4 @@
-namespace TripleDerby.Core.Messages;
+namespace TripleDerby.SharedKernel.Messages;
 
 public sealed class BreedingCompleted(
     Guid RequestId,

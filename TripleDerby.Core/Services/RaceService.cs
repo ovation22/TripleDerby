@@ -7,20 +7,16 @@ using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Core.Services;
 
-public class RaceService : IRaceService
+public class RaceService(ITripleDerbyRepository repository) : IRaceService
 {
-    private readonly ITripleDerbyRepository _repository;
-
-    public RaceService(
-        ITripleDerbyRepository repository
-    )
-    {
-        _repository = repository;
-    }
-
     public async Task<RaceResult> Get(byte id)
     {
-        var race = await _repository.SingleOrDefaultAsync(new RaceSpecification(id));
+        var race = await repository.SingleOrDefaultAsync(new RaceSpecification(id));
+
+        if (race is null)
+        {
+            throw new KeyNotFoundException($"Race with ID '{id}' was not found.");
+        }
 
         return new RaceResult
         {
@@ -37,7 +33,7 @@ public class RaceService : IRaceService
 
     public async Task<IEnumerable<RacesResult>> GetAll()
     {
-        var races = await _repository.ListAsync(new RaceSpecification());
+        var races = await repository.ListAsync(new RaceSpecification());
 
         return races.Select(x => new RacesResult
         {
@@ -54,8 +50,14 @@ public class RaceService : IRaceService
 
     public async Task<RaceRunResult> Race(byte raceId, Guid horseId)
     {
-        var race = await _repository.SingleOrDefaultAsync(new RaceSpecification(raceId));
-        var racers = await _repository.ListAsync(new HorseRandomRacerSpecification());
+        var race = await repository.SingleOrDefaultAsync(new RaceSpecification(raceId));
+
+        if (race is null)
+        {
+            throw new KeyNotFoundException($"Race with ID '{raceId}' was not found.");
+        }
+
+        var racers = await repository.ListAsync(new HorseRandomRacerSpecification());
 
         var raceRunHorses = new List<RaceRunHorse> { new RaceRunHorse { HorseId = horseId, Lane = 1 } };
         raceRunHorses.AddRange(racers.Select(racer => new RaceRunHorse { HorseId = racer.Id, Lane = 2 })); // TODO: lane
@@ -71,7 +73,7 @@ public class RaceService : IRaceService
             RaceRunTicks = raceRunTicks
         };
 
-        await _repository.CreateAsync(raceRun);
+        await repository.CreateAsync(raceRun);
 
         return new RaceRunResult
         {

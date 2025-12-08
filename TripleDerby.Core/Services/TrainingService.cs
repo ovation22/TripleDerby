@@ -6,20 +6,16 @@ using TripleDerby.SharedKernel;
 
 namespace TripleDerby.Core.Services;
 
-public class TrainingService : ITrainingService
+public class TrainingService(ITripleDerbyRepository repository) : ITrainingService
 {
-    private readonly ITripleDerbyRepository _repository;
-
-    public TrainingService(
-        ITripleDerbyRepository repository
-    )
-    {
-        _repository = repository;
-    }
-
     public async Task<TrainingResult> Get(byte id)
     {
-        var training = await _repository.SingleOrDefaultAsync(new TrainingSpecification(id));
+        var training = await repository.SingleOrDefaultAsync(new TrainingSpecification(id));
+
+        if (training is null)
+        {
+            throw new KeyNotFoundException($"Training with ID '{id}' was not found.");
+        }
 
         return new TrainingResult
         {
@@ -31,7 +27,7 @@ public class TrainingService : ITrainingService
 
     public async Task<IEnumerable<TrainingsResult>> GetAll()
     {
-        var trainings = await _repository.GetAllAsync<Training>();
+        var trainings = await repository.GetAllAsync<Training>();
 
         return trainings.Select(x => new TrainingsResult
         {
@@ -51,7 +47,7 @@ public class TrainingService : ITrainingService
             Result = result
         };
 
-        await _repository.CreateAsync(trainingSession);
+        await repository.CreateAsync(trainingSession);
 
         return new TrainingSessionResult { Result = result };
     }

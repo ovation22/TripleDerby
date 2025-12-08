@@ -15,6 +15,11 @@ public class HorseService(ITripleDerbyRepository repository) : IHorseService
     {
         var horse = await repository.SingleOrDefaultAsync(new HorseSpecification(id));
 
+        if (horse is null)
+        {
+            throw new KeyNotFoundException($"Horse with ID '{id}' was not found.");
+        }
+
         return new HorseResult
         {
             Id = horse.Id,
@@ -32,9 +37,9 @@ public class HorseService(ITripleDerbyRepository repository) : IHorseService
 
     public async Task<PagedList<HorseResult>> Filter(PaginationRequest request, CancellationToken cancellationToken)
     {
-        return await FilterWithManualMapping(request, cancellationToken);
+        //return await FilterWithManualMapping(request, cancellationToken);
         
-        //return await FilterWithSpecMapping(request, cancellationToken);
+        return await FilterWithSpecMapping(request, cancellationToken);
     }
 
     private async Task<PagedList<HorseResult>> FilterWithManualMapping(PaginationRequest request, CancellationToken cancellationToken)
@@ -74,6 +79,11 @@ public class HorseService(ITripleDerbyRepository repository) : IHorseService
     public async Task Update(Guid id, JsonPatchDocument<HorsePatch> patch)
     {
         var horse = await repository.FindAsync<Horse>(id);
+
+        if (horse is null)
+        {
+            throw new KeyNotFoundException($"Horse with ID '{id}' was not found.");
+        }
 
         patch.Map<HorsePatch, Horse>().ApplyTo(horse);
 
