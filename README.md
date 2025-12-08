@@ -1,4 +1,7 @@
-﻿# Triple Derby  
+﻿[![CI](https://github.com/ovation22/TripleDerby/actions/workflows/ci.yml/badge.svg)](https://github.com/ovation22/TripleDerby/actions/workflows/ci.yml)
+[![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/ovation22/TripleDerby/blob/main/LICENSE)
+
+# Triple Derby  
 
 *A modern horse racing simulation built with .NET Aspire, .NET 9 Web API, and Blazor.*
 
