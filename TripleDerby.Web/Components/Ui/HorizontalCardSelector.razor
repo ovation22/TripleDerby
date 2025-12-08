@@ -1,0 +1,155 @@
+﻿@typeparam TItem
+
+<div class="hs-root @_animationClass">
+    <FluentButton Appearance="Appearance.Stealth"
+                  IconOnly="true"
+                  Title="Previous"
+                  Disabled="@(IsDisabled || _isAnimating)"
+                  OnClick="MovePrevious">
+        <FluentIcon Value="@(new Icons.Regular.Size20.ChevronLeft())" />
+    </FluentButton>
+
+    <div class="hs-window">
+        @if (Count > 0)
+        {
+            @if (Count > 1)
+            {
+                <div class="hs-card hs-card-left">
+                    @RenderItem(PrevIndex)
+                </div>
+            }
+
+            <div class="hs-card hs-card-center">
+                @RenderItem(SelectedIndexSafe)
+            </div>
+
+            @if (Count > 1)
+            {
+                <div class="hs-card hs-card-right">
+                    @RenderItem(NextIndex)
+                </div>
+            }
+        }
+        else
+        {
+            <div class="hs-empty">No items</div>
+        }
+    </div>
+
+    <FluentButton Appearance="Appearance.Stealth"
+                  IconOnly="true"
+                  Title="Next"
+                  Disabled="@(IsDisabled || _isAnimating)"
+                  OnClick="MoveNext">
+        <FluentIcon Value="@(new Icons.Regular.Size20.ChevronRight())" />
+    </FluentButton>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TItem> Items { get; set; } = Array.Empty<TItem>();
+
+    [Parameter] public int SelectedIndex { get; set; }
+
+    [Parameter] public EventCallback<int> SelectedIndexChanged { get; set; }
+
+    [Parameter] public EventCallback<TItem?> SelectedItemChanged { get; set; }
+
+    /// <summary>
+    /// Template for rendering each item. Typically you’ll wrap the content in a FluentCard.
+    /// </summary>
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+
+    private int Count => Items?.Count ?? 0;
+    private bool IsDisabled => Count == 0;
+
+    private int SelectedIndexSafe => Count == 0
+        ? 0
+        : (SelectedIndex % Count + Count) % Count;
+
+    private int PrevIndex => Count == 0 ? 0 : (SelectedIndexSafe - 1 + Count) % Count;
+    private int NextIndex => Count == 0 ? 0 : (SelectedIndexSafe + 1) % Count;
+
+    private bool _isAnimating;
+    private string _animationClass = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (Count == 0)
+        {
+            SelectedIndex = 0;
+            return;
+        }
+
+        SelectedIndex = SelectedIndexSafe;
+    }
+
+    private RenderFragment RenderItem(int index) => builder =>
+    {
+        if (Count == 0) return;
+
+        var item = Items[index];
+
+        if (ItemTemplate is not null)
+        {
+            builder.AddContent(0, ItemTemplate(item));
+        }
+        else
+        {
+            builder.OpenElement(1, "div");
+            builder.AddAttribute(2, "class", "hs-default-card");
+            builder.AddContent(3, item?.ToString());
+            builder.CloseElement();
+        }
+    };
+
+    private async Task MovePrevious()
+    {
+        if (IsDisabled || _isAnimating) return;
+
+        _isAnimating = true;
+        _animationClass = "hs-move-left";
+        StateHasChanged();
+
+        // wait for CSS animation to mostly finish
+        await Task.Delay(280);
+
+        _animationClass = string.Empty;
+
+        // now logically move selection one step left
+        SelectedIndex = (SelectedIndexSafe - 1 + Count) % Count;
+        await RaiseSelectionChanged();
+
+        _isAnimating = false;
+    }
+
+    private async Task MoveNext()
+    {
+        if (IsDisabled || _isAnimating) return;
+
+        _isAnimating = true;
+        _animationClass = "hs-move-right";
+        StateHasChanged();
+
+        await Task.Delay(280);
+
+        _animationClass = string.Empty;
+
+        SelectedIndex = (SelectedIndexSafe + 1) % Count;
+        await RaiseSelectionChanged();
+
+        _isAnimating = false;
+    }
+
+    private async Task RaiseSelectionChanged()
+    {
+        await SelectedIndexChanged.InvokeAsync(SelectedIndexSafe);
+
+        if (SelectedItemChanged.HasDelegate && Count > 0)
+        {
+            var item = Items[SelectedIndexSafe];
+            await SelectedItemChanged.InvokeAsync(item);
+        }
+
+        StateHasChanged();
+    }
+}

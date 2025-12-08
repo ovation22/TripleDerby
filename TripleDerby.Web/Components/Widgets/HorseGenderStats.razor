@@ -1,0 +1,158 @@
+@using System.Globalization
+@using System.Linq
+@using Microsoft.AspNetCore.Components
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel.Horses
+@using TripleDerby.Web.Icons
+
+<div role="region" aria-label="@Title">
+    <div class="hc-header">
+        <h3 class="hc-title">@Title</h3>
+        @if (ShowTotal)
+        {
+            <div class="hc-total">
+                @if (loading)
+                {
+                    <span>Loading…</span>
+                }
+                else
+                {
+                    <span>Total: @TotalCount</span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (loading)
+    {
+        <div class="hc-loading" aria-live="polite">Loading gender stats…</div>
+    }
+    else
+    {
+        <ul class="hc-list" aria-live="polite" style="@GridColumns">
+            @foreach (var s in DisplayStats)
+            {
+                <li class="hc-item">
+                    <div class="hc-meta">
+                        @if (s.IsMale)
+                        {
+                            <FluentIcon Width="15px;" Value="@(new TripleDerby.Web.Icons.MaleIcon())" aria-hidden="true" />
+                        }
+                        else
+                        {
+                            <FluentIcon Width="15px;" Value="@(new TripleDerby.Web.Icons.FemaleIcon())" aria-hidden="true" />
+                        }
+
+                        <div class="hc-labels">
+                            <div class="hc-name">@s.GenderName</div>
+                            @if (ShowCounts)
+                            {
+                                <div class="hc-count">@s.Count</div>
+                            }
+                        </div>
+                        <div class="hc-percent">@s.Percentage.ToString("0.0", CultureInfo.InvariantCulture)%</div>
+                    </div>
+
+                    <div class="hc-bar-outer" aria-hidden="true">
+                        <FluentProgress Stroke="ProgressStroke.Large" Min="0" Max="100" Value="@((int)(Math.Clamp(s.Percentage, 0, 100)))"></FluentProgress>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+<style>
+.hc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
+.hc-title { margin:0; font-size:1rem; font-weight:600; }
+.hc-loading { padding:12px 0; color:var(--neutralSecondary, #666); }
+.hc-list { list-style:none; padding:0; margin:0; display:grid; gap:10px 30px; }
+.hc-item { display:flex; flex-direction:column; gap:6px; align-items:stretch; }
+.hc-meta { display:flex; align-items:center; gap:10px; }
+.hc-labels { min-width:140px; display:flex; flex-direction:column; gap:2px; }
+.hc-name { font-weight:600; font-size:0.95rem; }
+.hc-percent { margin-left:auto; font-weight:600; width:50px; text-align:right; font-size:0.95rem; }
+</style>
+
+@code {
+    [Inject] private IStatsApiClient StatsApi { get; set; } = default!;
+
+    public record GenderStat(bool IsMale, string GenderName, int Count, double Percentage);
+
+    [Parameter] public IEnumerable<GenderStat> Stats { get; set; } = Enumerable.Empty<GenderStat>();
+    [Parameter] public string Title { get; set; } = "Horse Gender Distribution";
+
+    // Optional display parameters
+    [Parameter] public bool ShowTotal { get; set; } = false;
+    [Parameter] public bool ShowCounts { get; set; } = false;
+
+    private List<GenderStat> DisplayStats = new();
+    private int TotalCount;
+    private bool loading;
+
+    // Inline style used to generate the correct number of columns for the grid.
+    // At runtime this becomes "grid-template-columns: repeat(N, 1fr);"
+    private string GridColumns => $"grid-template-columns: repeat({Math.Max(1, DisplayStats?.Count ?? 0)}, 1fr);";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Stats == null || !Stats.Any())
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            UpdateDisplayFromStats();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        try
+        {
+            // Expects an API client method GetHorseGenderStatsAsync returning IEnumerable<HorseGenderStats>
+            var dtos = await StatsApi.GetHorseGenderStatsAsync();
+            Stats = dtos.Select(d =>
+                new GenderStat(
+                    d.IsMale,
+                    d.GenderName ?? (d.IsMale ? "Male" : "Female"),
+                    d.Count,
+                    d.Percentage))
+                .ToList();
+
+            UpdateDisplayFromStats();
+        }
+        finally
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateDisplayFromStats()
+    {
+        var list = (Stats ?? Enumerable.Empty<GenderStat>()).OrderByDescending(s => s.Percentage).ToList();
+        TotalCount = list.Sum(x => x.Count);
+
+        DisplayStats = list.Select(x => new GenderStat(x.IsMale, x.GenderName, x.Count, Math.Round(x.Percentage, 2))).ToList();
+    }
+
+    // Deterministic pastel color generator kept for potential reuse by other widgets.
+    private string GetColorFromName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "#b0b0b0";
+        unchecked
+        {
+            int hash = 23;
+            foreach (var ch in name) hash = (hash * 31) + ch;
+            var r = (hash >> 16) & 0xFF;
+            var g = (hash >> 8) & 0xFF;
+            var b = (hash) & 0xFF;
+            r = (r + 240) / 2;
+            g = (g + 240) / 2;
+            b = (b + 240) / 2;
+            return $"#{r:X2}{g:X2}{b:X2}";
+        }
+    }
+}

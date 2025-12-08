@@ -1,0 +1,173 @@
+@using System.Globalization
+@using System.Linq
+@using Microsoft.AspNetCore.Components
+@using TripleDerby.Web.ApiClients.Abstractions
+
+<div role="region" aria-label="@Title">
+    <div class="hc-header">
+        <h3 class="hc-title">@Title</h3>
+        <div class="hc-total">
+            @if (loading)
+            {
+                <span>Loading…</span>
+            }
+            else
+            {
+                <span>Total: @TotalCount</span>
+            }
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="hc-loading" aria-live="polite">Loading color stats…</div>
+    }
+    else
+    {
+        <ul class="hc-list" aria-live="polite" style="grid-template-columns: repeat(@Columns, 1fr);">
+            @foreach (var s in DisplayStats)
+            {
+                <li class="hc-item">
+                    <div class="hc-meta">
+                        @if (s.ColorId == -1)
+                        {
+                            <span class="hc-swatch other" aria-hidden="true">+</span>
+                        }
+                        else
+                        {
+                            <span class="hc-swatch" style="background-color:@GetColorFromName(s.ColorName);" aria-hidden="true"></span>
+                        }
+
+                        <div class="hc-labels">
+                            <div class="hc-name">@s.ColorName</div>
+                            <div class="hc-count">@s.Count</div>
+                        </div>
+                       <div class="hc-percent">@s.Percentage.ToString("0.0", CultureInfo.InvariantCulture)%</div>
+                    </div>
+
+                    <div class="hc-bar-outer" aria-hidden="true">
+                        <FluentProgress Stroke="ProgressStroke.Large" Min="0" Max="100" Value="@((int)(Math.Clamp(s.Percentage, 0, 100)))"></FluentProgress>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+<style>
+.hc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
+.hc-title { margin:0; font-size:1rem; font-weight:600; }
+.hc-total { font-size:0.85rem; color:var(--neutralSecondary, #666); }
+.hc-loading { padding:12px 0; color:var(--neutralSecondary, #666); }
+.hc-list { list-style:none; padding:0; margin:0; display:grid; grid-template-columns: repeat(1, 1fr); gap:10px 30px; }
+.hc-item { display:flex; flex-direction:column; gap:6px; }
+.hc-meta { display:flex; align-items:center; gap:10px; }
+.hc-swatch { width:18px; height:18px; border-radius:4px; display:inline-block; flex:0 0 18px; }
+.hc-swatch.other { display:flex; align-items:center; justify-content:center; background:linear-gradient(45deg,#d0d0d0,#a8a8a8); color:#fff; font-weight:600; }
+.hc-labels { min-width:140px; display:flex; flex-direction:column; gap:2px; }
+.hc-name { font-weight:600; font-size:0.95rem; }
+.hc-count { font-size:0.82rem; color:var(--neutralSecondary, #666); }
+.hc-percent { margin-left:auto; font-weight:600; width:50px; text-align:right; font-size:0.95rem; }
+</style>
+
+@code {
+    [Inject] private IStatsApiClient StatsApi { get; set; } = default!;
+
+    /// <summary>
+    /// Input model used by the component when consumer passes data.
+    /// </summary>
+    public record ColorStat(int ColorId, string ColorName, int Count, double Percentage);
+
+    [Parameter] public IEnumerable<ColorStat> Stats { get; set; } = Enumerable.Empty<ColorStat>();
+    [Parameter] public string Title { get; set; } = "Horse Color Distribution";
+
+    [Parameter] public int MaxItems { get; set; } = 6; // show top N per column
+    [Parameter] public int Columns { get; set; } = 2; // number of columns to render
+
+    private List<ColorStat> DisplayStats = new();
+    private int TotalCount;
+    private int OtherCount;
+    private double OtherPercentage;
+    private bool loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // If consumer passed Stats, prefer that; otherwise fetch from API.
+        if (Stats == null || !Stats.Any())
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            UpdateDisplayFromStats();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        try
+        {
+            var dtos = await StatsApi.GetHorseColorStatsAsync();
+            Stats = dtos.Select(d => new ColorStat(d.ColorId, d.ColorName, d.Count, d.Percentage)).ToList();
+            UpdateDisplayFromStats();
+        }
+        finally
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateDisplayFromStats()
+    {
+        var list = (Stats ?? Enumerable.Empty<ColorStat>()).OrderByDescending(s => s.Percentage).ToList();
+        TotalCount = list.Sum(x => x.Count);
+
+        // Show up to MaxItems per column (total shown = MaxItems * Columns).
+        var take = Math.Max(0, MaxItems * Math.Max(1, Columns));
+        var top = list.Take(take).ToList();
+        var rest = list.Skip(take).ToList();
+
+        OtherCount = rest.Sum(x => x.Count);
+        OtherPercentage = Math.Round(rest.Sum(x => x.Percentage), 2);
+
+        // If there are additional items beyond the slots we have, aggregate them into a single "Other"
+        if (OtherCount > 0)
+        {
+            var otherStat = new ColorStat(-1, "Other", OtherCount, OtherPercentage);
+
+            if (top.Count == take)
+            {
+                // replace the last visible slot with "Other" so we still render exactly `take` items
+                top[top.Count - 1] = otherStat;
+            }
+            else
+            {
+                // there's room to show the "Other" aggregated item as an additional entry
+                top.Add(otherStat);
+            }
+        }
+
+        DisplayStats = top.Select(x => new ColorStat(x.ColorId, x.ColorName, x.Count, Math.Round(x.Percentage, 2))).ToList();
+    }
+
+    // Create a deterministic pastel color from the name so each color gets a consistent swatch.
+    private string GetColorFromName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "#b0b0b0";
+        unchecked
+        {
+            int hash = 23;
+            foreach (var ch in name) hash = (hash * 31) + ch;
+            var r = (hash >> 16) & 0xFF;
+            var g = (hash >> 8) & 0xFF;
+            var b = (hash) & 0xFF;
+            // lighten toward white for pastel feel
+            r = (r + 240) / 2;
+            g = (g + 240) / 2;
+            b = (b + 240) / 2;
+            return $"#{r:X2}{g:X2}{b:X2}";
+        }
+    }
+}

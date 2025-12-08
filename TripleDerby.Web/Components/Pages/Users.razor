@@ -1,0 +1,113 @@
+﻿@page "/users"
+@rendermode InteractiveServer
+
+@using System.Linq
+@using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IUserApiClient UserApi
+
+<PageTitle>Users</PageTitle>
+
+<h1>Users</h1>
+
+<div style="min-height: 490px;" tabindex="-1">
+    <FluentDataGrid @ref="dataGrid"
+                    Items="@users"
+                    RefreshItems="RefreshItemsAsync"
+                    DisplayMode="DataGridDisplayMode.Table"
+                    TGridItem="UserResult"
+                    Pagination="pagination"
+                    Loading="loading">
+        <PropertyColumn Title="Username" Property="@(c => c!.Username)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true Align="Align.Start" />
+        <PropertyColumn Title="Email" Property="@(c => c!.Email)" Sortable="true" Align="Align.Start" />
+        <TemplateColumn Title="Active" Sortable="true" SortBy="@sortByActive" Align="Align.Center">
+            <div title="@(context.IsActive ? "Active" : "Inactive")" aria-label="Active state">
+                @if (context.IsActive)
+                {
+                    <FluentIcon Value="@(new Icons.Regular.Size16.Checkmark())" />
+                }
+                else
+                {
+                    <FluentIcon Value="@(new Icons.Regular.Size16.Dismiss())" />
+                }
+            </div>
+        </TemplateColumn>
+        <TemplateColumn Title="Admin" Sortable="true" SortBy="@sortByAdmin" Align="Align.Center">
+            <div title="@(context.IsActive ? "Admin" : "User")" aria-label="Active state">
+                @if (context.IsAdmin)
+                {
+                    <FluentIcon Value="@(new Icons.Regular.Size16.Checkmark())" />
+                }
+                else
+                {
+                    <FluentIcon Value="@(new Icons.Regular.Size16.Dismiss())" />
+                }
+            </div>
+        </TemplateColumn>
+        <TemplateColumn Title="Actions" Align="@Align.End">
+            <FluentButton aria-label="Edit item" IconEnd="@(new Icons.Regular.Size16.Edit())" />
+            <FluentButton aria-label="Delete item" IconEnd="@(new Icons.Regular.Size16.Delete())" />
+        </TemplateColumn>
+    </FluentDataGrid>
+</div>
+
+<FluentPaginator State="@pagination" />
+
+@code {
+    bool loading = true;
+    IQueryable<UserResult> users = default!;
+    FluentDataGrid<UserResult> dataGrid = default!;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    GridSort<UserResult> sortByActive = GridSort<UserResult>
+        .ByAscending(p => p.IsActive);
+
+    GridSort<UserResult> sortByAdmin = GridSort<UserResult>
+        .ByAscending(p => p.IsAdmin);
+        
+    protected async Task RefreshItemsAsync(GridItemsProviderRequest<UserResult> req)
+    {
+        loading = true;
+        await InvokeAsync(StateHasChanged);
+
+        var start = req.StartIndex;
+        var count = (req.Count.HasValue && req.Count.Value > 0)
+            ? req.Count.Value
+            : pagination.ItemsPerPage;
+        if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 1;
+
+        var page = (start / count) + 1;
+
+        var sortBy = "Username";
+        var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
+
+        var s = req.GetSortByProperties().FirstOrDefault();
+        if (req.SortByColumn != null && !string.IsNullOrEmpty(s.PropertyName))
+        {
+            sortBy = s.PropertyName;
+            sortDirection = s.Direction == Microsoft.FluentUI.AspNetCore.Components.SortDirection.Ascending
+                ? SharedKernel.Pagination.SortDirection.Asc
+                : SharedKernel.Pagination.SortDirection.Desc;
+        }
+
+        var request = new PaginationRequest
+        {
+            Page = page,
+            Size = count,
+            SortBy = sortBy,
+            Direction = sortDirection
+        };
+        
+        var response = await UserApi.SearchAsync(request);
+
+        users = (response?.Data ?? Enumerable.Empty<UserResult>()).AsQueryable();
+        await pagination.SetTotalItemCountAsync(response?.Total ?? 0);
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

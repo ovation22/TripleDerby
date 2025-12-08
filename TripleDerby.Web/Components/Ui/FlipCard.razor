@@ -1,0 +1,55 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.FluentUI.AspNetCore.Components
+
+<div class="flip-card" style="width:@Width;; height:@Height;;">
+    <div class="flip-card-inner @(IsFlipped ? "flipped" : string.Empty)"
+         @onclick="ToggleFlip"
+         @onkeydown="OnKeyDown"
+         role="button"
+         tabindex="0"
+         aria-pressed="@(IsFlipped.ToString().ToLower())">
+        <div class="flip-card-front">
+            <FluentCard MinimalStyle=@MinimalStyle class="flip-inner-card front-card" Style="width:100%; height:100%;">
+                @Front
+            </FluentCard>
+        </div>
+        <div class="flip-card-back">
+            <FluentCard MinimalStyle=@MinimalStyle class="flip-inner-card back-card" Style="width:100%; height:100%;">
+                @Back
+            </FluentCard>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? Front { get; set; }
+
+    [Parameter]
+    public RenderFragment? Back { get; set; }
+
+    [Parameter]
+    public string Width { get; set; } = "320px";
+
+    [Parameter]
+    public string Height { get; set; } = "200px";
+
+    [Parameter]
+    public bool MinimalStyle { get; set; } = true;
+
+    bool IsFlipped = false;
+
+    void ToggleFlip()
+    {
+        IsFlipped = !IsFlipped;
+    }
+
+    void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            ToggleFlip();
+        }
+    }
+}

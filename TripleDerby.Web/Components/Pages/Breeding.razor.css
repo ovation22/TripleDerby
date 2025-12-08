@@ -1,0 +1,81 @@
+﻿/* Baseball-card front layout */
+.card-top {
+    flex: 11 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0));
+}
+
+.card-image {
+    width: 70%;
+    max-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+}
+
+    .card-image svg {
+        width: 100%;
+        height: auto;
+        fill: currentColor;
+    }
+
+.card-bottom {
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(180deg, #f8f8f8, #efefef);
+    border-top: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.card-earnings {
+    font-weight: 600;
+    color: #2b6cb0;
+}
+
+/* Back layout - stats */
+.card-stats {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.card-title {
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+}
+
+.stat-label {
+    color: #444;
+}
+
+.stat-value {
+    font-weight: 700;
+}
+
+/* small responsive adjustments */
+@media (max-width: 400px) {
+    .card-name {
+        font-size: 0.95rem;
+    }
+
+    .card-image {
+        max-height: 120px;
+    }
+}

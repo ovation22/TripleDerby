@@ -1,0 +1,65 @@
+﻿@page "/"
+@using TripleDerby.Web.Components.Widgets
+
+<PageTitle>Triple Derby - Admin</PageTitle>
+
+<FluentGrid style="padding-top: 10px;" >
+    <FluentGridItem xs="12" sm="6" md="4">
+        <FluentCard Height="100px;">
+            <FluentNavLink Href="horses">
+                <FluentLabel Typo="Typography.H2">
+                    <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())" />
+                </FluentLabel>
+                <FluentLabel Typo="Typography.H4">Horses</FluentLabel>
+            </FluentNavLink>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="4">
+        <FluentCard Height="100px;">
+            <FluentNavLink Href="users">
+                <FluentLabel Typo="Typography.H2">
+                    <FluentEmoji Value="@(new Emojis.PeopleBody.Color.Default.Person())" />
+                </FluentLabel>
+                <FluentLabel Typo="Typography.H4">Users</FluentLabel>
+            </FluentNavLink>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="12" md="4">
+        <FluentCard Height="100px;">
+            <FluentNavLink Underline="Underline.None" Href="breeding">
+                <FluentLabel Typo="Typography.H2">
+                    <FluentEmoji Value="@(new Emojis.TravelPlaces.Color.Default.HouseWithGarden())" />
+                </FluentLabel>
+                <FluentLabel Typo="Typography.H4">Breeding</FluentLabel>
+            </FluentNavLink>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6">
+        <FluentGrid>
+            <FluentGridItem xs="12">
+                <FluentCard Height="156px;">
+                    <HorseGenderStats Title="Genders" />
+                </FluentCard>
+            </FluentGridItem>
+            <FluentGridItem xs="12">
+                <FluentCard Height="270px;">
+                    <HorseLegTypeStats Title="Leg Types" />
+                </FluentCard>
+            </FluentGridItem>
+        </FluentGrid>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6">
+        <FluentCard Style="height: 100%">
+            <HorseColorStats Title="Horse Colors" MaxItems="6" />
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="4">
+        <FluentCard Style="height: 150px;"></FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="4">
+        <FluentCard Style="height: 150px;"></FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="12" md="4">
+        <FluentCard Style="height: 150px;"></FluentCard>
+    </FluentGridItem>
+</FluentGrid>

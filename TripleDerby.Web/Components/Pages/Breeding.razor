@@ -1,0 +1,260 @@
+﻿@page "/breeding"
+@rendermode InteractiveServer
+
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading
+@using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
+@using Microsoft.FluentUI.AspNetCore.Components;
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.Web.Icons;
+@using TripleDerby.Web.Components.Ui;
+
+@inject IBreedingApiClient BreedingApi
+@inject IUserApiClient UserApi
+
+<PageTitle>Breeding</PageTitle>
+
+<h1>Breeding</h1>
+
+<FluentGrid>
+    <FluentGridItem xs="12" sm="12" md="6">
+        @if (loadingDams)
+        {
+            <div>Loading dams...</div>
+        }
+        else if (!dams.Any())
+        {
+            <div>No dams available.</div>
+        }
+        else
+        {
+            <h2>Dams</h2>
+            <HorizontalCardSelector TItem="HorseResult"
+                                    Items="@dams.ToList()"
+                                    SelectedIndex="@SelectedDamIndex"
+                                    SelectedIndexChanged="i => SelectedDamIndex = i"
+                                    SelectedItemChanged="OnDamChanged">
+                <ItemTemplate Context="horse">
+                    <FlipCard MinimalStyle="true" Height="250px" Width="300px">
+                        <Front>
+                            <div class="card-top">
+                                <div class="card-image">
+                                    <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())" />
+                                </div>
+                            </div>
+                            <div class="card-bottom">
+                                <div class="card-name">@horse.Name</div>
+                                <div class="card-earnings">$@horse.Earnings</div>
+                            </div>
+                        </Front>
+                        <Back>
+                            <div class="card-stats">
+                                <div class="card-title">Stats</div>
+                                <div class="stat-row"><div class="stat-label">Starts</div><div class="stat-value">@horse.RaceStarts</div></div>
+                                <div class="stat-row"><div class="stat-label">Wins</div><div class="stat-value">@horse.RaceWins</div></div>
+                                <div class="stat-row"><div class="stat-label">Place</div><div class="stat-value">@horse.RacePlace</div></div>
+                                <div class="stat-row"><div class="stat-label">Show</div><div class="stat-value">@horse.RaceShow</div></div>
+                                <div class="stat-row"><div class="stat-label">Sire</div><div class="stat-value">@(horse.Sire ?? "-")</div></div>
+                                <div class="stat-row"><div class="stat-label">Dam</div><div class="stat-value">@(horse.Dam ?? "-")</div></div>
+                            </div>
+                        </Back>
+                    </FlipCard>
+                </ItemTemplate>
+            </HorizontalCardSelector>
+        }
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="12" md="6">
+        <h2>Sires</h2>
+        <HorizontalCardSelector TItem="HorseResult"
+                                Items="@sires.ToList()"
+                                SelectedIndex="@SelectedSireIndex"
+                                SelectedIndexChanged="i => SelectedSireIndex = i"
+                                SelectedItemChanged="OnSireChanged">
+            <ItemTemplate Context="horse">
+                <FlipCard MinimalStyle="true" Height="250px" Width="300px">
+                    <Front>
+                        <div class="card-top">
+                            <div class="card-image">
+                                <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())" />
+                            </div>
+                        </div>
+                        <div class="card-bottom">
+                            <div class="card-name">@horse.Name</div>
+                            <div class="card-earnings">$@horse.Earnings</div>
+                        </div>
+                    </Front>
+                    <Back>
+                        <div class="card-stats">
+                            <div class="card-title">Stats</div>
+                            <div class="stat-row"><div class="stat-label">Starts</div><div class="stat-value">@horse.RaceStarts</div></div>
+                            <div class="stat-row"><div class="stat-label">Wins</div><div class="stat-value">@horse.RaceWins</div></div>
+                            <div class="stat-row"><div class="stat-label">Place</div><div class="stat-value">@horse.RacePlace</div></div>
+                            <div class="stat-row"><div class="stat-label">Show</div><div class="stat-value">@horse.RaceShow</div></div>
+                            <div class="stat-row"><div class="stat-label">Sire</div><div class="stat-value">@(horse.Sire ?? "-")</div></div>
+                            <div class="stat-row"><div class="stat-label">Dam</div><div class="stat-value">@(horse.Dam ?? "-")</div></div>
+                        </div>
+                    </Back>
+                </FlipCard>
+            </ItemTemplate>
+        </HorizontalCardSelector>
+    </FluentGridItem>
+</FluentGrid>
+
+<div style="margin-top:1rem;">
+    <label for="ownerSearch"><strong>Owner</strong></label>
+
+    <FluentAutocomplete TOption="UserResult"
+                        Width="320px"
+                        Placeholder="Search users by username"
+                        OptionText="@(u => $"{u.Username} ({u.Email})")"
+                        Multiple="false"
+                        OnOptionsSearch="OnOptionsSearchAsync"
+                        @bind-SelectedOption="SelectedOwner" />
+</div>
+
+<div style="margin-top:1rem;">
+    <button class="btn btn-primary" disabled="@(SelectedDamId == null || SelectedSireId == null)" @onclick="BreedAsync">
+        Breed selected pair
+    </button>
+</div>
+
+@if (breedResult is not null)
+{
+    <div style="margin-top:1rem;">
+        <strong>Breed result:</strong> @breedResult
+    </div>
+}
+
+@code {
+    IEnumerable<HorseResult> dams = Enumerable.Empty<HorseResult>();
+    IEnumerable<HorseResult> sires = Enumerable.Empty<HorseResult>();
+
+    bool loadingDams = true;
+    bool loadingSires = true;
+
+    Guid? SelectedDamId;
+    Guid? SelectedSireId;
+
+    private int SelectedSireIndex { get; set; }
+    private void OnSireChanged(HorseResult? horse)
+        => SelectedSireId = horse is null ? null : horse.Id;
+
+    private int SelectedDamIndex { get; set; }
+    private void OnDamChanged(HorseResult? horse)
+        => SelectedDamId = horse is null ? null : horse.Id;
+
+    string? breedResult;
+
+    // Autocomplete owner selection
+    private UserResult? SelectedOwner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load dams and sires in parallel
+        var damsTask = BreedingApi.GetDamsAsync();
+        var siresTask = BreedingApi.GetSiresAsync();
+
+        var damsResp = await damsTask;
+        var siresResp = await siresTask;
+
+        // Ensure deterministic sorting (case-insensitive by Name)
+        dams = (damsResp ?? Enumerable.Empty<HorseResult>())
+            .OrderBy(h => h?.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        sires = (siresResp ?? Enumerable.Empty<HorseResult>())
+            .OrderBy(h => h?.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        SelectedDamId = dams.First().Id;
+        SelectedSireId = sires.First().Id;
+
+        loadingDams = false;
+        loadingSires = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnSelectDam(ChangeEventArgs e)
+    {
+        if (e?.Value is string s && Guid.TryParse(s, out var id))
+        {
+            SelectedDamId = id;
+        }
+        else
+        {
+            SelectedDamId = null;
+        }
+    }
+
+    private void OnSelectSire(ChangeEventArgs e)
+    {
+        if (e?.Value is string s && Guid.TryParse(s, out var id))
+        {
+            SelectedSireId = id;
+        }
+        else
+        {
+            SelectedSireId = null;
+        }
+    }
+
+    private async Task OnOptionsSearchAsync(OptionsSearchEventArgs<UserResult> e)
+    {
+        // Called by the FluentAutocomplete when the user types. Use the UserApi to search.
+        var q = e.Text?.Trim();
+
+        PaginationRequest request;
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            // Load first N users when there's no search text
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Username",
+                Direction = TripleDerby.SharedKernel.Pagination.SortDirection.Asc
+            };
+        }
+        else
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Username",
+                Direction = TripleDerby.SharedKernel.Pagination.SortDirection.Asc,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Username"] = new Filter { Operator = FilterOperator.Contains, Value = q }
+                }
+            };
+        }
+
+        var resp = await UserApi.SearchAsync(request);
+        e.Items = resp?.Data ?? Enumerable.Empty<UserResult>();
+    }
+
+    private Task BreedAsync()
+    {
+        var dam = dams.FirstOrDefault(d => d.Id == SelectedDamId);
+        var sire = sires.FirstOrDefault(s => s.Id == SelectedSireId);
+
+        if (dam is null || sire is null)
+        {
+            breedResult = "Invalid selection.";
+        }
+        else
+        {
+            var ownerPart = SelectedOwner is not null ? $" (Owner: {SelectedOwner.Username})" : string.Empty;
+            breedResult = $"Planned breeding: Dam '{dam.Name}' x Sire '{sire.Name}'{ownerPart}";
+        }
+
+        return Task.CompletedTask;
+    }
+}

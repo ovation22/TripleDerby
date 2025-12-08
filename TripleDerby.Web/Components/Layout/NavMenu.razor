@@ -1,0 +1,20 @@
+﻿@using TripleDerby.Web.Icons;
+
+<div class="navmenu">
+    <input type="checkbox" title="Menu expand/collapse toggle" id="navmenu-toggle" class="navmenu-icon" />
+    <label for="navmenu-toggle" class="navmenu-icon"><FluentIcon Value="@(new Icons.Regular.Size20.Navigation())" Color="Color.Fill" /></label>
+    <nav class="sitenav" aria-labelledby="main-menu">
+        <FluentNavMenu Id="main-menu" Collapsible="true" Width="250" Title="Navigation menu" @bind-Expanded="expanded" CustomToggle="true">
+            <FluentNavLink Href="/" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Home())" IconColor="Color.Accent">Home</FluentNavLink>
+            <FluentNavLink Href="users" Icon="@(new Icons.Regular.Size20.Person())" IconColor="Color.Accent">Users</FluentNavLink>
+            <FluentNavLink Href="horses" Icon="@(new HorseIcon())" IconColor="Color.Accent">Horses</FluentNavLink>
+            <FluentNavLink Href="breeding" Icon="@(new BarnIcon())" IconColor="Color.Accent">Breeding</FluentNavLink>
+            <FluentNavLink Href="tracks" Icon="@(new RaceTrackIcon())" IconColor="Color.Accent">Tracks</FluentNavLink>
+            <FluentNavLink Href="races" Icon="@(new HorseAndRider())" IconColor="Color.Accent">Races</FluentNavLink>
+        </FluentNavMenu>
+    </nav>
+</div>
+
+@code {
+    private bool expanded = true;
+}

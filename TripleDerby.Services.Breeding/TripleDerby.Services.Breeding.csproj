@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-TripleDerby.Services.Breeding-fb2b3935-ea97-4f32-8892-18efcccd3f78</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
+	<PackageReference Include="Aspire.RabbitMQ.Client" Version="9.5.2" />
+	<PackageReference Include="Aspire.Microsoft.Data.SqlClient" Version="9.5.2" />
+	<PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+	<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+	<PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+	<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+	<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+	<PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TripleDerby.Core\TripleDerby.Core.csproj" />
+    <ProjectReference Include="..\TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj" />
+    <ProjectReference Include="..\TripleDerby.ServiceDefaults\TripleDerby.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\TripleDerby.SharedKernel\TripleDerby.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

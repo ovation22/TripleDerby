@@ -1,0 +1,117 @@
+﻿/* Timing variables (debug mode) */
+:root {
+    --hs-duration: 300ms;
+    --hs-ease: cubic-bezier(.25, .8, .25, 1);
+}
+
+/* Root wrapper (buttons + window) */
+.hs-root {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Viewport for cards */
+.hs-window {
+    position: relative;
+    width: 450px;
+    min-height: var(--hs-window-min-height, 280px);
+    overflow: hidden;
+}
+
+/* Base style for all cards */
+.hs-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 260px;
+    min-height: 160px;
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    box-sizing: border-box;
+    overflow: visible;
+    /* default “off” state */
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    z-index: 0;
+    transition: transform var(--hs-duration) var(--hs-ease), opacity var(--hs-duration) ease-out;
+    will-change: transform, opacity;
+}
+
+    /* Fill children */
+    .hs-card > * {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-height: 100%;
+    }
+
+/* === Resting positions === */
+
+.hs-card-center {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    z-index: 3;
+}
+
+.hs-card-left {
+    transform: translate(-120%, -50%) scale(0.7);
+    opacity: 0.4;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.hs-card-right {
+    transform: translate(20%, -50%) scale(0.7);
+    opacity: 0.4;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* === Move RIGHT (Next) === */
+
+.hs-move-right .hs-card-center {
+    transform: translate(-120%, -50%) scale(0.7);
+    transition: transform var(--hs-duration) var(--hs-ease), opacity var(--hs-duration) ease-out;
+    z-index: 4;
+}
+
+.hs-move-right .hs-card-right {
+    transform: translate(-50%, -50%) scale(1);
+    transition: transform var(--hs-duration) var(--hs-ease), opacity var(--hs-duration) ease-in;
+    z-index: 3;
+}
+
+.hs-move-right .hs-card-left {
+    transform: translate(-230%, -50%) scale(0.5);
+    transition: transform var(--hs-duration) var(--hs-ease), opacity var(--hs-duration) ease-in;
+    z-index: 3;
+}
+
+/* === Move LEFT (Prev) === */
+
+/* Old center → slide right, shrink */
+.hs-move-left .hs-card-center {
+    transform: translate(20%, -50%) scale(0.7);
+    transition: transform var(--hs-duration) var(--hs-ease),
+                opacity   var(--hs-duration) ease-out;
+}
+
+/* Left card → slide into center */
+.hs-move-left .hs-card-left {
+    transform: translate(-50%, -50%) scale(1);
+    transition: transform var(--hs-duration) var(--hs-ease),
+                opacity   var(--hs-duration) ease-in;
+}
+
+/* Right card → slide further right, shrink */
+.hs-move-left .hs-card-right {
+    transform: translate(210%, -50%) scale(0.5);
+    transition: transform var(--hs-duration) var(--hs-ease),
+                opacity   var(--hs-duration) ease-in;
+}
+

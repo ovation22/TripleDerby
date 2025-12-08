@@ -1,0 +1,144 @@
+@using System.Globalization
+@using System.Linq
+@using Microsoft.AspNetCore.Components
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel.Horses
+@using TripleDerby.SharedKernel.Enums
+@using TripleDerby.Web.Icons
+
+<div role="region" aria-label="@Title">
+    <div class="hc-header">
+        <h3 class="hc-title">@Title</h3>
+        @if (ShowTotal)
+        {
+            <div class="hc-total">
+                @if (loading)
+                {
+                    <span>Loading…</span>
+                }
+                else
+                {
+                    <span>Total: @TotalCount</span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (loading)
+    {
+        <div class="hc-loading" aria-live="polite">Loading leg type stats…</div>
+    }
+    else
+    {
+        <ul class="hc-list" aria-live="polite" style="grid-template-columns: repeat(1, 1fr);">
+            @foreach (var s in DisplayStats)
+            {
+                <li class="hc-item">
+                    <div class="hc-meta">
+                        @switch((LegTypeId)s.LegTypeId)
+                        {
+                            case LegTypeId.FrontRunner:
+                                <FluentIcon Value="@(new Icons.Regular.Size20.ArrowForwardDownLightning())" />
+                                break;
+                            case LegTypeId.StartDash:
+                                <FluentIcon Value="@(new Icons.Regular.Size20.Rocket())" />
+                                break;
+                            case LegTypeId.LastSpurt:
+                                <FluentIcon Value="@(new Icons.Regular.Size20.ArrowImport())" />
+                                break;
+                            case LegTypeId.StretchRunner:
+                                <FluentIcon Value="@(new Icons.Regular.Size20.Timer())" />
+                                break;
+                            case LegTypeId.RailRunner:
+                                <FluentIcon Value="@(new Icons.Regular.Size20.ArrowAutofitUp())" />
+                                break;
+                            default:
+                                <span class="hc-icon">?</span>
+                                break;
+                        }
+
+                        <div class="hc-labels">
+                            <div class="hc-name">@s.LegTypeName</div>
+                            @if (ShowCounts)
+                            {
+                                <div class="hc-count">@s.Count</div>
+                            }
+                        </div>
+                        <div class="hc-percent">@s.Percentage.ToString("0.0", CultureInfo.InvariantCulture)%</div>
+                    </div>
+
+                    <div class="hc-bar-outer" aria-hidden="true">
+                        <FluentProgress Min="0" Max="100" Value="@((int)(Math.Clamp(s.Percentage, 0, 100)))"></FluentProgress>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+<style>
+.hc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
+.hc-title { margin:0; font-size:1rem; font-weight:600; }
+.hc-loading { padding:12px 0; color:var(--neutralSecondary, #666); }
+.hc-list { list-style:none; padding:0; margin:0; display:grid; grid-template-columns: repeat(1, 1fr); gap:10px 30px; }
+.hc-item { display:flex; flex-direction:column; gap:6px; }
+.hc-meta { display:flex; align-items:center; gap:10px; }
+.hc-labels { min-width:140px; display:flex; flex-direction:column; gap:2px; }
+.hc-name { font-weight:600; font-size:0.95rem; }
+.hc-percent { margin-left:auto; font-weight:600; width:50px; text-align:right; font-size:0.95rem; }
+</style>
+
+@code {
+    [Inject] private IStatsApiClient StatsApi { get; set; } = default!;
+
+    public record LegStat(int LegTypeId, string LegTypeName, int Count, double Percentage);
+
+    [Parameter] public IEnumerable<LegStat> Stats { get; set; } = Enumerable.Empty<LegStat>();
+    [Parameter] public string Title { get; set; } = "Horse Leg Type Distribution";
+
+    // New optional display parameters (default to false)
+    [Parameter] public bool ShowTotal { get; set; } = false;
+    [Parameter] public bool ShowCounts { get; set; } = false;
+
+    private List<LegStat> DisplayStats = new();
+    private int TotalCount;
+    private bool loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Stats == null || !Stats.Any())
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            UpdateDisplayFromStats();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        try
+        {
+            // Assumes the API client exposes GetHorseLegTypeStatsAsync returning IEnumerable<HorseLegTypeStats>
+            var dtos = await StatsApi.GetHorseLegTypeStatsAsync();
+            Stats = dtos.Select(d => new LegStat((int)d.LegTypeId, d.LegTypeName ?? d.LegTypeId.ToString(), d.Count, d.Percentage)).ToList();
+            UpdateDisplayFromStats();
+        }
+        finally
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateDisplayFromStats()
+    {
+        var list = (Stats ?? Enumerable.Empty<LegStat>()).OrderByDescending(s => s.Percentage).ToList();
+        TotalCount = list.Sum(x => x.Count);
+
+        // There are only five leg types — show them all in a single column.
+        DisplayStats = list.Select(x => new LegStat(x.LegTypeId, x.LegTypeName, x.Count, Math.Round(x.Percentage, 2))).ToList();
+    }
+}

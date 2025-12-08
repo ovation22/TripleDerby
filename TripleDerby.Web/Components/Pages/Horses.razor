@@ -1,0 +1,379 @@
+﻿@page "/horses"
+@rendermode InteractiveServer
+
+@using System.Linq
+@using System.Threading
+@using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IHorseApiClient HorseApi
+
+@implements IDisposable
+
+<PageTitle>Horses</PageTitle>
+
+<h1>Horses</h1>
+
+<FluentToolbar>
+    <FluentRadioGroup Name="filterOp" @bind-Value="filterOperator" Label="Combine filters using">
+        <FluentRadio Value="@LogicalOperator.Or">Or</FluentRadio>
+        <FluentRadio Value="@LogicalOperator.And">And</FluentRadio>
+    </FluentRadioGroup>
+    <FluentSpacer Width="25" />
+</FluentToolbar>
+
+<div style="min-height: 490px;" tabindex="-1">
+    <FluentDataGrid @ref="dataGrid"
+                    Items="@horses"
+                    RefreshItems="RefreshItemsAsync"
+                    DisplayMode="DataGridDisplayMode.Table"
+                    TGridItem="HorseResult"
+                    Pagination="pagination"
+                    HeaderCellAsButtonWithMenu=true
+                    UseMenuService=false
+                    Loading="loading">
+        <PropertyColumn Property="@(c => c.Name)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true>
+            <ColumnOptions>
+                <div class="search-box">
+                    <FluentSearch type="search" Autofocus=true @bind-Value="nameFilter" @oninput="HandleNameFilter" @bind-Value:after="HandleClearName" Placeholder="Horse name..." />
+                </div>
+            </ColumnOptions>
+        </PropertyColumn>
+        <TemplateColumn Title="Gender" Sortable="true" SortBy="@sortByGender" Align="Align.Center">
+            <div title="@(context.IsMale ? "Sire" : "Dam")" aria-label="Gender">
+                @if (context.IsMale)
+                {
+                    <FluentIcon Value="@(new TripleDerby.Web.Icons.MaleIcon())" />
+                }
+                else
+                {
+                    <FluentIcon Value="@(new TripleDerby.Web.Icons.FemaleIcon())" />
+                }
+            </div>
+        </TemplateColumn>
+        <PropertyColumn Title="Color" Property="@(c => c!.Color)" Sortable="true" Align="Align.Start">
+            <ColumnOptions>
+                <div class="search-box">
+                    <FluentSearch type="search" @bind-Value="colorFilter" @oninput="HandleColorFilter" @bind-Value:after="HandleClearColor" Placeholder="Color..." />
+                </div>
+            </ColumnOptions>
+        </PropertyColumn>
+        <PropertyColumn Title="Starts" Property="@(c => c!.RaceStarts)" Sortable="true" Align="Align.End" />
+        <PropertyColumn Title="Wins" Property="@(c => c!.RaceWins)" Sortable="true" Align="Align.End" />
+        <PropertyColumn Title="Earnings" Property="@(c => c!.Earnings)" Sortable="true" Align="Align.End" />
+        <PropertyColumn Title="Owner" Property="@(c => c!.Owner)" Sortable="true" Align="Align.End">
+            <ColumnOptions>
+                <div class="search-box">
+                    <FluentSearch type="search" @bind-Value="ownerFilter" @oninput="HandleOwnerFilter" @bind-Value:after="HandleClearOwner" Placeholder="Owner..." />
+                </div>
+            </ColumnOptions>
+        </PropertyColumn>
+        <TemplateColumn Title="Created" Sortable="true" SortBy="@sortByCreated" Align="Align.End">
+            <div>@context.Created.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss")</div>
+        </TemplateColumn>
+        <TemplateColumn Title="Actions" Align="@Align.End">
+            <FluentButton aria-label="Edit item" IconEnd="@(new Icons.Regular.Size16.Edit())" />
+            <FluentButton aria-label="Delete item" IconEnd="@(new Icons.Regular.Size16.Delete())" />
+        </TemplateColumn>
+    </FluentDataGrid>
+</div>
+
+<FluentPaginator State="@pagination" />
+
+@code {
+    bool loading = true;
+    IQueryable<HorseResult> horses = Enumerable.Empty<HorseResult>().AsQueryable();
+    FluentDataGrid<HorseResult>? dataGrid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    string nameFilter = string.Empty;
+    string colorFilter = string.Empty;
+    string ownerFilter = string.Empty;
+
+    // Controls how filters are combined: Or (default) or And
+    private LogicalOperator _filterOperator = LogicalOperator.Or;
+    private LogicalOperator filterOperator
+    {
+        get => _filterOperator;
+        set
+        {
+            if (_filterOperator == value) return;
+            _filterOperator = value;
+
+            // Refresh grid when the operator changes.
+            _ = InvokeAsync(async () =>
+            {
+                if (dataGrid is not null)
+                {
+                    await dataGrid.RefreshDataAsync(true);
+                }
+                else
+                {
+                    var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                    await RefreshItemsAsync(request);
+                }
+            });
+        }
+    }
+
+    GridSort<HorseResult> sortByGender = GridSort<HorseResult>
+    .ByAscending(p => p.IsMale);
+
+    GridSort<HorseResult> sortByCreated = GridSort<HorseResult>
+    .ByAscending(p => p.Created);
+
+    // Debounce helpers
+    private CancellationTokenSource? _nameFilterCts;
+    private CancellationTokenSource? _colorFilterCts;
+    private CancellationTokenSource? _ownerFilterCts;
+    private int _debounceMs = 300; // adjust to taste
+
+    // Called by the search box after a bind update (clear button triggers this).
+    // Must be synchronous to match @bind-Value:after handler signature, so schedule the async refresh.
+    private void HandleClearName()
+    {
+        if (string.IsNullOrWhiteSpace(nameFilter))
+        {
+            _nameFilterCts?.Cancel();
+            _nameFilterCts?.Dispose();
+            _nameFilterCts = null;
+
+            _ = InvokeAsync(async () =>
+            {
+                if (dataGrid is not null)
+                {
+                    await dataGrid.RefreshDataAsync(true);
+                }
+                else
+                {
+                    var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                    await RefreshItemsAsync(request);
+                }
+            });
+        }
+    }
+
+    private void HandleClearColor()
+    {
+        if (string.IsNullOrWhiteSpace(colorFilter))
+        {
+            _colorFilterCts?.Cancel();
+            _colorFilterCts?.Dispose();
+            _colorFilterCts = null;
+
+            _ = InvokeAsync(async () =>
+            {
+                if (dataGrid is not null)
+                {
+                    await dataGrid.RefreshDataAsync(true);
+                }
+                else
+                {
+                    var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                    await RefreshItemsAsync(request);
+                }
+            });
+        }
+    }
+
+    private void HandleClearOwner()
+    {
+        if (string.IsNullOrWhiteSpace(ownerFilter))
+        {
+            _ownerFilterCts?.Cancel();
+            _ownerFilterCts?.Dispose();
+            _ownerFilterCts = null;
+
+            _ = InvokeAsync(async () =>
+            {
+                if (dataGrid is not null)
+                {
+                    await dataGrid.RefreshDataAsync(true);
+                }
+                else
+                {
+                    var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                    await RefreshItemsAsync(request);
+                }
+            });
+        }
+    }
+
+    // Called by the search box on each input; debounce before triggering grid refresh.
+    private async Task HandleNameFilter(ChangeEventArgs args)
+    {
+        if (args.Value is not string value)
+            return;
+
+        nameFilter = value;
+
+        _nameFilterCts?.Cancel();
+        _nameFilterCts?.Dispose();
+        _nameFilterCts = new CancellationTokenSource();
+        var token = _nameFilterCts.Token;
+
+        try
+        {
+            await Task.Delay(_debounceMs, token);
+            if (token.IsCancellationRequested) return;
+
+            if (dataGrid is not null)
+            {
+                await dataGrid.RefreshDataAsync(true);
+            }
+            else
+            {
+                var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                await RefreshItemsAsync(request);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private async Task HandleColorFilter(ChangeEventArgs args)
+    {
+        if (args.Value is not string value)
+            return;
+
+        colorFilter = value;
+
+        _colorFilterCts?.Cancel();
+        _colorFilterCts?.Dispose();
+        _colorFilterCts = new CancellationTokenSource();
+        var token = _colorFilterCts.Token;
+
+        try
+        {
+            await Task.Delay(_debounceMs, token);
+            if (token.IsCancellationRequested) return;
+
+            if (dataGrid is not null)
+            {
+                await dataGrid.RefreshDataAsync(true);
+            }
+            else
+            {
+                var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                await RefreshItemsAsync(request);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private async Task HandleOwnerFilter(ChangeEventArgs args)
+    {
+        if (args.Value is not string value)
+            return;
+
+        ownerFilter = value;
+
+        _ownerFilterCts?.Cancel();
+        _ownerFilterCts?.Dispose();
+        _ownerFilterCts = new CancellationTokenSource();
+        var token = _ownerFilterCts.Token;
+
+        try
+        {
+            await Task.Delay(_debounceMs, token);
+            if (token.IsCancellationRequested) return;
+
+            if (dataGrid is not null)
+            {
+                await dataGrid.RefreshDataAsync(true);
+            }
+            else
+            {
+                var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                await RefreshItemsAsync(request);
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    protected async Task RefreshItemsAsync(GridItemsProviderRequest<HorseResult> req)
+    {
+        loading = true;
+
+        // safe StartIndex / Count handling
+        var start = req.StartIndex;
+        var count = (req.Count.HasValue && req.Count.Value > 0)
+            ? req.Count.Value
+            : pagination.ItemsPerPage;
+        if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 1;
+
+        var page = (start / count) + 1;
+
+        var sortBy = "Name";
+        var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
+
+        var s = req.GetSortByProperties().FirstOrDefault(x => !string.IsNullOrEmpty(x.PropertyName));
+        if (!string.IsNullOrEmpty(s.PropertyName))
+        {
+            sortBy = s.PropertyName;
+            sortDirection = s.Direction == FUISort.Ascending
+                ? SharedKernel.Pagination.SortDirection.Asc
+                : SharedKernel.Pagination.SortDirection.Desc;
+        }
+
+        var request = new PaginationRequest
+        {
+            Page = page,
+            Size = count,
+            SortBy = sortBy,
+            Direction = sortDirection,
+            Operator = filterOperator
+        };
+
+        // Build filters dictionary from any non-empty filter fields
+        var filters = new Dictionary<string, Filter>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(nameFilter))
+        {
+            filters["Horse"] = new Filter
+            {
+                Operator = FilterOperator.Contains,
+                Value = nameFilter
+            };
+        }
+        if (!string.IsNullOrWhiteSpace(colorFilter))
+        {
+            filters["Color"] = new Filter
+            {
+                Operator = FilterOperator.Contains,
+                Value = colorFilter
+            };
+        }
+        if (!string.IsNullOrWhiteSpace(ownerFilter))
+        {
+            filters["Owner"] = new Filter
+            {
+                Operator = FilterOperator.Contains,
+                Value = ownerFilter
+            };
+        }
+
+        if (filters.Count > 0)
+        {
+            request = request with { Filters = filters };
+        }
+
+        var response = await HorseApi.SearchAsync(request);
+
+        horses = (response?.Data ?? Enumerable.Empty<HorseResult>()).AsQueryable();
+        await pagination.SetTotalItemCountAsync(response?.Total ?? 0);
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _nameFilterCts?.Cancel();
+        _nameFilterCts?.Dispose();
+        _colorFilterCts?.Cancel();
+        _colorFilterCts?.Dispose();
+        _ownerFilterCts?.Cancel();
+        _ownerFilterCts?.Dispose();
+    }
+}

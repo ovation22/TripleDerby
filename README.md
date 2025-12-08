@@ -1,2 +1,285 @@
-# TripleDerby
-The online horse racing game!
+﻿# Triple Derby  
+
+*A modern horse racing simulation built with .NET Aspire, .NET 9 Web API, and Blazor.*
+
+Triple Derby is a management and simulation game where players breed, train, feed, and race virtual horses — each with unique genetics and performance characteristics. This modern rebuild uses .NET 9, Blazor, and .NET Aspire to orchestrate a clean, extensible architecture.
+
+Gameplay systems follow the **Triple Derby Functional Specification** :contentReference[oaicite:0]{index=0}.
+
+---
+
+## 🚀 Features
+
+- Modern **.NET 9 Web API** for all gameplay operations  
+- **Blazor Admin UI** for testing, debugging, and management  
+- **.NET Aspire orchestration** for local infrastructure and future cloud deployment  
+- **Breeding engine** with Punnett-style dominant/recessive logic  
+- **Mutation system** with weighted randomness  
+- **Racing simulation** with tick-based movement, leg types, lane modifiers, and track conditions  
+- Training, feeding, month-end lifecycle logic  
+- Easily extensible to microservices and background workers  
+
+---
+
+## 🧱 Architecture Overview
+
+```text
+/src
+  /TripleDerby.Api        → .NET 9 Web API (gameplay engine)
+  /TripleDerby.Admin      → Blazor Admin UI
+  /TripleDerby.AppHost    → .NET Aspire orchestrator
+```
+
+---
+
+## 🖥️ System Flow (Mermaid Diagram)
+
+```mermaid
+flowchart TD
+
+A[Player Action] --> B{Choose Activity}
+
+B -->|Breed| C[Select Sire & Dam]
+C --> D[Compute Genetics & Stats]
+D --> E[Foal Created + Naming]
+
+B -->|Train| F[Select Training Routine]
+F --> G[Apply Stat Changes]
+G --> H[Injury Check]
+
+B -->|Feed| I[Pick Feed Type]
+I --> J[Apply Happiness/Stat Effects]
+
+B -->|Race| K[Select Track/Jockey/Plan]
+K --> L[Race Simulation Engine]
+L --> M[Outcome + Injury Check]
+
+M --> N[Month-End Processing]
+N --> O[Stipend + Reset AP + Reset Happiness]
+```
+
+---
+
+## 📦 Domain Model Overview
+
+```mermaid
+classDiagram
+    class Horse {
+        Guid Id
+        string Name
+        Gender Gender
+        Color Color
+        LegType LegType
+        Stats GeneticDominant
+        Stats GeneticRecessive
+        Stats ActualStats
+        int Happiness
+        int Age
+        int RacesThisYear
+    }
+
+    class Stats {
+        int Speed
+        int Stamina
+        int Agility
+        int Durability
+    }
+
+    class BreedingService {
+        +Breed(sire, dam) Horse
+        +AssignColor()
+        +AssignGender()
+        +AssignLegType()
+        +ComputeGenetics()
+        +ApplyMutation()
+        +ComputeActualStats()
+    }
+
+    class TrainingService {
+        +Train(horse, routine)
+        +ApplyEffects()
+        +CheckInjury()
+    }
+
+    class FeedingService {
+        +Feed(horse, feedType)
+    }
+
+    class RacingService {
+        +SimulateRace(horse, conditions, plan)
+        +ComputeDistancePerTick()
+        +LaneModifiers()
+        +ConditionModifiers()
+        +OvertakeLogic()
+    }
+
+    class Stable {
+        Guid OwnerId
+        List~Horse~ Horses
+    }
+
+    Horse --> Stable : "belongs to"
+    BreedingService --> Horse
+    TrainingService --> Horse
+    FeedingService --> Horse
+    RacingService --> Horse
+    Horse --> Stats : "uses"
+```
+
+---
+
+## 🧬 Gameplay Systems Summary
+
+### **Breeding**
+
+Breeding creates a new foal influenced by parent traits:
+
+- Select CPU or stable-owned sire/dam  
+- Weighted color selection (with special colors)  
+- Leg type influences racing behavior  
+- Dominant/Recessive stats computed using Punnett-style quadrants  
+- Final step: player names the foal  
+
+### **Training**
+
+- May increase stats  
+- May increase happiness  
+- Reduced effect if recently injured  
+- Small chance of injury  
+
+### **Feeding**
+
+- Affects happiness  
+- Can influence training effectiveness  
+- May add minor stat variance  
+
+### **Racing**
+
+Race outcome depends on:
+
+- Track selection (surface, length, hidden conditions)  
+- Leg type (FrontRunner, StartDash, LastSpurt, StretchRunner, RailRunner)  
+- Lane position effects  
+- Condition modifiers (Fast, Muddy, Frozen, Soft, etc.)  
+- Tick-based formula:  
+  Distance = BaseSpeed × LegTypeModifier × ConditionModifier × LaneModifier  
+- Overtaking logic and random events  
+- Injury chance  
+- Max 8 races per year, max 3-year racing career  
+
+### **Month-End**
+
+- Player receives stipend  
+- Action points reset  
+- Happiness resets to 50  
+
+---
+
+## ▶️ Running the Project
+
+### **Prerequisites**
+
+- .NET 9 SDK  
+- Docker Desktop (optional, for Aspire dependencies)  
+- VS 2022 or VS Code + C# Dev Kit  
+
+### **Start the Full System via Aspire**
+
+code
+dotnet run --project src/TripleDerby.AppHost
+code
+
+Aspire launches:
+
+- TripleDerby API  
+- Blazor Admin UI  
+- Database or other configured services  
+- Aspire dashboard with logs + health checks  
+
+### **Default Endpoints**
+
+- Admin UI → https://localhost:{port}/  
+- Swagger UI → https://localhost:{port}/swagger  
+
+---
+
+## 🛠️ Development Notes
+
+- Keep gameplay logic in domain services for clean, testable architecture  
+- Use deterministic RNG for reproducible breeding and racing tests  
+- Use DTOs to avoid leaking domain internals  
+- Future expansions:
+  - Breeding Worker  
+  - Racing Simulation Worker  
+  - Month-End Scheduler  
+- Consider messaging (RabbitMQ or Service Bus) for async workload distribution  
+
+---
+
+## Solution Structure
+
+### Core Project
+
+The Core project is the center of the Clean Architecture design, and all other project dependencies should point toward it. As such, it has very few external dependencies. The Core project should include things like:
+
+- Entities
+- DTOs
+- Interfaces
+- Domain Services
+
+### Infrastructure Project
+
+Most of your application's dependencies on external resources should be implemented in classed defined in the Infrastructure project. These classed should implement interfaces defined in Core. The Infrastructure project should include things like:
+
+- Http clients
+- Repositories
+- Event Hub Producer clients
+- Service Bus clients
+
+### Api Project
+
+The entry point of the application is the Api project. The Api project should include things like:
+
+- Program.cs
+- Controllers
+- Configurations
+
+### Test Projects
+
+Test projects are organized based on the kind of test (unit, integration, benchmark, etc.).
+
+#### Unit Tests
+
+Unit tests provide a way to verify and validate functionality of individual methods/components/features. This project contains example tests using [xUnit](https://xunit.net/).
+
+#### Integration Tests
+
+[Integration testing](https://learn.microsoft.com/en-us/aspnet/core/test/integration-tests) provides a way to ensure that an application's components function correctly at each level.
+
+#### Architectural Tests
+
+Architectural rules can be enforced using [NetArchTest](https://github.com/BenMorris/NetArchTest), a fluent API for .NET Standard that can enforce architectural rules within unit tests.
+
+#### Benchmark Tests
+
+Benchmark testing is provided by [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet), a powerful .NET library for creating and executing benchmark tests.
+
+```powershell
+dotnet run --project ./tests/Api.Project.Template.Tests.Benchmark -c Release
+```
+
+---
+
+## 🗺️ Roadmap
+
+### **Short Term**
+
+- Complete race engine visualization  
+- Expand Admin UI tooling  
+- Add stable management  
+
+### **Long Term**
+
+- Worker/microservice separation  
+- In-game marketplace  
+- Public player UI  
