@@ -28,7 +28,7 @@ jobs:
         - name: Run tests with coverage
           run: dotnet test --configuration Release --no-build --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage"
             
-        - name: Add Test Results PR Comment
+        - name: Add test results PR comment
           uses: marocchino/sticky-pull-request-comment@v2
           if: github.event_name == 'pull_request'
           with:
@@ -40,3 +40,17 @@ jobs:
           if: always()
           with:
             files: TestResults/**/*.trx
+
+        - name: Generate coverage report
+          uses: danielpalme/ReportGenerator-GitHub-Action@v5.2.4
+          with: 
+            reports: 'TestResults/**/*.cobertura.xml'
+            targetdir: 'CoverageReport'
+            reporttypes: 'MarkdownSummaryGitHub'
+            verbosity: 'Info'
+            title: 'Code Coverage Report'
+            toolpath: '~/.dotnet/tools/reportgenerator'
+
+        - name: Upload coverage report artifact
+          run: cat CoverageReport/Summary.md >> $GITHUB_STEP_SUMMARY
+          shell: bash
