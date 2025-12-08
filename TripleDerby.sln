@@ -10,8 +10,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleDerby.Api", "TripleDe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleDerby.Web", "TripleDerby.Web\TripleDerby.Web.csproj", "{CD5A0851-2D57-96CF-58BA-AF1340CAE967}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleDerby.Tests", "TripleDerby.Tests\TripleDerby.Tests.csproj", "{B830AA42-293D-3F44-4F89-E8F2A59A018B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleDerby.Core", "TripleDerby.Core\TripleDerby.Core.csproj", "{CF33C321-3940-4DF9-9291-6A18C4431419}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TripleDerby.Infrastructure", "TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj", "{9BB20A08-34E6-4D2E-8E3C-817D55C74C4C}"
@@ -56,10 +54,6 @@ Global
 		{CD5A0851-2D57-96CF-58BA-AF1340CAE967}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD5A0851-2D57-96CF-58BA-AF1340CAE967}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD5A0851-2D57-96CF-58BA-AF1340CAE967}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B830AA42-293D-3F44-4F89-E8F2A59A018B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B830AA42-293D-3F44-4F89-E8F2A59A018B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B830AA42-293D-3F44-4F89-E8F2A59A018B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B830AA42-293D-3F44-4F89-E8F2A59A018B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CF33C321-3940-4DF9-9291-6A18C4431419}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CF33C321-3940-4DF9-9291-6A18C4431419}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF33C321-3940-4DF9-9291-6A18C4431419}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -89,7 +83,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{B830AA42-293D-3F44-4F89-E8F2A59A018B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{4CC6DB4A-C1A2-49FE-8394-9D14A96CE743} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{46AA271E-AAB4-EA2A-C302-C1287BCAE1E1} = {E238A671-61FF-45DC-A560-862B1FF7F802}
 	EndGlobalSection
