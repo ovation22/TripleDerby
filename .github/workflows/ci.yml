@@ -26,7 +26,7 @@ jobs:
           run: dotnet build --no-restore --configuration Release
             
         - name: Run tests with coverage
-          run: dotnet test --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --logger "trx" --results-directory ./TestResults
+          run: dotnet test --configuration Release --no-build --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage"
             
         - name: Publish test results
           uses: EnricoMi/publish-unit-test-result-action@v2
