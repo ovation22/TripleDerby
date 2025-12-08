@@ -42,7 +42,7 @@ jobs:
             files: TestResults/**/*.trx
 
         - name: Generate coverage report
-          uses: danielpalme/ReportGenerator-GitHub-Action@v5.2.4
+          uses: danielpalme/ReportGenerator-GitHub-Action@5.2.4
           with: 
             reports: 'TestResults/**/*.cobertura.xml'
             targetdir: 'CoverageReport'
