@@ -192,52 +192,50 @@ Breeding creates a new foal influenced by parent traits:
 - Final step: player names the foal  
 
 ```mermaid
-graph TD
-  subgraph "API Layer"
-    A["BreedingController<br>(API)"]
+sequenceDiagram
+  participant Player
+  participant BreedingController
+  participant BreedingService
+  participant Repository
+  participant MessagePublisher
+  participant MessageBus
+  participant BreedingRequestProcessor
+  participant RNG as RandomGenerator
+  participant NameGen as HorseNameGenerator
+
+  Player->>BreedingController: POST /api/breeding/requests (BreedRequest)
+  BreedingController->>BreedingService: Breed(request)
+  BreedingService->>Repository: Create BreedingRequest (Status=Pending)
+  Repository-->>BreedingService: BreedingRequest(created)
+  BreedingService->>MessagePublisher: Publish BreedingRequested(Event)
+  MessagePublisher->>MessageBus: Send BreedingRequested
+  MessageBus-->>BreedingRequestProcessor: Deliver BreedingRequested
+
+  BreedingRequestProcessor->>Repository: Find BreedingRequest(id)
+  Repository-->>BreedingRequestProcessor: BreedingRequest(entity)
+  BreedingRequestProcessor->>Repository: Update BreedingRequest (Status=InProgress) — claim
+  BreedingRequestProcessor->>Repository: Get Parent: Dam
+  Repository-->>BreedingRequestProcessor: Dam
+  BreedingRequestProcessor->>Repository: Get Parent: Sire
+  Repository-->>BreedingRequestProcessor: Sire
+
+  BreedingRequestProcessor->>RNG: GetRandomGender / LegType / Color / Stats
+  RNG-->>BreedingRequestProcessor: Random values
+  BreedingRequestProcessor->>NameGen: Generate()
+  NameGen-->>BreedingRequestProcessor: FoalName
+
+  Note right of Repository: ExecuteInTransaction:<br>- Create Foal<br>- Update parented counters<br>- Update BreedingRequest (FoalId, Status=Completed, ProcessedDate)
+  BreedingRequestProcessor->>Repository: Execute transaction (create foal & update)
+  Repository-->>BreedingRequestProcessor: Foal(created)
+
+  BreedingRequestProcessor->>MessagePublisher: Publish BreedingCompleted(Event)
+  MessagePublisher->>MessageBus: Send BreedingCompleted
+  MessageBus-->> Consumers: Deliver BreedingCompleted
+
+  alt Publish failure after commit
+    BreedingRequestProcessor->>Repository: Persist FailureReason (keep Status=Completed)
+    Repository-->>BreedingRequestProcessor: Ack
   end
-
-  subgraph "Core / Domain"
-    B["BreedingService<br>(Domain service)"]
-  end
-
-  subgraph "Services.Breeding"
-    C["BreedingRequestProcessor<br>(TripleDerby.Services.Breeding)"]
-  end
-
-  subgraph "Infrastructure"
-    Repo["Repository<br>(ITripleDerbyRepository)"]
-    Cache["Distributed Cache<br>(IDistributedCacheAdapter)"]
-    Pub["MessagePublisher<br>(IMessagePublisher)"]
-    Bus["Message Bus / Broker"]
-    RNG["Random Generator<br>(IRandomGenerator)"]
-    NameGen["Horse Name Generator<br>(IHorseNameGenerator)"]
-    Time["Time Manager<br>(ITimeManager)"]
-    DB["Database<br>(Horses, BreedingRequests, Colors, etc.)"]
-  end
-
-  A -->|calls: GetDams / GetSires| B
-  A -->|calls: Breed -> creates BreedingRequest| B
-  A -->|calls: Replay / ReplayAll / GetRequest| B
-
-  B -->|reads/writes featured lists| Cache
-  B -->|reads parents, creates BreedingRequest, updates status| Repo
-  B -->|publish &quot;BreedingRequested&quot; event| Pub
-  Pub -->|sends event| Bus
-
-  Bus -->|delivers &quot;BreedingRequested&quot;| C
-  C -->|reads/writes parents, BreedingRequest and foal transaction| Repo
-  C -->|create foal: uses randomness and name generation| RNG
-  C --> RNG
-  C --> NameGen
-  C --> Time
-  C -->|publish &quot;BreedingCompleted&quot;| Pub
-  Pub -->|sends event| Bus
-
-  Repo -->|persists entities| DB
-
-  NoteFailed["Note: BreedingRequestProcessor executes foal creation + parent updates + BreedingRequest update in a single transaction. On publish failure it records FailureReason but keeps Foal persisted."]
-  C --- NoteFailed
 ```
 
 ### **Training**
