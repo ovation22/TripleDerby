@@ -22,18 +22,59 @@ Triple Derby is a management and simulation game where players breed, train, fee
 
 ---
 
-## 🧱 Architecture Overview
+## 🏛️ Solution Structure
 
-```text
-/src
-  /TripleDerby.Api        → .NET 9 Web API (gameplay engine)
-  /TripleDerby.Admin      → Blazor Admin UI
-  /TripleDerby.AppHost    → .NET Aspire orchestrator
+Included in the solution:
+
+- [x] .NET 9 Web Api
+- [x] Logging
+- [x] Global Exception Handling
+- [x] Cancellation Handling
+- [x] Health Checks
+- [x] CI Pipelines
+- [x] Unit Tests
+- [ ] Integration Tests
+- [ ] Benchmark Tests
+- [ ] Architectural Tets
+
+---
+
+## 🧩 Architecture Overview
+
+```mermaid
+graph TD
+    A{API Project} --> B[Core Project]
+    C[Infrastructure Project] --> B
+    A --> C
+    E[Shared Kernel] --> B
+    A --> E
+    C --> E
+
+    subgraph "API Layer"
+      A[TripleDerby.Api<br>• Controllers<br>• Configuration<br>• Program.cs]
+    end
+
+    subgraph "Core Layer"
+      B[TripleDerby.Core<br>• Entities<br>• Interfaces<br>• Domain Services]
+    end
+
+    subgraph "Shared Kernel"
+      E[TripleDerby.SharedKernel<br>• DTOs<br>• Base Classes<br>• Value Objects<br>• Common Interfaces<br>• Events]
+    end
+
+    subgraph "Infrastructure Layer"
+      C[TripleDerby.Infrastructure<br>• Repositories<br>• Http Clients<br>• Event Producers]
+    end
+
+    style A fill:#0078d7,stroke:#004578,stroke-width:1px,color:white
+    style B fill:#28a745,stroke:#115724,stroke-width:1px,color:white
+    style C fill:#ff9900,stroke:#cc7a00,stroke-width:1px,color:white
+    style E fill:#8a2be2,stroke:#5a189a,stroke-width:1px,color:white
 ```
 
 ---
 
-## 🖥️ System Flow (Mermaid Diagram)
+## 🖥️ System Flow
 
 ```mermaid
 flowchart TD
@@ -140,6 +181,55 @@ Breeding creates a new foal influenced by parent traits:
 - Leg type influences racing behavior  
 - Dominant/Recessive stats computed using Punnett-style quadrants  
 - Final step: player names the foal  
+
+```mermaid
+graph TD
+  subgraph "API Layer"
+    A["BreedingController<br>(API)"]
+  end
+
+  subgraph "Core / Domain"
+    B["BreedingService<br>(Domain service)"]
+  end
+
+  subgraph "Services.Breeding"
+    C["BreedingRequestProcessor<br>(TripleDerby.Services.Breeding)"]
+  end
+
+  subgraph "Infrastructure"
+    Repo["Repository<br>(ITripleDerbyRepository)"]
+    Cache["Distributed Cache<br>(IDistributedCacheAdapter)"]
+    Pub["MessagePublisher<br>(IMessagePublisher)"]
+    Bus["Message Bus / Broker"]
+    RNG["Random Generator<br>(IRandomGenerator)"]
+    NameGen["Horse Name Generator<br>(IHorseNameGenerator)"]
+    Time["Time Manager<br>(ITimeManager)"]
+    DB["Database<br>(Horses, BreedingRequests, Colors, etc.)"]
+  end
+
+  A -->|calls: GetDams / GetSires| B
+  A -->|calls: Breed -> creates BreedingRequest| B
+  A -->|calls: Replay / ReplayAll / GetRequest| B
+
+  B -->|reads/writes featured lists| Cache
+  B -->|reads parents, creates BreedingRequest, updates status| Repo
+  B -->|publish &quot;BreedingRequested&quot; event| Pub
+  Pub -->|sends event| Bus
+
+  Bus -->|delivers &quot;BreedingRequested&quot;| C
+  C -->|reads/writes parents, BreedingRequest and foal transaction| Repo
+  C -->|create foal: uses randomness and name generation| RNG
+  C --> RNG
+  C --> NameGen
+  C --> Time
+  C -->|publish &quot;BreedingCompleted&quot;| Pub
+  Pub -->|sends event| Bus
+
+  Repo -->|persists entities| DB
+
+  NoteFailed["Note: BreedingRequestProcessor executes foal creation + parent updates + BreedingRequest update in a single transaction. On publish failure it records FailureReason but keeps Foal persisted."]
+  C --- NoteFailed
+```
 
 ### **Training**
 
