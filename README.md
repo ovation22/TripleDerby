@@ -7,8 +7,6 @@
 
 Triple Derby is a management and simulation game where players breed, train, feed, and race virtual horses — each with unique genetics and performance characteristics. This modern rebuild uses .NET 9, Blazor, and .NET Aspire to orchestrate a clean, extensible architecture.
 
-Gameplay systems follow the **Triple Derby Functional Specification** :contentReference[oaicite:0]{index=0}.
-
 ---
 
 ## 🚀 Features
