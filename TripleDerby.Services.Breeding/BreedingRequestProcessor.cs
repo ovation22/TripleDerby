@@ -9,25 +9,15 @@ using TripleDerby.SharedKernel.Messages;
 
 namespace TripleDerby.Services.Breeding;
 
-public class BreedingRequestProcessor : IBreedingRequestProcessor
+public class BreedingRequestProcessor(
+    ILogger<BreedingRequestProcessor> logger,
+    IRandomGenerator randomGenerator,
+    ITripleDerbyRepository repository,
+    IMessagePublisher messagePublisher,
+    IHorseNameGenerator horseNameGenerator,
+    ITimeManager timeManager)
+    : IBreedingRequestProcessor
 {
-    private readonly ILogger<BreedingRequestProcessor> _logger;
-    private readonly IRandomGenerator _randomGenerator;
-    private readonly ITripleDerbyRepository _repository;
-    private readonly IMessagePublisher _messagePublisher;
-    private readonly IHorseNameGenerator _horseNameGenerator;
-    private readonly ITimeManager _timeManager;
-
-    public BreedingRequestProcessor(ILogger<BreedingRequestProcessor> logger, IRandomGenerator randomGenerator, ITripleDerbyRepository repository, IMessagePublisher messagePublisher, IHorseNameGenerator horseNameGenerator, ITimeManager timeManager)
-    {
-        _logger = logger;
-        _randomGenerator = randomGenerator;
-        _repository = repository;
-        _messagePublisher = messagePublisher;
-        _horseNameGenerator = horseNameGenerator;
-        _timeManager = timeManager;
-    }
-
     public async Task ProcessAsync(BreedingRequested request, CancellationToken cancellationToken)
     {
         if (request is null) 
@@ -35,33 +25,33 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
         
         cancellationToken.ThrowIfCancellationRequested();
 
-        _logger.LogInformation("Processing breeding request {RequestId} (sire={SireId}, dam={DamId})", request.RequestId, request.SireId, request.DamId);
+        logger.LogInformation("Processing breeding request {RequestId} (sire={SireId}, dam={DamId})", request.RequestId, request.SireId, request.DamId);
 
         // idempotency: load persisted request
-        var stored = await _repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+        var stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
         if (stored is null)
         {
-            _logger.LogWarning("BreedingRequest {RequestId} not found in DB; skipping", request.RequestId);
+            logger.LogWarning("BreedingRequest {RequestId} not found in DB; skipping", request.RequestId);
             return;
         }
 
         // If already completed, skip
         if (stored.Status == BreedingRequestStatus.Completed)
         {
-            _logger.LogInformation("Skipping request {RequestId} because status is {Status}", request.RequestId, stored.Status);
+            logger.LogInformation("Skipping request {RequestId} because status is {Status}", request.RequestId, stored.Status);
             return;
         }
 
         // If previously failed, allow replay — log and proceed to claim
         if (stored.Status == BreedingRequestStatus.Failed)
         {
-            _logger.LogInformation("Reprocessing failed BreedingRequest {RequestId}. Previous failure: {FailureReason}", request.RequestId, stored.FailureReason);
+            logger.LogInformation("Reprocessing failed BreedingRequest {RequestId}. Previous failure: {FailureReason}", request.RequestId, stored.FailureReason);
         }
 
         // If already in progress, skip to avoid concurrent processing
         if (stored.Status == BreedingRequestStatus.InProgress)
         {
-            _logger.LogInformation("Skipping request {RequestId} because it is already InProgress", request.RequestId);
+            logger.LogInformation("Skipping request {RequestId} because it is already InProgress", request.RequestId);
             return;
         }
 
@@ -69,33 +59,33 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
         try
         {
             stored.Status = BreedingRequestStatus.InProgress;
-            stored.UpdatedDate = _timeManager.OffsetUtcNow();
-            await _repository.UpdateAsync(stored, cancellationToken);
+            stored.UpdatedDate = timeManager.OffsetUtcNow();
+            await repository.UpdateAsync(stored, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to claim BreedingRequest {RequestId} for processing; another worker may have claimed it", request.RequestId);
+            logger.LogWarning(ex, "Failed to claim BreedingRequest {RequestId} for processing; another worker may have claimed it", request.RequestId);
             // reload and re-check status
-            stored = await _repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+            stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
             if (stored is not null && stored.Status != BreedingRequestStatus.InProgress)
             {
-                _logger.LogInformation("Request {RequestId} is no longer available for processing (status={Status}), skipping", request.RequestId, stored.Status);
+                logger.LogInformation("Request {RequestId} is no longer available for processing (status={Status}), skipping", request.RequestId, stored.Status);
                 return;
             }
 
-            // if we couldn't claim and it's still not in progress, proceed — a later duplicate check in DB will avoid double side-effects in most cases.
+            // if we couldn't claim, and it's still not in progress, proceed — a later duplicate check in DB will avoid double side effects in most cases.
         }
 
         await Breed(request, cancellationToken);
 
-        _logger.LogInformation("Completed processing breeding request {RequestId}", request.RequestId);
+        logger.LogInformation("Completed processing breeding request {RequestId}", request.RequestId);
     }
 
     private async Task Breed(BreedingRequested request, CancellationToken cancellationToken)
     {
         // resolve parents with cancellation
-        var dam = await _repository.SingleOrDefaultAsync(new ParentHorseSpecification(request.DamId), cancellationToken);
-        var sire = await _repository.SingleOrDefaultAsync(new ParentHorseSpecification(request.SireId), cancellationToken);
+        var dam = await repository.SingleOrDefaultAsync(new ParentHorseSpecification(request.DamId), cancellationToken);
+        var sire = await repository.SingleOrDefaultAsync(new ParentHorseSpecification(request.SireId), cancellationToken);
 
         if (dam is null)
             throw new InvalidOperationException($"Unable to retrieve Dam ({request.DamId})");
@@ -107,7 +97,7 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
         var legTypeId = GetRandomLegType();
         var color = await GetRandomColor(sire.Color.IsSpecial, dam.Color.IsSpecial, true, cancellationToken);
         var statistics = GenerateHorseStatistics(sire.Statistics, dam.Statistics);
-        var name = _horseNameGenerator.Generate();
+        var name = horseNameGenerator.Generate();
 
         var horse = new Horse
         {
@@ -127,26 +117,26 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
             OwnerId = request.OwnerId,
             Statistics = statistics,
             CreatedBy = request.OwnerId,
-            CreatedDate = _timeManager.OffsetUtcNow()
+            CreatedDate = timeManager.OffsetUtcNow()
         };
 
         try
         {
             // Create foal, update parent counters and update BreedingRequest atomically
-            var foal = await _repository.ExecuteInTransactionAsync(async () =>
+            var foal = await repository.ExecuteInTransactionAsync(async () =>
             {
-                var createdFoal = await _repository.CreateAsync(horse, cancellationToken);
-                await _repository.UpdateParentedAsync(request.SireId, request.DamId, cancellationToken);
+                var createdFoal = await repository.CreateAsync(horse, cancellationToken);
+                await repository.UpdateParentedAsync(request.SireId, request.DamId, cancellationToken);
 
                 // Update the persisted BreedingRequest with FoalId, status and processed date as part of the same transaction
-                var breedingRequestEntity = await _repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+                var breedingRequestEntity = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
                 if (breedingRequestEntity != null)
                 {
                     breedingRequestEntity.FoalId = createdFoal.Id;
                     breedingRequestEntity.Status = BreedingRequestStatus.Completed;
-                    breedingRequestEntity.ProcessedDate = _timeManager.OffsetUtcNow();
-                    breedingRequestEntity.UpdatedDate = _timeManager.OffsetUtcNow();
-                    await _repository.UpdateAsync(breedingRequestEntity, cancellationToken);
+                    breedingRequestEntity.ProcessedDate = timeManager.OffsetUtcNow();
+                    breedingRequestEntity.UpdatedDate = timeManager.OffsetUtcNow();
+                    await repository.UpdateAsync(breedingRequestEntity, cancellationToken);
                 }
 
                 return createdFoal;
@@ -164,27 +154,27 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
 
             try
             {
-                await _messagePublisher.PublishAsync(completedEvent, cancellationToken: cancellationToken);
+                await messagePublisher.PublishAsync(completedEvent, cancellationToken: cancellationToken);
             }
             catch (Exception pubEx)
             {
                 // Log and persist failure info, but keep Status = Completed so DB reflects foal existence.
-                _logger.LogError(pubEx, "Failed to publish BreedingCompleted for BreedingId={RequestId}", request.RequestId);
+                logger.LogError(pubEx, "Failed to publish BreedingCompleted for BreedingId={RequestId}", request.RequestId);
                 try
                 {
-                    var bre = await _repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+                    var bre = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
                     if (bre != null)
                     {
                         // Keep Status = Completed (foal created). Record publish failure details for reconciliation.
                         bre.FailureReason = $"Publish failed: {pubEx.Message}";
-                        bre.ProcessedDate = _timeManager.OffsetUtcNow();
-                        bre.UpdatedDate = _timeManager.OffsetUtcNow();
-                        await _repository.UpdateAsync(bre, cancellationToken);
+                        bre.ProcessedDate = timeManager.OffsetUtcNow();
+                        bre.UpdatedDate = timeManager.OffsetUtcNow();
+                        await repository.UpdateAsync(bre, cancellationToken);
                     }
                 }
                 catch (Exception updEx)
                 {
-                    _logger.LogWarning(updEx, "Failed to persist publish-failure metadata for BreedingId={RequestId}", request.RequestId);
+                    logger.LogWarning(updEx, "Failed to persist publish-failure metadata for BreedingId={RequestId}", request.RequestId);
                 }
 
                 // decide whether to rethrow or swallow — here we rethrow so caller / monitoring sees the failure
@@ -193,23 +183,23 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Breeding operation failed for RequestId={RequestId}", request.RequestId);
+            logger.LogError(ex, "Breeding operation failed for RequestId={RequestId}", request.RequestId);
 
             try
             {
-                var bre = await _repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+                var bre = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
                 if (bre != null)
                 {
                     bre.Status = BreedingRequestStatus.Failed;
                     bre.FailureReason = ex.Message;
-                    bre.ProcessedDate = _timeManager.OffsetUtcNow();
-                    bre.UpdatedDate = _timeManager.OffsetUtcNow();
-                    await _repository.UpdateAsync(bre, cancellationToken);
+                    bre.ProcessedDate = timeManager.OffsetUtcNow();
+                    bre.UpdatedDate = timeManager.OffsetUtcNow();
+                    await repository.UpdateAsync(bre, cancellationToken);
                 }
             }
             catch (Exception updEx)
             {
-                _logger.LogWarning(updEx, "Failed to mark BreedingRequest as failed for RequestId={RequestId}", request.RequestId);
+                logger.LogWarning(updEx, "Failed to mark BreedingRequest as failed for RequestId={RequestId}", request.RequestId);
             }
 
             throw;
@@ -218,7 +208,7 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
 
     private bool GetRandomGender()
     {
-        return _randomGenerator.Next(0, 2) == 1;
+        return randomGenerator.Next(0, 2) == 1;
     }
 
     private LegTypeId GetRandomLegType()
@@ -226,13 +216,13 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
         var legTypes = Enum.GetValues(typeof(LegTypeId)).Cast<LegTypeId>().ToList();
         if (legTypes.Count == 0) throw new InvalidOperationException("No leg types defined.");
 
-        var idx = _randomGenerator.Next(0, legTypes.Count);
+        var idx = randomGenerator.Next(0, legTypes.Count);
         return legTypes[idx];
     }
 
     private async Task<Color> GetRandomColor(bool isSireSpecial, bool isDamSpecial, bool includeSpecialColors, CancellationToken cancellationToken)
     {
-        var colors = (await _repository.GetAllAsync<Color>(cancellationToken)).ToList();
+        var colors = (await repository.GetAllAsync<Color>(cancellationToken)).ToList();
 
         var candidates = colors
             .Where(x => includeSpecialColors || !x.IsSpecial)
@@ -263,7 +253,7 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
             totalWeight += frequency;
         }
 
-        var n = _randomGenerator.Next(0, int.MaxValue);
+        var n = randomGenerator.Next(0, int.MaxValue);
         double r = (n / (double)int.MaxValue) * totalWeight;
 
         double acc = 0.0;
@@ -283,14 +273,14 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
         if (damStats == null) throw new ArgumentNullException(nameof(damStats));
 
         List<HorseStatistic> foalStatistics =
-            new List<HorseStatistic> { new HorseStatistic { StatisticId = StatisticId.Happiness, DominantPotential = 100 } };
+            [new() { StatisticId = StatisticId.Happiness, DominantPotential = 100 }];
 
         var requiredStats = Enum.GetValues(typeof(StatisticId)).Cast<StatisticId>().Where(x => x != StatisticId.Happiness);
         foreach (var stat in requiredStats)
         {
-            if (!sireStats.Any(x => x.StatisticId == stat))
+            if (sireStats.All(x => x.StatisticId != stat))
                 throw new InvalidOperationException($"Sire is missing statistic {stat}.");
-            if (!damStats.Any(x => x.StatisticId == stat))
+            if (damStats.All(x => x.StatisticId != stat))
                 throw new InvalidOperationException($"Dam is missing statistic {stat}.");
         }
 
@@ -302,8 +292,8 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
 
     private HorseStatistic GenerateHorseStatistic(IEnumerable<HorseStatistic> sireStats, IEnumerable<HorseStatistic> damStats, StatisticId statistic)
     {
-        int punnettQuadrant = _randomGenerator.Next(1, 5);
-        int whichGeneToPick = _randomGenerator.Next(1, 3);
+        int punnettQuadrant = randomGenerator.Next(1, 5);
+        int whichGeneToPick = randomGenerator.Next(1, 3);
 
         byte dominantPotential;
         byte recessivePotential;
@@ -354,7 +344,7 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
 
         int min = Math.Max(1, dominantPotential / 3);
         int maxExclusive = Math.Max(min + 1, dominantPotential / 2 + 1);
-        byte actual = (byte)_randomGenerator.Next(min, maxExclusive);
+        byte actual = (byte)randomGenerator.Next(min, maxExclusive);
 
         var foalStatistic = new HorseStatistic
         {
@@ -368,7 +358,7 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
 
     private byte MutatePotentialGene(byte potential)
     {
-        byte mutationMultiplier = (byte)_randomGenerator.Next(1, 101);
+        byte mutationMultiplier = (byte)randomGenerator.Next(1, 101);
         int mutationLowerBound;
         byte mutationUpperBound;
 
@@ -388,7 +378,7 @@ public class BreedingRequestProcessor : IBreedingRequestProcessor
                 break;
         }
 
-        potential = (byte)(potential + _randomGenerator.Next(mutationLowerBound, mutationUpperBound));
+        potential = (byte)(potential + randomGenerator.Next(mutationLowerBound, mutationUpperBound));
 
         potential = (byte)(potential is < 30 or > 95 ? 50 : potential);
 

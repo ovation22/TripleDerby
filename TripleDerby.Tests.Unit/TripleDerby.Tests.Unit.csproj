@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TripleDerby.Core\TripleDerby.Core.csproj" />
     <ProjectReference Include="..\TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj" />
+    <ProjectReference Include="..\TripleDerby.Services.Breeding\TripleDerby.Services.Breeding.csproj" />
   </ItemGroup>
 
   <ItemGroup>
