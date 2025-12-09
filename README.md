@@ -14,11 +14,16 @@ Triple Derby is a management and simulation game where players breed, train, fee
 - Modern **.NET 9 Web API** for all gameplay operations  
 - **Blazor Admin UI** for testing, debugging, and management  
 - **.NET Aspire orchestration** for local infrastructure and future cloud deployment  
-- **Breeding engine** with Punnett-style dominant/recessive logic  
-- **Mutation system** with weighted randomness  
-- **Racing simulation** with tick-based movement, leg types, lane modifiers, and track conditions  
-- Training, feeding, month-end lifecycle logic  
-- Easily extensible to microservices and background workers  
+- Message-driven breeding pipeline with a background worker (`TripleDerby.Services.Breeding` / `BreedingRequestProcessor`) and transactional foal creation  
+- Deterministic RNG support for reproducible breeding and race simulations  
+- Breeding engine implementing Punnett-style dominant/recessive genetics and a weighted mutation system  
+- Weighted color rarity selection and leg-type influenced racing behavior  
+- Racing simulation with tick-based movement, leg types, lane modifiers, and track condition modifiers  
+- Distributed caching for featured parent lists and performance-sensitive reads  
+- Message broker support (RabbitMQ) for message-driven workflows and background processing  
+- Training, feeding, and month-end lifecycle processing  
+- Health checks, graceful cancellation handling, and robust error handling for background workers and API  
+- Easily extensible to microservices, background workers, and cloud deployment
 
 ---
 
@@ -27,15 +32,20 @@ Triple Derby is a management and simulation game where players breed, train, fee
 Included in the solution:
 
 - [x] .NET 9 Web Api
+- [x] Blazor Admin UI
+- [x] .NET Aspire orchestration
 - [x] Logging
 - [x] Global Exception Handling
 - [x] Cancellation Handling
 - [x] Health Checks
 - [x] CI Pipelines
 - [x] Unit Tests
+- [x] Worker Service(s) (e.g., Breeding & Racing Simulation)
+- [x] Distributed Caching (`IDistributedCacheAdapter`)
+- [x] Message Broker Support (RabbitMQ)
 - [ ] Integration Tests
 - [ ] Benchmark Tests
-- [ ] Architectural Tets
+- [ ] Architectural Tests
 
 ---
 
