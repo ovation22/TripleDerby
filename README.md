@@ -284,7 +284,7 @@ Race outcome depends on:
 ### **Start the Full System via Aspire**
 
 ```command
-dotnet run --project src/TripleDerby.AppHost
+dotnet run --project ./TripleDerby.AppHost
 ```
 
 Aspire launches:
