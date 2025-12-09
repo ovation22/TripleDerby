@@ -15,7 +15,6 @@ Triple Derby is a management and simulation game where players breed, train, fee
 - **Blazor Admin UI** for testing, debugging, and management  
 - **.NET Aspire orchestration** for local infrastructure and future cloud deployment  
 - Message-driven breeding pipeline with a background worker (`TripleDerby.Services.Breeding` / `BreedingRequestProcessor`) and transactional foal creation  
-- Deterministic RNG support for reproducible breeding and race simulations  
 - Breeding engine implementing Punnett-style dominant/recessive genetics and a weighted mutation system  
 - Weighted color rarity selection and leg-type influenced racing behavior  
 - Racing simulation with tick-based movement, leg types, lane modifiers, and track condition modifiers  
