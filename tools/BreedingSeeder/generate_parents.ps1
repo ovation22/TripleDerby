@@ -101,17 +101,26 @@ if ($totalPossible -lt $Count) {
     $Count = $totalPossible
 }
 
-# Generate combinations using round-robin pairing (distributes pairs across both lists)
+# Generate all unique combinations systematically
 $parents = New-Object System.Collections.Generic.List[object]
 $produced = 0
 $di = 0
 $si = 0
+
 while ($produced -lt $Count) {
     $parent = @{ damId = $dams[$di]; sireId = $sires[$si] }
     $parents.Add($parent)
     $produced++
-    $si = ($si + 1) % $sires.Count
-    $di = ($di + 1) % $dams.Count
+    
+    # Advance sire index, and when it wraps, advance dam index
+    $si++
+    if ($si -ge $sires.Count) {
+        $si = 0
+        $di++
+        if ($di -ge $dams.Count) {
+            $di = 0  # Wrap around if we've exhausted all combinations
+        }
+    }
 }
 
 # Write output
