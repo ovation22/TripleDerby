@@ -9,11 +9,11 @@ public class Horse
     [Key]
     public Guid Id { get; set; }
 
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 
     public byte ColorId { get; set; }
 
-    public virtual Color Color { get; set; } = default!;
+    public virtual Color Color { get; set; } = null!;
 
     public LegTypeId LegTypeId { get; set; }
     
@@ -35,7 +35,7 @@ public class Horse
     
     public bool IsRetired { get; set; }
     
-    public short Parented { get; set; }
+    public int Parented { get; set; }
     
     public Guid OwnerId { get; set; }
 
@@ -47,7 +47,7 @@ public class Horse
 
     public Guid? UpdatedBy { get; set; }
 
-    public virtual User Owner { get; set; } = default!;
+    public virtual User Owner { get; set; } = null!;
 
     public virtual Horse? Sire { get; set; }
 
