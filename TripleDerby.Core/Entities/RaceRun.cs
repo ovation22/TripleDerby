@@ -10,25 +10,25 @@ public class RaceRun
 
     public byte RaceId { get; set; }
 
-    public virtual Race Race { get; set; } = default!;
+    public virtual Race Race { get; set; } = null!;
 
     public ConditionId ConditionId { get; set; }
 
     public Guid? WinHorseId { get; set; }
 
-    public virtual Horse WinHorse { get; set; } = default!;
+    public virtual Horse WinHorse { get; set; } = null!;
 
     public Guid? PlaceHorseId { get; set; }
 
-    public virtual Horse PlaceHorse { get; set; } = default!;
+    public virtual Horse PlaceHorse { get; set; } = null!;
 
     public Guid? ShowHorseId { get; set; }
 
-    public virtual Horse ShowHorse { get; set; } = default!;
+    public virtual Horse ShowHorse { get; set; } = null!;
 
     public int Purse { get; set; }
 
-    public virtual ICollection<RaceRunHorse> Horses { get; set; } = default!;
+    public virtual ICollection<RaceRunHorse> Horses { get; set; } = null!;
 
-    public virtual ICollection<RaceRunTick> RaceRunTicks { get; set; } = default!;
+    public virtual ICollection<RaceRunTick> RaceRunTicks { get; set; } = null!;
 }

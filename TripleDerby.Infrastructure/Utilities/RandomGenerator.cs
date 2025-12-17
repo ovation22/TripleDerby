@@ -21,4 +21,9 @@ public class RandomGenerator : IRandomGenerator
         if (max <= min) throw new ArgumentOutOfRangeException(nameof(max), "max must be > min");
         return RandomNumberGenerator.GetInt32(min, max);
     }
+
+    public double NextDouble()
+    {
+        return RandomNumberGenerator.GetInt32(int.MaxValue) / (double)int.MaxValue;
+    }
 }

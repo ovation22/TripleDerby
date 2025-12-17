@@ -7,17 +7,8 @@ namespace TripleDerby.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [ApiConventionType(typeof(DefaultApiConventions))]
-public class RacesController : ControllerBase
+public class RacesController(IRaceService raceService) : ControllerBase
 {
-    private readonly IRaceService _raceService;
-
-    public RacesController(
-        IRaceService raceService
-    )
-    {
-        _raceService = raceService;
-    }
-
     /// <summary>
     /// Returns a list of race definitions/results.
     /// </summary>
@@ -30,7 +21,7 @@ public class RacesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<RacesResult>>> GetAll()
     {
-        var result = await _raceService.GetAll();
+        var result = await raceService.GetAll();
 
         return Ok(result);
     }
@@ -48,7 +39,7 @@ public class RacesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<RaceResult>> Get(byte id)
     {
-        var result = await _raceService.Get(id);
+        var result = await raceService.Get(id);
 
         return Ok(result);
     }
@@ -61,13 +52,13 @@ public class RacesController : ControllerBase
     /// <returns>200 with <see cref="RaceRunResult"/>; 400 on failure.</returns>
     /// <response code="200">Returns race run result.</response>
     /// <response code="400">Unable to run race.</response>
-    [HttpPost("{raceId}/{horseId}")]
+    [HttpPost("{raceId}/run")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<RaceRunResult>> Race(byte raceId, Guid horseId)
+    public async Task<ActionResult<RaceRunResult>> Race([FromRoute] byte raceId, [FromQuery] Guid horseId)
     {
-        var result = await _raceService.Race(raceId, horseId);
+        var result = await raceService.Race(raceId, horseId);
 
         return Ok(result);
     }

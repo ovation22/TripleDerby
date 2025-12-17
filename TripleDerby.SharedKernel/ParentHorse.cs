@@ -6,9 +6,9 @@ public record ParentHorse
 {
     public Guid Id { get; init; }
 
-    public string Name { get; init; } = default!;
+    public string Name { get; init; } = null!;
 
-    public string Color { get; init; } = default!;
+    public string Color { get; init; } = null!;
 
     public short RaceStarts { get; init; }
 

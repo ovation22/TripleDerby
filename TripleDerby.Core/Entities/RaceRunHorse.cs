@@ -9,11 +9,15 @@ public class RaceRunHorse
 
     public Guid RaceRunId { get; set; }
 
-    public virtual RaceRun RaceRun { get; set; } = default!;
+    public virtual RaceRun RaceRun { get; set; } = null!;
 
     public Guid HorseId { get; set; }
 
-    public virtual Horse Horse { get; set; } = default!;
+    public virtual Horse Horse { get; set; } = null!;
 
     public byte Lane { get; set; }
+
+    public byte InitialStamina { get; set; }
+
+    public decimal Distance { get; set; }
 }

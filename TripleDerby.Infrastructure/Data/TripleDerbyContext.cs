@@ -4,12 +4,8 @@ using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Infrastructure.Data;
 
-public class TripleDerbyContext : DbContext
+public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : DbContext(options)
 {
-    public TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : base(options)
-    {
-    }
-
     public virtual DbSet<Color> Colors { get; set; } = null!;
     public virtual DbSet<Condition> Conditions { get; set; } = null!;
     public virtual DbSet<Feeding> Feedings { get; set; } = null!;
@@ -40,6 +36,13 @@ public class TripleDerbyContext : DbContext
         modelBuilder.Entity<HorseStatistic>()
              .HasKey(hs => new { hs.HorseId, hs.StatisticId });
 
+        modelBuilder.Entity<HorseStatistic>()
+            .Ignore(h => h.Speed)
+            .Ignore(h => h.Stamina)
+            .Ignore(h => h.Agility)
+            .Ignore(h => h.Durability)
+            .Ignore(h => h.Happiness);
+
         modelBuilder.Entity<Horse>()
             .Property(c => c.LegTypeId)
             .HasConversion<byte>();
@@ -51,6 +54,13 @@ public class TripleDerbyContext : DbContext
         modelBuilder.Entity<Horse>()
             .HasOne(x => x.Dam)
             .WithMany();
+
+        modelBuilder.Entity<Horse>()
+            .Ignore(h => h.Speed)
+            .Ignore(h => h.Stamina)
+            .Ignore(h => h.Agility)
+            .Ignore(h => h.Durability)
+            .Ignore(h => h.Happiness);
 
         modelBuilder.Entity<LegType>()
             .Property(c => c.Id)
@@ -90,6 +100,11 @@ public class TripleDerbyContext : DbContext
         modelBuilder.Entity<RaceRun>()
             .Property(c => c.ConditionId)
             .HasConversion<byte>();
+
+        modelBuilder.Entity<RaceRunTickHorse>()
+            .HasOne(x => x.RaceRunTick)
+            .WithMany(x => x.RaceRunTickHorses)
+            .HasForeignKey(x => x.RaceRunTickId);
 
         modelBuilder.Entity<BreedingRequest>()
             .ToTable("BreedingRequests", schema: "brd")

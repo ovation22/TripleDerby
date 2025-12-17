@@ -2,5 +2,5 @@
 
 public record TrainingSessionResult
 {
-    public string Result { get; init; } = default!;
+    public string Result { get; init; } = null!;
 }

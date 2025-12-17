@@ -70,7 +70,7 @@
 </style>
 
 @code {
-    [Inject] private IStatsApiClient StatsApi { get; set; } = default!;
+    [Inject] private IStatsApiClient StatsApi { get; set; } = null!;
 
     /// <summary>
     /// Input model used by the component when consumer passes data.

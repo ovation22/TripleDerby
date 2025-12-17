@@ -11,9 +11,11 @@ public class RaceRunTickHorse
 
     public Guid? HorseId { get; set; }
 
-    public virtual Horse Horse { get; set; } = default!;
+    public virtual Horse Horse { get; set; } = null!;
 
     public byte Lane { get; set; }
 
-    public byte Distance { get; set; }
+    public decimal Distance { get; set; }
+
+    public virtual RaceRunTick RaceRunTick { get; set; } = null!;
 }

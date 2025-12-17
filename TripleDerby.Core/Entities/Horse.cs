@@ -58,4 +58,69 @@ public class Horse
     public virtual ICollection<HorseStatistic> Statistics { get; set; } = new Collection<HorseStatistic>();
     
     public virtual ICollection<FeedingSession> FeedingSessions { get; set; } = new Collection<FeedingSession>();
+
+    public byte Speed
+    {
+        get => Statistics?.FirstOrDefault()?.Speed ?? 0;
+        set
+        {
+            var stat = Statistics?.FirstOrDefault();
+            if (stat != null)
+            {
+                stat.Speed = value;
+            }
+        }
+    }
+
+    public byte Stamina
+    {
+        get => Statistics?.FirstOrDefault()?.Stamina ?? 0;
+        set
+        {
+            var stat = Statistics?.FirstOrDefault();
+            if (stat != null)
+            {
+                stat.Stamina = value;
+            }
+        }
+    }
+
+    public byte Agility
+    {
+        get => Statistics?.FirstOrDefault()?.Agility ?? 0;
+        set
+        {
+            var stat = Statistics?.FirstOrDefault();
+            if (stat != null)
+            {
+                stat.Agility = value;
+            }
+        }
+    }
+
+    public byte Durability
+    {
+        get => Statistics?.FirstOrDefault()?.Durability ?? 0;
+        set
+        {
+            var stat = Statistics?.FirstOrDefault();
+            if (stat != null)
+            {
+                stat.Durability = value;
+            }
+        }
+    }
+
+    public byte Happiness
+    {
+        get => Statistics?.FirstOrDefault()?.Happiness ?? 0;
+        set
+        {
+            var stat = Statistics?.FirstOrDefault();
+            if (stat != null)
+            {
+                stat.Happiness = value;
+            }
+        }
+    }
 }

@@ -8,5 +8,5 @@ public class Track
     [Key]
     public TrackId Id { get; set; }
 
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 }

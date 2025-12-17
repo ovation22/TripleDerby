@@ -9,11 +9,11 @@ public class RaceRunTick
 
     public Guid RaceRunId { get; set; }
 
-    public virtual RaceRun RaceRun { get; set; } = default!;
+    public virtual RaceRun RaceRun { get; set; } = null!;
 
     public byte Tick { get; set; }
 
-    public string Note { get; set; } = default!;
+    public string Note { get; set; } = null!;
 
-    public virtual ICollection<RaceRunTickHorse> RaceRunTickHorses { get; set; } = default!;
+    public virtual ICollection<RaceRunTickHorse> RaceRunTickHorses { get; set; } = null!;
 }

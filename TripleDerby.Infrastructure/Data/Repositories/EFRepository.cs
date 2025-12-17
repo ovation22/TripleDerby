@@ -35,7 +35,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         where T : class
     {
         return await dbContext.Set<T>()
-            .AsNoTracking()
             .SingleOrDefaultAsync(expression, cancellationToken);
     }
 
@@ -45,7 +44,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         var specificationResult = ApplySpecification(specification);
 
         return await specificationResult
-            .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -63,7 +61,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         where T : class
     {
         return await dbContext.Set<T>()
-            .AsNoTracking()
             .FirstOrDefaultAsync(expression, cancellationToken);
     }
 
@@ -72,7 +69,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         where T : class
     {
         var query = dbContext.Set<T>()
-            .AsNoTracking()
             .Where(expression);
 
         query = orderBy(query);
@@ -86,7 +82,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         var specificationResult = ApplySpecification(specification);
 
         return await specificationResult
-            .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -94,7 +89,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
     public virtual async Task<IEnumerable<T>> GetAllAsync<T>(CancellationToken cancellationToken = default) where T : class
     {
         return await dbContext.Set<T>()
-            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -103,7 +97,7 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
     {
         var query = ApplySpecification(specification);
 
-        return query.AsNoTracking().AsAsyncEnumerable();
+        return query.AsAsyncEnumerable();
     }
 
     /// <inheritdoc />
@@ -117,7 +111,7 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
     {
         var query = ApplySpecification(specification);
 
-        return query.AsNoTracking().AsEnumerable();
+        return query.AsEnumerable();
     }
 
     /// <inheritdoc />
@@ -131,7 +125,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         CancellationToken cancellationToken = default) where T : class
     {
         return await dbContext.Set<T>()
-            .AsNoTracking()
             .Where(expression)
             .ToListAsync(cancellationToken);
     }
@@ -143,7 +136,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
         var query = ApplySpecification(specification);
 
         return await query
-            .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
@@ -185,7 +177,6 @@ public abstract class EFRepository(DbContext dbContext, ILogger<EFRepository> lo
 
         var query = ApplySpecification(specification);
         var items = await query
-            .AsNoTracking()
             .Skip((specification.PageNumber - 1) * specification.PageSize)
             .Take(specification.PageSize)
             .ToListAsync(cancellationToken);

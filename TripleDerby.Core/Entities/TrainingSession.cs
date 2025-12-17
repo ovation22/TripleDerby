@@ -9,11 +9,11 @@ public class TrainingSession
     
     public byte TrainingId { get; set; }
 
-    public virtual Training Training { get; set; } = default!;
+    public virtual Training Training { get; set; } = null!;
 
     public Guid HorseId { get; set; }
 
-    public virtual Horse Horse { get; set; } = default!;
+    public virtual Horse Horse { get; set; } = null!;
 
-    public string Result { get; set; } = default!;
+    public string Result { get; set; } = null!;
 }

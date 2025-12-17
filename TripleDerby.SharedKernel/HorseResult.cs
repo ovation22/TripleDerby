@@ -4,11 +4,11 @@ public record HorseResult
 {
     public Guid Id { get; init; }
 
-    public string Name { get; init; } = default!; 
+    public string Name { get; init; } = null!; 
 
     public bool IsMale { get; init; }
     
-    public string Color { get; init; } = default!;
+    public string Color { get; init; } = null!;
 
     public short RaceStarts { get; init; }
 
@@ -26,5 +26,5 @@ public record HorseResult
 
     public DateTimeOffset Created { get; set; }
 
-    public string Owner { get; set; } = default!;
+    public string Owner { get; set; } = null!;
 }

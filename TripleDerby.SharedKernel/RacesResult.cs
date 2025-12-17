@@ -7,17 +7,17 @@ public record RacesResult
 {
     public byte Id { get; init; }
 
-    public string Name { get; init; } = default!;
+    public string Name { get; init; } = null!;
 
-    public string Description { get; init; } = default!;
+    public string Description { get; init; } = null!;
 
     public decimal Furlongs { get; init; }
 
     public SurfaceId SurfaceId { get; init; }
 
-    public string Surface { get; init; } = default!;
+    public string Surface { get; init; } = null!;
 
     public TrackId TrackId { get; init; }
 
-    public string Track { get; init; } = default!;
+    public string Track { get; init; } = null!;
 }

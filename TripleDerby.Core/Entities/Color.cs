@@ -7,9 +7,9 @@ public class Color
     [Key]
     public byte Id { get; set; }
 
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 
-    public string Description { get; set; } = default!;
+    public string Description { get; set; } = null!;
 
     public int Weight { get; set; }
 

@@ -2,5 +2,5 @@
 
 public record HorsePatch
 {
-    public string Name { get; init; } = default!; 
+    public string Name { get; init; } = null!; 
 }

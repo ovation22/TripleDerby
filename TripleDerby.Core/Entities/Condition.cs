@@ -8,5 +8,5 @@ public class Condition
     [Key]
     public ConditionId Id { get; set; }
 
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 }

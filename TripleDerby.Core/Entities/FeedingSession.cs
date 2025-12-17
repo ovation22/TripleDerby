@@ -10,11 +10,11 @@ public class FeedingSession
     
     public byte FeedingId { get; set; }
 
-    public virtual Feeding Feeding { get; set; } = default!;
+    public virtual Feeding Feeding { get; set; } = null!;
 
     public Guid HorseId { get; set; }
 
-    public virtual Horse Horse { get; set; } = default!;
+    public virtual Horse Horse { get; set; } = null!;
 
     public FeedResponse Result { get; set; }
 }

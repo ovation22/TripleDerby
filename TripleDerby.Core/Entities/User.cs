@@ -7,9 +7,9 @@ public class User
     [Key]
     public Guid Id { get; set; }
 
-    public string Username { get; set; } = default!;
+    public string Username { get; set; } = null!;
 
-    public string Email { get; set; } = default!;
+    public string Email { get; set; } = null!;
 
     public bool IsActive { get; set; }
 

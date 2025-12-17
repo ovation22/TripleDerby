@@ -59,8 +59,8 @@
 
 @code {
     bool loading = true;
-    IQueryable<UserResult> users = default!;
-    FluentDataGrid<UserResult> dataGrid = default!;
+    IQueryable<UserResult> users = null!;
+    FluentDataGrid<UserResult> dataGrid = null!;
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
 
     GridSort<UserResult> sortByActive = GridSort<UserResult>

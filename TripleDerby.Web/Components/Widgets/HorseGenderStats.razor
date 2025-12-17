@@ -75,7 +75,7 @@
 </style>
 
 @code {
-    [Inject] private IStatsApiClient StatsApi { get; set; } = default!;
+    [Inject] private IStatsApiClient StatsApi { get; set; } = null!;
 
     public record GenderStat(bool IsMale, string GenderName, int Count, double Percentage);
 

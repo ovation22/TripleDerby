@@ -8,5 +8,5 @@ public class Surface
     [Key]
     public SurfaceId Id { get; set; }
 
-    public string Name { get; set; } = default!;
+    public string Name { get; set; } = null!;
 }

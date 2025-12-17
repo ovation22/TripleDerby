@@ -89,7 +89,7 @@
 </style>
 
 @code {
-    [Inject] private IStatsApiClient StatsApi { get; set; } = default!;
+    [Inject] private IStatsApiClient StatsApi { get; set; } = null!;
 
     public record LegStat(int LegTypeId, string LegTypeName, int Count, double Percentage);
 
