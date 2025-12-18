@@ -37,10 +37,9 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
             throw new ArgumentException($"Horse not found with {horseId}");
         }
 
-        // Fetch CPU horses with similar race experience
+        // Fetch CPU horses with similar race experience (owned by Racers)
         var cpuHorseSpec = new SimilarRaceStartsSpecification(
             targetRaceStarts: myHorse.RaceStarts,
-            excludeHorseId: horseId,
             tolerance: 2,
             limit: 11);
         var cpuHorses = await repository.ListAsync(cpuHorseSpec, cancellationToken);
