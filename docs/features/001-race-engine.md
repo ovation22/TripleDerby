@@ -38,7 +38,7 @@
 
 | # | Sub-Feature | Description | Depends On | Status |
 |---|-------------|-------------|------------|--------|
-| 1 | Core Race Simulation | Field assembly, lane/condition assignment, tick-based movement with stamina, finish order determination | - | Pending |
+| 1 | Core Race Simulation | Field assembly, lane/condition assignment, tick-based movement with stamina, finish order determination | - | Implemented |
 | 2 | Purse Distribution | Calculate and distribute prize money to top finishers, update player balance | 1 | Pending |
 | 3 | Play-by-Play Commentary | Generate narrative notes for each tick describing race events | 1 | Pending |
 | 4 | Career Tracking | Increment race counts, enforce yearly and career limits | 1 | Pending |
@@ -46,7 +46,7 @@
 
 ## Sub-Feature Documents
 
-*Links will be added here as sub-features are discovered.*
+- [001a-core-race-simulation](001a-core-race-simulation.md) - Implemented
 
 ## Related Decisions
 

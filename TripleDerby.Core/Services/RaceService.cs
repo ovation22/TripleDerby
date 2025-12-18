@@ -32,6 +32,23 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
             throw new ArgumentException($"Race not found with {raceId}");
         }
 
+        if (myHorse == null)
+        {
+            throw new ArgumentException($"Horse not found with {horseId}");
+        }
+
+        // Fetch CPU horses with similar race experience
+        var cpuHorseSpec = new SimilarRaceStartsSpecification(
+            targetRaceStarts: myHorse.RaceStarts,
+            excludeHorseId: horseId,
+            tolerance: 2,
+            limit: 11);
+        var cpuHorses = await repository.ListAsync(cpuHorseSpec, cancellationToken);
+
+        // Combine player's horse with CPU horses
+        var horses = new List<Horse> { myHorse };
+        horses.AddRange(cpuHorses);
+
         // Initialization phase
         var raceRun = new RaceRun
         {
@@ -40,10 +57,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
             ConditionId = GenerateRandomConditionId(),
             Horses = new List<RaceRunHorse>(),
             RaceRunTicks = new List<RaceRunTick>()
-        };
-        IEnumerable<Horse> horses = new List<Horse>
-        {
-            myHorse!
         };
         InitializeHorses(raceRun, horses);
 
@@ -98,8 +111,8 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
             }
         }
 
-        //Determine winners and rewards
-        //DetermineRaceResults(raceRun);
+        // Determine winners and rewards
+        DetermineRaceResults(raceRun);
         //DistributePurse(raceRun);
 
         await repository.CreateAsync(raceRun, cancellationToken);
@@ -108,29 +121,37 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         {
             RaceRunId = raceRun.Id,
             RaceId = raceRun.RaceId,
-            RaceName = "TODO",
+            RaceName = race.Name,
             ConditionId = raceRun.ConditionId,
-            ConditionName = "TODO",
+            ConditionName = raceRun.ConditionId.ToString(),
             TrackId = race.TrackId,
-            TrackName = "TODO",
+            TrackName = race.Track.Name,
             Furlongs = race.Furlongs,
             SurfaceId = race.SurfaceId,
-            SurfaceName = "TODO",
-            HorseResults =
-            [
-                new RaceRunHorseResult { HorseId = horseId, HorseName = "TODO", Payout = 1, Place = 1 }
-            ]
+            SurfaceName = race.Surface.Name,
+            HorseResults = raceRun.Horses
+                .OrderBy(h => h.Place)
+                .Select(h => new RaceRunHorseResult
+                {
+                    HorseId = h.Horse.Id,
+                    HorseName = h.Horse.Name,
+                    Place = h.Place,
+                    Payout = 0 // Payout is handled by Purse Distribution (sub-feature 2)
+                })
+                .ToList()
         };
     }
 
     private static void InitializeHorses(RaceRun raceRun, IEnumerable<Horse> horses)
     {
+        byte lane = 1;
         foreach (var horse in horses)
         {
             var raceRunHorse = new RaceRunHorse
             {
                 Horse = horse,
-                InitialStamina = horse.Stamina
+                InitialStamina = horse.Stamina,
+                Lane = lane++
             };
             raceRun.Horses.Add(raceRunHorse);
         }
@@ -461,12 +482,16 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
     }
     */
 
-    /*
     private static void DetermineRaceResults(RaceRun raceRun)
     {
-        // Sort horses based on final position and assign rankings.
+        // Sort horses by distance (descending) and assign places
+        var sortedHorses = raceRun.Horses.OrderByDescending(h => h.Distance).ToList();
+        byte place = 1;
+        foreach (var horse in sortedHorses)
+        {
+            horse.Place = place++;
+        }
     }
-    */
 
     /*
     private static void DistributePurse(RaceRun raceRun)
