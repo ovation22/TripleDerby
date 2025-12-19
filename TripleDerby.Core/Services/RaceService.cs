@@ -2,6 +2,7 @@
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Racing;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
@@ -10,6 +11,9 @@ namespace TripleDerby.Core.Services;
 
 public class RaceService(ITripleDerbyRepository repository, IRandomGenerator randomGenerator) : IRaceService
 {
+    // Phase 2: Speed Modifier Calculator
+    private readonly SpeedModifierCalculator _speedModifierCalculator = new(randomGenerator);
+
     // Configuration constants
     private const double BaseSpeedMph = 38.0; // Average horse speed in mph
     private const double MilesPerFurlong = 0.125; // 1 furlong = 1/8 mile
@@ -207,24 +211,31 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
     {
         var baseSpeed = AverageBaseSpeed;
 
-        // Apply the horse's speed modifier
-        baseSpeed = ApplySpeedModifier(baseSpeed, raceRunHorse.Horse.Speed);
+        // Phase 2: Apply stat modifiers using new calculator (Speed + Agility)
+        var context = new ModifierContext(
+            CurrentTick: tick,
+            TotalTicks: totalTicks,
+            Horse: raceRunHorse.Horse,
+            RaceCondition: raceRun.ConditionId,
+            RaceSurface: raceRun.Race.SurfaceId,
+            RaceFurlongs: raceRun.Race.Furlongs
+        );
+        baseSpeed *= _speedModifierCalculator.CalculateStatModifiers(context);
 
         // Adjust speed based on race conditions
         baseSpeed = AdjustSpeedForCondition(baseSpeed, raceRun.ConditionId);
-        
+
         // Adjust speed and stamina consumption based on lane and leg type
         baseSpeed = AdjustSpeedForLaneAndLegType(baseSpeed, raceRunHorse.Lane, raceRunHorse.Horse.LegTypeId);
-        
+
         // Adjust speed and stamina consumption based on track surface
         baseSpeed = AdjustSpeedForSurface(baseSpeed, raceRun.Race.SurfaceId);
-        
+
         // Adjust speed dynamically during the race based on leg type
         baseSpeed = AdjustSpeedForLegTypeDuringRace(baseSpeed, tick, totalTicks, raceRunHorse.Horse.LegTypeId);
 
-        // Factor in horse's agility and happiness
-        baseSpeed *= GetAgilityModifier(raceRunHorse.Horse.Agility);
-        baseSpeed *= GetHappinessModifier(raceRunHorse.Horse.Happiness);
+        // Phase 2: Happiness modifier disabled per spec
+        // baseSpeed *= GetHappinessModifier(raceRunHorse.Horse.Happiness);
 
         // Apply random performance fluctuations
         baseSpeed = ApplyRandomPerformanceFluctuations(baseSpeed);
@@ -373,6 +384,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         }
     }*/
 
+    [Obsolete("Replaced by SpeedModifierCalculator.CalculateStatModifiers in Phase 2. Will be removed in Phase 6.")]
     private static double ApplySpeedModifier(double baseSpeed, int speedActual)
     {
         // Use a percentage-based scaling factor for speed
@@ -380,6 +392,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         return baseSpeed * speedModifier;
     }
 
+    [Obsolete("Disabled per race-modifiers-refactor spec. Will be removed in Phase 6.")]
     private static double GetHappinessModifier(int happiness)
     {
         // Logarithmic scaling with very subtle effect
@@ -535,6 +548,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         return baseSpeed * modifier;
     }
 
+    [Obsolete("Replaced by SpeedModifierCalculator.CalculateStatModifiers in Phase 2. Will be removed in Phase 6.")]
     private static double GetAgilityModifier(int agility)
     {
         return 1 + ((agility - 50) / 5000.0); // Agility boosts speed by a very small percentage (max ±1%)

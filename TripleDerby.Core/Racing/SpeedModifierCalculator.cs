@@ -22,14 +22,36 @@ public class SpeedModifierCalculator
 
     /// <summary>
     /// Calculates stat-based speed modifiers (Speed and Agility).
-    /// Returns 1.0 (neutral) for now - implementation in Phase 2.
+    /// Uses linear scaling from neutral point (50) for both stats.
     /// </summary>
     /// <param name="context">Race context with horse stats</param>
-    /// <returns>Combined stat modifier (neutral = 1.0)</returns>
+    /// <returns>Combined stat modifier (Speed × Agility multipliers)</returns>
     public double CalculateStatModifiers(ModifierContext context)
     {
-        // TODO: Phase 2 - Implement stat-based modifiers
-        return 1.0;
+        var speedMultiplier = CalculateSpeedMultiplier(context.Horse.Speed);
+        var agilityMultiplier = CalculateAgilityMultiplier(context.Horse.Agility);
+
+        return speedMultiplier * agilityMultiplier;
+    }
+
+    /// <summary>
+    /// Calculates speed stat multiplier using linear scaling.
+    /// Formula: 1.0 + ((speed - 50) * SpeedModifierPerPoint)
+    /// Range: Speed 0 = 0.90x, Speed 50 = 1.0x, Speed 100 = 1.10x
+    /// </summary>
+    private static double CalculateSpeedMultiplier(int speed)
+    {
+        return 1.0 + ((speed - 50) * Configuration.RaceModifierConfig.SpeedModifierPerPoint);
+    }
+
+    /// <summary>
+    /// Calculates agility stat multiplier using linear scaling.
+    /// Formula: 1.0 + ((agility - 50) * AgilityModifierPerPoint)
+    /// Range: Agility 0 = 0.95x, Agility 50 = 1.0x, Agility 100 = 1.05x
+    /// </summary>
+    private static double CalculateAgilityMultiplier(int agility)
+    {
+        return 1.0 + ((agility - 50) * Configuration.RaceModifierConfig.AgilityModifierPerPoint);
     }
 
     /// <summary>
