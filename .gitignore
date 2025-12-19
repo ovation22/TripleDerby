@@ -417,5 +417,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# Claude Code
-.claude/
+# Claude Code - ignore personal config but share skills
+.claude/*
+!.claude/skills/
