@@ -13,7 +13,7 @@ public static class ModelBuilderExtensions
         modelBuilder.Entity<User>().HasData(
              new User { Id = adminId, Username = "Breeders", Email = "breeders@triplederby.com", IsActive = true, IsAdmin = true },
              new User { Id = new Guid("72115894-88CD-433E-9892-CAC22E335F1D"), Username = "Racers", Email = "racers@triplederby.com", IsActive = true, IsAdmin = true },
-             new User { Id = new Guid("1B4AB681-147F-4727-8923-33C6CA269878"), Username = "User", Email = "user@triplederby.com", IsActive = true, IsAdmin = false }
+             new User { Id = new Guid("1B4AB681-147F-4727-8923-33C6CA269878"), Username = "Player", Email = "player@triplederby.com", IsActive = true, IsAdmin = false }
          );
 
         modelBuilder.Entity<Color>().HasData(
