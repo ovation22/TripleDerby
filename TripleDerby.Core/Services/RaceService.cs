@@ -157,7 +157,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
 
         // Determine winners and rewards
         DetermineRaceResults(raceRun);
-        //DistributePurse(raceRun);
 
         await repository.CreateAsync(raceRun, cancellationToken);
 
@@ -334,29 +333,11 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         }
     }
 
-    /*
-    private static void DistributePurse(RaceRun raceRun)
-    {
-        // Distribute prize money based on final standings.
-    }
-    */
-
     private static short CalculateTotalTicks(decimal furlongs)
     {
         // At 0.0422 furlongs/tick (derived from ~38 mph), calculate required ticks
         // This ensures horses can actually complete the race distance
         return (short)Math.Ceiling((double)furlongs / AverageBaseSpeed);
-    }
-
-    private static double GetStaminaModifierForSurface(SurfaceId surfaceId)
-    {
-        return surfaceId switch
-        {
-            SurfaceId.Dirt => 1.05, // More stamina consumption on dirt
-            SurfaceId.Turf => 0.95, // Less stamina consumption on turf
-            SurfaceId.Artificial => 0.90, // Even less stamina consumption on artificial surfaces
-            _ => 1.00
-        };
     }
 
     private ConditionId GenerateRandomConditionId()
