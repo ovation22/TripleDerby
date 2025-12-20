@@ -6,6 +6,23 @@ namespace TripleDerby.Core.Configuration;
 /// <summary>
 /// Configuration constants for race speed modifiers.
 /// All modifier values are multiplicative and stack together to calculate final speed.
+///
+/// <para>
+/// <strong>Modifier Pipeline:</strong>
+/// Final Speed = Base Speed × Stat Modifiers × Environmental Modifiers × Phase Modifiers × Random Variance
+/// </para>
+///
+/// <para>
+/// <strong>Design Goals:</strong>
+/// - No magic numbers: All values defined as constants or in dictionaries
+/// - Easy to balance: Adjust values in config, no code changes needed
+/// - Independent testing: Each modifier category testable in isolation
+/// - Clear impact ranges: Each modifier documents its min/max effect
+/// </para>
+///
+/// <para>
+/// <strong>Reference:</strong> See race-modifiers-refactor.md feature spec for design rationale and balancing decisions.
+/// </para>
 /// </summary>
 public static class RaceModifierConfig
 {

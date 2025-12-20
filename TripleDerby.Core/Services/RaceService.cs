@@ -377,39 +377,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         }
     }*/
 
-    [Obsolete("Replaced by SpeedModifierCalculator.CalculateStatModifiers in Phase 2. Will be removed in Phase 6.")]
-    private static double ApplySpeedModifier(double baseSpeed, int speedActual)
-    {
-        // Use a percentage-based scaling factor for speed
-        var speedModifier = 1 + ((speedActual - 50) / 1000.0); // Adjust scaling factor as needed
-        return baseSpeed * speedModifier;
-    }
-
-    [Obsolete("Disabled per race-modifiers-refactor spec. Will be removed in Phase 6.")]
-    private static double GetHappinessModifier(int happiness)
-    {
-        // Logarithmic scaling with very subtle effect
-        // Uses natural log to create diminishing returns curve
-        // Neutral point is at happiness = 50
-
-        // Clamp happiness to valid range [0, 100]
-        happiness = Math.Clamp(happiness, 0, 100);
-
-        // Normalize happiness to range around 0 (shift 50 to 0)
-        var normalizedHappiness = happiness - 50.0;
-
-        // Apply logarithmic scaling with very small coefficient
-        // Log provides diminishing returns: big changes at low happiness, smaller at high
-        if (normalizedHappiness == 0)
-        {
-            return 1.0; // Neutral, no effect
-        }
-
-        var logEffect = Math.Sign(normalizedHappiness) * Math.Log(1.0 + Math.Abs(normalizedHappiness)) / 5000.0;
-
-        return 1.0 + logEffect;
-    }
-
     private static double GetHappinessStaminaModifier(int happiness)
     {
         // Logarithmic scaling with very subtle effect on stamina consumption
@@ -434,26 +401,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         return 1.0 + logEffect;
     }
 
-    [Obsolete("Replaced by SpeedModifierCalculator.CalculateEnvironmentalModifiers in Phase 3. Will be removed in Phase 6.")]
-    private static double AdjustSpeedForCondition(double baseSpeed, ConditionId conditionId)
-    {
-        return conditionId switch
-        {
-            ConditionId.Fast => baseSpeed * 1.02, 
-            ConditionId.WetFast => baseSpeed * 1.01,
-            ConditionId.Good => baseSpeed,
-            ConditionId.Muddy => baseSpeed * 0.99,
-            ConditionId.Sloppy => baseSpeed * 0.98,
-            ConditionId.Frozen => baseSpeed * 0.97,
-            ConditionId.Slow => baseSpeed * 0.96,
-            ConditionId.Heavy => baseSpeed * 0.95,
-            ConditionId.Firm => baseSpeed * 1.01,
-            ConditionId.Soft => baseSpeed * 0.99,
-            ConditionId.Yielding => baseSpeed * 0.99,
-            _ => baseSpeed
-        };
-    }
-
     private static double GetStaminaModifierForCondition(ConditionId conditionId)
     {
         return conditionId switch
@@ -471,95 +418,14 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         };
     }
 
-    [Obsolete("Replaced by SpeedModifierCalculator.CalculateEnvironmentalModifiers in Phase 3. Lane position no longer affects speed. Will be removed in Phase 6.")]
-    private double AdjustSpeedForLaneAndLegType(double baseSpeed, int lane, LegTypeId legTypeId)
-    {
-        var r = randomGenerator.NextDouble() * 0.0002 - 0.0001; // ±0.0001 variance
-
-        return legTypeId switch
-        {
-            LegTypeId.FrontRunner => lane <= 3 ? baseSpeed * (1.005 + r) : baseSpeed * (0.995 + r),
-            LegTypeId.StartDash => lane <= 3 ? baseSpeed * (1.003 + r) : baseSpeed * (0.997 + r),
-            LegTypeId.LastSpurt => lane > 6 ? baseSpeed * (1.004 + r) : baseSpeed * (0.996 + r),
-            LegTypeId.StretchRunner => lane > 6 ? baseSpeed * (1.006 + r) : baseSpeed * (0.994 + r),
-            LegTypeId.RailRunner => lane == 1 ? baseSpeed * (1.008 + r) : baseSpeed * (0.992 + r),
-            _ => baseSpeed
-        };
-    }
-
     private static double GetStaminaModifierForLaneAndLegType(int lane)
     {
         return (lane <= 3) ? 1.02 : 1.00; // Inner lanes might cause faster stamina drain
     }
 
-    [Obsolete("Replaced by SpeedModifierCalculator.CalculatePhaseModifiers in Phase 4. Will be removed in Phase 6.")]
-    private double AdjustSpeedForLegTypeDuringRace(double baseSpeed, int currentTick, int totalTicks, LegTypeId legTypeId)
-    {
-        var modifier = 1.0;
-
-        switch (legTypeId)
-        {
-            case LegTypeId.StartDash:
-                if (currentTick < totalTicks * 0.25)
-                {
-                    modifier = 1.02; // Boost early in the race
-                }
-                break;
-
-            case LegTypeId.LastSpurt:
-                if (currentTick > totalTicks * 0.75)
-                {
-                    modifier = 1.02; // Boost late in the race
-                }
-                break;
-
-            case LegTypeId.StretchRunner:
-                if (currentTick > totalTicks * 0.4 && currentTick < totalTicks * 0.6)
-                {
-                    modifier = 1.015; // Boost in the middle of the race
-                }
-                break;
-
-            case LegTypeId.FrontRunner:
-                if (currentTick < totalTicks * 0.2)
-                {
-                    modifier = 1.015; // Boost early in the race
-                }
-                break;
-
-            case LegTypeId.RailRunner:
-                if (currentTick > totalTicks * 0.7)
-                {
-                    modifier = 1.01; // Boost late in the race
-                }
-                break;
-        }
-
-        // Optionally, add a random late race boost
-        if (currentTick > totalTicks * 0.8)
-        {
-            modifier *= (1 + (randomGenerator.NextDouble() * 0.01));
-        }
-
-        return baseSpeed * modifier;
-    }
-
-    [Obsolete("Replaced by SpeedModifierCalculator.CalculateStatModifiers in Phase 2. Will be removed in Phase 6.")]
-    private static double GetAgilityModifier(int agility)
-    {
-        return 1 + ((agility - 50) / 5000.0); // Agility boosts speed by a very small percentage (max ±1%)
-    }
-
     private static double GetDurabilityModifier(int durability)
     {
         return 1 - ((100 - durability) / 100.0); // Durability affects stamina drain; higher durability means less stamina loss
-    }
-
-    [Obsolete("Replaced by SpeedModifierCalculator.ApplyRandomVariance in Phase 5. Will be removed in Phase 6.")]
-    private double ApplyRandomPerformanceFluctuations(double baseSpeed)
-    {
-        var fluctuation = randomGenerator.NextDouble() * 0.02 - 0.01; // ±1% random fluctuation
-        return baseSpeed * (1 + fluctuation);
     }
 
     private double ApplyTrafficInterference(double baseSpeed, RaceRunHorse horse, RaceRun raceRun)
@@ -750,18 +616,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         // At 0.0422 furlongs/tick (derived from ~38 mph), calculate required ticks
         // This ensures horses can actually complete the race distance
         return (int)Math.Ceiling((double)furlongs / AverageBaseSpeed);
-    }
-
-    [Obsolete("Replaced by SpeedModifierCalculator.CalculateEnvironmentalModifiers in Phase 3. Will be removed in Phase 6.")]
-    private static double AdjustSpeedForSurface(double baseSpeed, SurfaceId surfaceId)
-    {
-        return surfaceId switch
-        {
-            SurfaceId.Dirt => baseSpeed * 0.98, // Slightly slower on dirt
-            SurfaceId.Turf => baseSpeed * 1.02, // Slightly faster on turf
-            SurfaceId.Artificial => baseSpeed * 1.03, // Slightly faster on artificial surfaces
-            _ => baseSpeed
-        };
     }
 
     private static double GetStaminaModifierForSurface(SurfaceId surfaceId)
