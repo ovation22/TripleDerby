@@ -113,7 +113,7 @@ This skill guides systematic feature discovery and planning to ensure requiremen
 
 ## Output Format
 
-After conducting discovery and planning, create a feature specification document that includes:
+After conducting discovery and planning, create a feature specification document in `/docs/features/` that includes:
 
 1. **Feature Summary**: One-paragraph overview
 2. **Requirements**: Functional and non-functional requirements
@@ -123,6 +123,8 @@ After conducting discovery and planning, create a feature specification document
 6. **Open Questions**: Items needing further clarification
 
 Use the PLANNING_TEMPLATE.md as a starting point for documentation.
+
+**Output Location**: All feature specification documents should be saved to `/docs/features/[feature-name].md`
 
 ## Integration with Existing Systems
 

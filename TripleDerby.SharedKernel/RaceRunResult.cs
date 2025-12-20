@@ -38,4 +38,8 @@ public record RaceRunHorseResult
     public byte Place { get; set; }
 
     public decimal Payout { get; set; }
+
+    public double Time { get; set; }
+
+    public string DisplayTime => TimeSpan.FromSeconds(Time * 0.50633).ToString(@"m\:ss\.ff");
 }

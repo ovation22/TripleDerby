@@ -61,66 +61,51 @@ public class Horse
 
     public byte Speed
     {
-        get => Statistics?.FirstOrDefault()?.Speed ?? 0;
+        get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Speed)?.Actual ?? 0;
         set
         {
-            var stat = Statistics?.FirstOrDefault();
-            if (stat != null)
-            {
-                stat.Speed = value;
-            }
+            var stat = Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Speed);
+            stat?.Actual = value;
         }
     }
 
     public byte Stamina
     {
-        get => Statistics?.FirstOrDefault()?.Stamina ?? 0;
+        get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Stamina)?.Actual ?? 0;
         set
         {
-            var stat = Statistics?.FirstOrDefault();
-            if (stat != null)
-            {
-                stat.Stamina = value;
-            }
+            var stat = Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Stamina);
+            stat?.Actual = value;
         }
     }
 
     public byte Agility
     {
-        get => Statistics?.FirstOrDefault()?.Agility ?? 0;
+        get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Agility)?.Actual ?? 0;
         set
         {
-            var stat = Statistics?.FirstOrDefault();
-            if (stat != null)
-            {
-                stat.Agility = value;
-            }
+            var stat = Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Agility);
+            stat?.Actual = value;
         }
     }
 
     public byte Durability
     {
-        get => Statistics?.FirstOrDefault()?.Durability ?? 0;
+        get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Durability)?.Actual ?? 0;
         set
         {
-            var stat = Statistics?.FirstOrDefault();
-            if (stat != null)
-            {
-                stat.Durability = value;
-            }
+            var stat = Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Durability);
+            stat?.Actual = value;
         }
     }
 
     public byte Happiness
     {
-        get => Statistics?.FirstOrDefault()?.Happiness ?? 0;
+        get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Happiness)?.Actual ?? 0;
         set
         {
-            var stat = Statistics?.FirstOrDefault();
-            if (stat != null)
-            {
-                stat.Happiness = value;
-            }
+            var stat = Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Happiness);
+            stat?.Actual = value;
         }
     }
 }

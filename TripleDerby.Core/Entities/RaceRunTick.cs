@@ -11,7 +11,7 @@ public class RaceRunTick
 
     public virtual RaceRun RaceRun { get; set; } = null!;
 
-    public byte Tick { get; set; }
+    public short Tick { get; set; }
 
     public string Note { get; set; } = null!;
 

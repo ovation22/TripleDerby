@@ -19,7 +19,11 @@ public class RaceRunHorse
 
     public byte InitialStamina { get; set; }
 
+    public double CurrentStamina { get; set; }
+
     public decimal Distance { get; set; }
 
     public byte Place { get; set; }
+
+    public double Time { get; set; }
 }

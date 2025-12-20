@@ -3,15 +3,15 @@
 
 # Triple Derby  
 
-*A modern horse racing simulation built with .NET Aspire, .NET 9 Web API, and Blazor.*
+*A modern horse racing simulation built with .NET Aspire, .NET 10 Web API, and Blazor.*
 
-Triple Derby is a management and simulation game where players breed, train, feed, and race virtual horses — each with unique genetics and performance characteristics. This modern rebuild uses .NET 9, Blazor, and .NET Aspire to orchestrate a clean, extensible architecture.
+Triple Derby is a management and simulation game where players breed, train, feed, and race virtual horses — each with unique genetics and performance characteristics. This modern rebuild uses .NET 10, Blazor, and .NET Aspire to orchestrate a clean, extensible architecture.
 
 ---
 
 ## 🚀 Features
 
-- Modern **.NET 9 Web API** for all gameplay operations  
+- Modern **.NET 10 Web API** for all gameplay operations  
 - **Blazor Admin UI** for testing, debugging, and management  
 - **.NET Aspire orchestration** for local infrastructure and future cloud deployment  
 - Message-driven breeding pipeline with a background worker (`TripleDerby.Services.Breeding` / `BreedingRequestProcessor`) and transactional foal creation  

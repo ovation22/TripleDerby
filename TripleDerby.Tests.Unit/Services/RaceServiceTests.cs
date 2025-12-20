@@ -341,6 +341,53 @@ public class RaceServiceTests
         Assert.Equal(1, horseResult.Place);
     }
 
+    [Fact]
+    public async Task Race_FasterHorseFinishesInLessTime()
+    {
+        // Arrange - Phase 2 Integration Test
+        var raceId = (byte)1;
+        var fastHorseId = Guid.NewGuid();
+        var slowHorseId = Guid.NewGuid();
+        var race = CreateRace(raceId, furlongs: 6);
+
+        // Fast horse (Speed 80) vs Slow horse (Speed 40)
+        var fastHorse = CreateHorse(fastHorseId, "Fast Horse", speed: 80);
+        var slowHorse = CreateHorse(slowHorseId, "Slow Horse", speed: 40);
+
+        // Run race for fast horse
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<RaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(race);
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<HorseForRaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fastHorse);
+        _repositoryMock
+            .Setup(r => r.CreateAsync(It.IsAny<RaceRun>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RaceRun rr, CancellationToken _) => rr);
+
+        var fastHorseResult = await _sut.Race(raceId, fastHorseId, CancellationToken.None);
+
+        // Run race for slow horse (reset mocks)
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<HorseForRaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(slowHorse);
+
+        var slowHorseResult = await _sut.Race(raceId, slowHorseId, CancellationToken.None);
+
+        // Assert - Fast horse should have lower finish time
+        var fastTime = fastHorseResult.HorseResults.First().Time;
+        var slowTime = slowHorseResult.HorseResults.First().Time;
+
+        Assert.True(fastTime < slowTime,
+            $"Fast horse (Speed 80) should finish in less time than slow horse (Speed 40). " +
+            $"Fast: {fastTime:F2} ticks, Slow: {slowTime:F2} ticks");
+
+        // Verify significant difference (should be noticeable)
+        var timeDifference = slowTime - fastTime;
+        Assert.True(timeDifference > 0.1,
+            $"Time difference should be noticeable (>0.1 ticks). Actual: {timeDifference:F2}");
+    }
+
     private static Race CreateRaceWithDetails(byte id, string raceName, string trackName, string surfaceName)
     {
         return new Race
@@ -365,7 +412,11 @@ public class RaceServiceTests
             RaceStarts = 5,
             Statistics = new List<HorseStatistic>
             {
-                new() { Speed = speed, Stamina = 50, Agility = 50, Durability = 50, Happiness = 50 }
+                new() { StatisticId = StatisticId.Speed, Actual = speed },
+                new() { StatisticId = StatisticId.Agility, Actual = 50 },
+                new() { StatisticId = StatisticId.Stamina, Actual = 50 },
+                new() { StatisticId = StatisticId.Durability, Actual = 50 },
+                new() { StatisticId = StatisticId.Happiness, Actual = 50 }
             }
         };
     }
