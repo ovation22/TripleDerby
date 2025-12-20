@@ -2,15 +2,24 @@
 
 Break down feature specifications into concrete, manageable implementation phases with TDD vertical slices.
 
-## ⚠️ Project-Specific Workflow
+## 🚨 CRITICAL: Project-Specific Workflow 🚨
 
-**IMPORTANT**: For this project, **DO NOT commit automatically** after implementation phases. Always:
-1. Complete the implementation tasks
-2. Show the user what was done
-3. **Wait for explicit approval** before creating any commits
-4. Only commit when the user explicitly requests it
+**NEVER COMMIT OR PUSH WITHOUT EXPLICIT USER APPROVAL**
 
-This allows the project owner to review all changes before they are committed to git.
+This project has a **MANDATORY REVIEW-BEFORE-COMMIT** workflow:
+
+1. ✅ Complete the implementation tasks
+2. ✅ Run all tests to verify everything works
+3. ✅ Present a summary of changes to the user
+4. ❌ **DO NOT RUN `git commit` OR `git push`**
+5. ⏸️ **WAIT** for the user to say "commit and push" or similar explicit approval
+6. ✅ Only after explicit approval, run `git add`, `git commit`, and `git push`
+
+**WHY**: The project owner must review all changes before they enter version control. Committing without approval violates this workflow and creates extra work to undo commits.
+
+**VIOLATION CONSEQUENCE**: If you commit without approval, you will need to reset the commit, which wastes time and disrupts the workflow.
+
+**REMEMBER**: "Looks good" or "Ready for review" ≠ "Commit and push". Wait for explicit commit instruction.
 
 ## Purpose
 
@@ -192,14 +201,15 @@ User: "Create an implementation plan for the race modifiers refactor"
 - [ ] Work on Phase 1 tasks from TodoWrite
 - [ ] Follow Red-Green-Refactor discipline
 - [ ] Mark todos complete as you go
-- [ ] **Wait for user review before committing** (project-specific)
+- [ ] **NEVER commit - wait for user approval** (project-specific)
 - [ ] When phase complete, add next phase to TodoWrite
 
 ### After Each Phase
 - [ ] Run all tests to verify no regressions
 - [ ] Review acceptance criteria - all met?
-- [ ] Present changes to user for review
-- [ ] Commit only when user explicitly requests it
+- [ ] Present summary of changes to user for review
+- [ ] **WAIT for explicit "commit and push" instruction**
+- [ ] Only after approval: run git add, git commit, git push
 - [ ] Add next phase tasks to TodoWrite
 
 ## Customization
@@ -225,14 +235,14 @@ If the default TDD vertical slice approach doesn't fit:
 - Keep tests green (never commit failing tests)
 - Work on one phase at a time
 - Mark todos complete immediately after finishing
-- **Present changes for review before committing** (project-specific)
+- **Present changes for review, then WAIT for "commit and push" instruction** (MANDATORY)
 - Update implementation plan if you discover new requirements
 
 ### ❌ Avoid This
 - Skipping tests ("I'll add them later")
 - Working on multiple phases simultaneously
 - Letting todos go stale (mark complete promptly)
-- **Committing without user review** (project-specific)
+- **CRITICAL: Running git commit or git push without explicit user approval** (NEVER DO THIS)
 - Deviating from plan without documenting why
 
 ## Troubleshooting
