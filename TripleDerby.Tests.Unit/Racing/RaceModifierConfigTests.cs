@@ -75,27 +75,91 @@ public class RaceModifierConfigTests
         Assert.NotNull(legTypeModifiers);
     }
 
-    // Note: Dictionary population tests will be added in later phases
-    // Phase 1 only verifies infrastructure exists, not that it's populated
+    // Phase 3: Environmental Modifier Tests
 
     [Fact]
-    public void SurfaceModifiers_ShouldBeEmptyInPhase1()
+    public void SurfaceModifiers_ShouldContainAllSurfaceTypes()
     {
         // Act
-        var count = RaceModifierConfig.SurfaceModifiers.Count;
+        var surfaceModifiers = RaceModifierConfig.SurfaceModifiers;
 
-        // Assert - Empty in Phase 1, will be populated in Phase 3
-        Assert.Equal(0, count);
+        // Assert
+        Assert.Equal(3, surfaceModifiers.Count);
+        Assert.True(surfaceModifiers.ContainsKey(SurfaceId.Dirt));
+        Assert.True(surfaceModifiers.ContainsKey(SurfaceId.Turf));
+        Assert.True(surfaceModifiers.ContainsKey(SurfaceId.Artificial));
     }
 
     [Fact]
-    public void ConditionModifiers_ShouldBeEmptyInPhase1()
+    public void SurfaceModifiers_Dirt_ShouldBe1Point00()
     {
         // Act
-        var count = RaceModifierConfig.ConditionModifiers.Count;
+        var modifier = RaceModifierConfig.SurfaceModifiers[SurfaceId.Dirt];
 
-        // Assert - Empty in Phase 1, will be populated in Phase 3
-        Assert.Equal(0, count);
+        // Assert
+        Assert.Equal(1.00, modifier);
+    }
+
+    [Fact]
+    public void SurfaceModifiers_Turf_ShouldBe1Point02()
+    {
+        // Act
+        var modifier = RaceModifierConfig.SurfaceModifiers[SurfaceId.Turf];
+
+        // Assert
+        Assert.Equal(1.02, modifier);
+    }
+
+    [Fact]
+    public void SurfaceModifiers_Artificial_ShouldBe1Point01()
+    {
+        // Act
+        var modifier = RaceModifierConfig.SurfaceModifiers[SurfaceId.Artificial];
+
+        // Assert
+        Assert.Equal(1.01, modifier);
+    }
+
+    [Fact]
+    public void ConditionModifiers_ShouldContainAll11Conditions()
+    {
+        // Act
+        var conditionModifiers = RaceModifierConfig.ConditionModifiers;
+
+        // Assert - All 11 ConditionId values should be present
+        Assert.Equal(11, conditionModifiers.Count);
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Fast));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Firm));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Good));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.WetFast));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Soft));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Yielding));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Muddy));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Sloppy));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Heavy));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Frozen));
+        Assert.True(conditionModifiers.ContainsKey(ConditionId.Slow));
+    }
+
+    [Theory]
+    [InlineData(ConditionId.Fast, 1.03)]
+    [InlineData(ConditionId.Firm, 1.02)]
+    [InlineData(ConditionId.Good, 1.00)]
+    [InlineData(ConditionId.WetFast, 0.99)]
+    [InlineData(ConditionId.Soft, 0.98)]
+    [InlineData(ConditionId.Yielding, 0.97)]
+    [InlineData(ConditionId.Muddy, 0.96)]
+    [InlineData(ConditionId.Sloppy, 0.95)]
+    [InlineData(ConditionId.Heavy, 0.93)]
+    [InlineData(ConditionId.Frozen, 0.92)]
+    [InlineData(ConditionId.Slow, 0.90)]
+    public void ConditionModifiers_ShouldHaveCorrectValue(ConditionId conditionId, double expectedModifier)
+    {
+        // Act
+        var modifier = RaceModifierConfig.ConditionModifiers[conditionId];
+
+        // Assert
+        Assert.Equal(expectedModifier, modifier);
     }
 
     [Fact]

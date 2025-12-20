@@ -56,14 +56,30 @@ public class SpeedModifierCalculator
 
     /// <summary>
     /// Calculates environmental speed modifiers (Surface and Condition).
-    /// Returns 1.0 (neutral) for now - implementation in Phase 3.
+    /// Multiplies surface and condition modifiers together.
     /// </summary>
     /// <param name="context">Race context with surface and condition</param>
-    /// <returns>Combined environmental modifier (neutral = 1.0)</returns>
+    /// <returns>Combined environmental modifier (Surface × Condition)</returns>
     public double CalculateEnvironmentalModifiers(ModifierContext context)
     {
-        // TODO: Phase 3 - Implement environmental modifiers
-        return 1.0;
+        var surfaceModifier = GetModifierOrDefault(
+            Configuration.RaceModifierConfig.SurfaceModifiers,
+            context.RaceSurface);
+
+        var conditionModifier = GetModifierOrDefault(
+            Configuration.RaceModifierConfig.ConditionModifiers,
+            context.RaceCondition);
+
+        return surfaceModifier * conditionModifier;
+    }
+
+    /// <summary>
+    /// Safely retrieves a modifier from a dictionary or returns 1.0 (neutral) if not found.
+    /// </summary>
+    private static double GetModifierOrDefault<TKey>(IReadOnlyDictionary<TKey, double> dictionary, TKey key)
+        where TKey : notnull
+    {
+        return dictionary.TryGetValue(key, out var modifier) ? modifier : 1.0;
     }
 
     /// <summary>

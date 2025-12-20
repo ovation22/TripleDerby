@@ -167,17 +167,92 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(0.9604, result, precision: 4);
     }
 
+    // ============================================================================
+    // Phase 3: Environmental Modifier Tests
+    // ============================================================================
+
     [Fact]
-    public void CalculateEnvironmentalModifiers_ShouldReturnNeutralValue()
+    public void CalculateEnvironmentalModifiers_WithDirtAndGood_ShouldReturn1Point0()
     {
-        // Arrange
-        var context = CreateModifierContext();
+        // Arrange - Dirt (1.00) * Good (1.00) = 1.0
+        var horse = CreateHorse();
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
 
         // Act
         var result = _sut.CalculateEnvironmentalModifiers(context);
 
         // Assert
-        Assert.Equal(1.0, result);
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculateEnvironmentalModifiers_WithTurfAndFast_ShouldReturn1Point0506()
+    {
+        // Arrange - Turf (1.02) * Fast (1.03) = 1.0506
+        var horse = CreateHorse();
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Fast,
+            RaceSurface: SurfaceId.Turf,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculateEnvironmentalModifiers(context);
+
+        // Assert
+        Assert.Equal(1.0506, result, precision: 4);
+    }
+
+    [Fact]
+    public void CalculateEnvironmentalModifiers_WithArtificialAndHeavy_ShouldReturn0Point9393()
+    {
+        // Arrange - Artificial (1.01) * Heavy (0.93) = 0.9393
+        var horse = CreateHorse();
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Heavy,
+            RaceSurface: SurfaceId.Artificial,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculateEnvironmentalModifiers(context);
+
+        // Assert
+        Assert.Equal(0.9393, result, precision: 4);
+    }
+
+    [Fact]
+    public void CalculateEnvironmentalModifiers_WithDirtAndSlow_ShouldReturn0Point90()
+    {
+        // Arrange - Dirt (1.00) * Slow (0.90) = 0.90 (worst case)
+        var horse = CreateHorse();
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Slow,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculateEnvironmentalModifiers(context);
+
+        // Assert
+        Assert.Equal(0.90, result, precision: 5);
     }
 
     [Fact]

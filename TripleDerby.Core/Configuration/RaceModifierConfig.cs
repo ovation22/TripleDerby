@@ -53,22 +53,41 @@ public static class RaceModifierConfig
 
     /// <summary>
     /// Speed modifiers by track surface type.
-    /// TODO: Populate in Phase 3 - Environmental Modifiers
+    /// Dirt is neutral (1.00), Turf is faster (1.02), Artificial is consistent and slightly faster (1.01).
+    /// Range: 1.00x to 1.02x (+0% to +2%)
     /// </summary>
     public static readonly IReadOnlyDictionary<SurfaceId, double> SurfaceModifiers =
         new Dictionary<SurfaceId, double>
         {
-            // Will be populated in Phase 3
+            { SurfaceId.Dirt, 1.00 },       // Neutral, most common surface
+            { SurfaceId.Turf, 1.02 },       // Faster, grass surface
+            { SurfaceId.Artificial, 1.01 }  // Consistent, synthetic surface
         };
 
     /// <summary>
     /// Speed modifiers by track condition.
-    /// TODO: Populate in Phase 3 - Environmental Modifiers
+    /// Fast/dry conditions provide speed bonuses, wet conditions provide penalties, extreme conditions have larger penalties.
+    /// Range: 0.90x to 1.03x (-10% to +3%)
     /// </summary>
     public static readonly IReadOnlyDictionary<ConditionId, double> ConditionModifiers =
         new Dictionary<ConditionId, double>
         {
-            // Will be populated in Phase 3
+            // Dry/Fast conditions (positive modifiers)
+            { ConditionId.Fast, 1.03 },      // Fastest condition
+            { ConditionId.Firm, 1.02 },      // Fast and firm
+            { ConditionId.Good, 1.00 },      // Neutral baseline
+
+            // Wet conditions (slight penalties)
+            { ConditionId.WetFast, 0.99 },   // Slightly wet but still fast
+            { ConditionId.Soft, 0.98 },      // Softer surface
+            { ConditionId.Yielding, 0.97 },  // Yielding surface
+            { ConditionId.Muddy, 0.96 },     // Muddy conditions
+            { ConditionId.Sloppy, 0.95 },    // Very wet and sloppy
+
+            // Extreme conditions (larger penalties)
+            { ConditionId.Heavy, 0.93 },     // Heavy, difficult conditions
+            { ConditionId.Frozen, 0.92 },    // Frozen track
+            { ConditionId.Slow, 0.90 }       // Slowest condition
         };
 
     // ============================================================================
