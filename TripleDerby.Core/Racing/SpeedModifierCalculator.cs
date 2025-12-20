@@ -108,12 +108,16 @@ public class SpeedModifierCalculator
 
     /// <summary>
     /// Applies random variance to simulate tick-to-tick performance fluctuation.
-    /// Returns 1.0 (neutral) for now - implementation in Phase 5.
+    /// Uses uniform distribution to apply ±1% variance each tick.
+    /// Formula: 1.0 + (NextDouble() * 2 * RandomVarianceRange - RandomVarianceRange)
     /// </summary>
-    /// <returns>Random variance modifier (neutral = 1.0)</returns>
+    /// <returns>Random variance modifier in range [0.99, 1.01]</returns>
     public double ApplyRandomVariance()
     {
-        // TODO: Phase 5 - Implement random variance
-        return 1.0;
+        // Generate random value in range [-0.01, +0.01]
+        var variance = _randomGenerator.NextDouble() * 2 * Configuration.RaceModifierConfig.RandomVarianceRange
+                       - Configuration.RaceModifierConfig.RandomVarianceRange;
+
+        return 1.0 + variance;
     }
 }

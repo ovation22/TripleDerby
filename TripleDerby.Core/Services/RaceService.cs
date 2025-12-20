@@ -230,8 +230,8 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         // Phase 4: Apply phase modifiers (LegType timing)
         baseSpeed *= _speedModifierCalculator.CalculatePhaseModifiers(context);
 
-        // Apply random performance fluctuations (Phase 5 will replace this)
-        baseSpeed = ApplyRandomPerformanceFluctuations(baseSpeed);
+        // Phase 5: Apply random variance (±1% per tick)
+        baseSpeed *= _speedModifierCalculator.ApplyRandomVariance();
 
         //var staminaModifier = GetStaminaModifierForCondition(raceRun.ConditionId);
         //staminaModifier *= GetStaminaModifierForLaneAndLegType(raceRunHorse.Lane);
@@ -555,6 +555,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         return 1 - ((100 - durability) / 100.0); // Durability affects stamina drain; higher durability means less stamina loss
     }
 
+    [Obsolete("Replaced by SpeedModifierCalculator.ApplyRandomVariance in Phase 5. Will be removed in Phase 6.")]
     private double ApplyRandomPerformanceFluctuations(double baseSpeed)
     {
         var fluctuation = randomGenerator.NextDouble() * 0.02 - 0.01; // ±1% random fluctuation

@@ -2,6 +2,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
+using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Tests.Unit.Racing;
@@ -391,14 +392,86 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(1.02, result, precision: 5);
     }
 
+    // ============================================================================
+    // Phase 5: Random Variance Tests
+    // ============================================================================
+
     [Fact]
-    public void ApplyRandomVariance_ShouldReturnNeutralValue()
+    public void ApplyRandomVariance_WithMockedRandom0Point5_ShouldReturnNeutral()
     {
+        // Arrange - Mock returns 0.5 which should give neutral modifier
+        _randomGeneratorMock.Setup(r => r.NextDouble()).Returns(0.5);
+
         // Act
         var result = _sut.ApplyRandomVariance();
 
-        // Assert
-        Assert.Equal(1.0, result);
+        // Assert - 0.5 * 0.02 - 0.01 = 0.0, so 1.0 + 0.0 = 1.0
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void ApplyRandomVariance_WithMockedRandom0Point0_ShouldReturn0Point99()
+    {
+        // Arrange - Mock returns 0.0 which should give -1% modifier
+        _randomGeneratorMock.Setup(r => r.NextDouble()).Returns(0.0);
+
+        // Act
+        var result = _sut.ApplyRandomVariance();
+
+        // Assert - 0.0 * 0.02 - 0.01 = -0.01, so 1.0 - 0.01 = 0.99
+        Assert.Equal(0.99, result, precision: 5);
+    }
+
+    [Fact]
+    public void ApplyRandomVariance_WithMockedRandom1Point0_ShouldReturn1Point01()
+    {
+        // Arrange - Mock returns 1.0 which should give +1% modifier
+        _randomGeneratorMock.Setup(r => r.NextDouble()).Returns(1.0);
+
+        // Act
+        var result = _sut.ApplyRandomVariance();
+
+        // Assert - 1.0 * 0.02 - 0.01 = 0.01, so 1.0 + 0.01 = 1.01
+        Assert.Equal(1.01, result, precision: 5);
+    }
+
+    [Fact]
+    public void ApplyRandomVariance_CalledMultipleTimes_ShouldProduceDifferentResults()
+    {
+        // Arrange - Use actual random generator instead of mock
+        var realRandomGenerator = new RandomGenerator();
+        var calculator = new SpeedModifierCalculator(realRandomGenerator);
+
+        // Act - Call multiple times
+        var results = new List<double>();
+        for (int i = 0; i < 100; i++)
+        {
+            results.Add(calculator.ApplyRandomVariance());
+        }
+
+        // Assert - Should have at least some variation (not all the same)
+        var distinctResults = results.Distinct().Count();
+        Assert.True(distinctResults > 10, $"Expected diverse results but only got {distinctResults} distinct values");
+    }
+
+    [Fact]
+    public void ApplyRandomVariance_Over1000Calls_ShouldBeMeanCentered()
+    {
+        // Arrange - Use actual random generator
+        var realRandomGenerator = new RandomGenerator();
+        var calculator = new SpeedModifierCalculator(realRandomGenerator);
+
+        // Act - Call 1000 times and calculate mean
+        var results = new List<double>();
+        for (int i = 0; i < 1000; i++)
+        {
+            results.Add(calculator.ApplyRandomVariance());
+        }
+
+        var mean = results.Average();
+
+        // Assert - Mean should be close to 1.0 (neutral), within reasonable tolerance
+        Assert.InRange(mean, 0.995, 1.005);
     }
 
     [Fact]
