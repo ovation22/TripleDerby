@@ -14,8 +14,8 @@ namespace TripleDerby.Core.Racing;
 /// <param name="RaceSurface">Track surface type (dirt, turf, artificial)</param>
 /// <param name="RaceFurlongs">Race distance in furlongs</param>
 public record ModifierContext(
-    int CurrentTick,
-    int TotalTicks,
+    short CurrentTick,
+    short TotalTicks,
     Horse Horse,
     ConditionId RaceCondition,
     SurfaceId RaceSurface,

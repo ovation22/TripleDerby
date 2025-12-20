@@ -478,8 +478,8 @@ public class SpeedModifierCalculatorTests
     public void ModifierContext_ShouldStoreAllRequiredFields()
     {
         // Arrange
-        var currentTick = 50;
-        var totalTicks = 200;
+        short currentTick = 50;
+        short totalTicks = 200;
         var horse = CreateHorse();
         var raceCondition = ConditionId.Good;
         var raceSurface = SurfaceId.Dirt;

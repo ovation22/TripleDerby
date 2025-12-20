@@ -79,7 +79,7 @@ public class SpeedModifierCalculator
     private static double GetModifierOrDefault<TKey>(IReadOnlyDictionary<TKey, double> dictionary, TKey key)
         where TKey : notnull
     {
-        return dictionary.TryGetValue(key, out var modifier) ? modifier : 1.0;
+        return dictionary.GetValueOrDefault(key, 1.0);
     }
 
     /// <summary>

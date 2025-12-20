@@ -67,7 +67,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         var horses = new List<Horse> { myHorse };
         horses.AddRange(cpuHorses);
 
-        // Initialization phase
         var raceRun = new RaceRun
         {
             RaceId = raceId,
@@ -82,7 +81,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         var totalTicks = CalculateTotalTicks(race.Furlongs);
             
         var allHorsesFinished = false;
-        byte tick = 0;
+        short tick = 0;
 
         // Run the simulation until all horses finish
         while (!allHorsesFinished)
@@ -101,8 +100,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
                     // Check if horse just crossed the finish line
                     if (previousDistance < race.Furlongs && horse.Distance >= race.Furlongs)
                     {
-                        // Calculate the exact fractional tick when they crossed
-                        // BEFORE we cap the distance
                         var distanceToGo = race.Furlongs - previousDistance;
                         var distanceCovered = horse.Distance - previousDistance;
 
@@ -110,7 +107,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
                         {
                             var fractionOfTick = (double)(distanceToGo / distanceCovered);
 
-                            // Store the precise finish time
                             horse.Time = tick - 1 + fractionOfTick;
                         }
                         else
@@ -207,11 +203,10 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         }
     }
 
-    private void UpdateHorsePosition(RaceRunHorse raceRunHorse, byte tick, int totalTicks, RaceRun raceRun)
+    private void UpdateHorsePosition(RaceRunHorse raceRunHorse, short tick, short totalTicks, RaceRun raceRun)
     {
         var baseSpeed = AverageBaseSpeed;
 
-        // Phase 2 & 3: Apply modifiers using new calculator
         var context = new ModifierContext(
             CurrentTick: tick,
             TotalTicks: totalTicks,
@@ -222,47 +217,16 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         );
 
         // Apply stat modifiers (Speed + Agility)
-        baseSpeed *= _speedModifierCalculator.CalculateStatModifiers(context);
+        var statModifier = _speedModifierCalculator.CalculateStatModifiers(context);
+        baseSpeed *= statModifier;
+        var envModifier = _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
+        baseSpeed *= envModifier;
 
-        // Phase 3: Apply environmental modifiers (Surface + Condition)
-        baseSpeed *= _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
+        var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context);
+        baseSpeed *= phaseModifier;
 
-        // Phase 4: Apply phase modifiers (LegType timing)
-        baseSpeed *= _speedModifierCalculator.CalculatePhaseModifiers(context);
-
-        // Phase 5: Apply random variance (±1% per tick)
-        baseSpeed *= _speedModifierCalculator.ApplyRandomVariance();
-
-        //var staminaModifier = GetStaminaModifierForCondition(raceRun.ConditionId);
-        //staminaModifier *= GetStaminaModifierForLaneAndLegType(raceRunHorse.Lane);
-        //staminaModifier *= GetStaminaModifierForSurface(raceRun.Race.SurfaceId);
-        //staminaModifier *= GetDurabilityModifier(raceRunHorse.Horse.Durability);
-        //staminaModifier *= GetHappinessStaminaModifier(raceRunHorse.Horse.Happiness);
-
-        // Factor in stamina depletion - PASS RACE DISTANCE
-        /*var staminaConsumption = GetStaminaConsumption(
-            staminaModifier,
-            raceRun.ConditionId,
-            raceRunHorse.Horse.LegTypeId,
-            raceRun.Race.Furlongs,
-            totalTicks);*/
-
-        //raceRunHorse.CurrentStamina -= staminaConsumption;
-
-        // Ensure stamina doesn't go below zero
-        /*if (raceRunHorse.CurrentStamina < 0)
-        {
-            raceRunHorse.CurrentStamina = 0;
-        }*/
-
-        // Adjust speed based on remaining stamina
-        //baseSpeed = ApplyStaminaEffect(baseSpeed, raceRunHorse);
-
-        // Apply traffic interference
-        //baseSpeed = ApplyTrafficInterference(baseSpeed, raceRunHorse, raceRun);
-
-        // Apply random incidents
-        //baseSpeed = ApplyRandomIncidents(baseSpeed, tick, raceRunHorse, totalTicks);
+        var randomVariance = _speedModifierCalculator.ApplyRandomVariance();
+        baseSpeed *= randomVariance;
 
         // Update horse position
         raceRunHorse.Distance += (decimal)baseSpeed;
@@ -270,233 +234,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         // Handle overtaking or lane changing logic
         //HandleOvertaking(raceRunHorse, raceRun);
     }
-
-    private double GetStaminaConsumption(
-        double staminaModifier,
-        ConditionId conditionId,
-        LegTypeId legTypeId,
-        decimal raceFurlongs,
-        int totalTicks)
-    {
-        // Base stamina consumption is now scaled by race distance
-        // Target: Use 40% of stamina for a 10-furlong race over 150 ticks (reduced from 70%)
-        const decimal standardDistance = 10m;
-        const int standardTicks = 150;
-        const double targetStaminaUsage = 0.4; // Use 40% of total stamina (REDUCED)
-
-        // Calculate per-tick consumption adjusted for this race's distance
-        var distanceScalingFactor = (double)(raceFurlongs / standardDistance);
-        var tickScalingFactor = (double)totalTicks / standardTicks;
-
-        // Base consumption per tick (normalized for standard race)
-        var baseConsumption = (targetStaminaUsage / standardTicks) * distanceScalingFactor / tickScalingFactor;
-
-        // Modify based on race conditions
-        var conditionModifier = conditionId switch
-        {
-            ConditionId.Fast => 0.97,        // Reduced from 0.95
-            ConditionId.WetFast => 0.99,     // Reduced from 0.98
-            ConditionId.Good => 1.0,
-            ConditionId.Muddy => 1.02,       // Reduced from 1.05
-            ConditionId.Sloppy => 1.03,      // Reduced from 1.07
-            ConditionId.Frozen => 1.04,      // Reduced from 1.1
-            ConditionId.Slow => 1.06,        // Reduced from 1.15
-            ConditionId.Heavy => 1.08,       // Reduced from 1.2
-            ConditionId.Firm => 0.99,        // Reduced from 0.98
-            ConditionId.Soft => 1.01,        // Reduced from 1.03
-            ConditionId.Yielding => 1.01,    // Reduced from 1.02
-            _ => 1.0
-        };
-
-        // Modify based on leg type (some run harder early/late)
-        var legTypeModifier = legTypeId switch
-        {
-            LegTypeId.StartDash => 1.02,    // Burns stamina early
-            LegTypeId.LastSpurt => 1.02,    // Burns stamina late
-            LegTypeId.FrontRunner => 1.01,  // Slightly more effort
-            LegTypeId.StretchRunner => 1.0, // Balanced
-            LegTypeId.RailRunner => 0.99,   // Efficient
-            _ => 1.0
-        };
-
-        // Combine all modifiers
-        var totalConsumption = baseConsumption * staminaModifier * conditionModifier * legTypeModifier;
-
-        var randomFactor = 1 + (randomGenerator.NextDouble() * 0.06 - 0.03); // ±3% 
-        totalConsumption *= randomFactor;
-
-        return totalConsumption;
-    }
-
-    private static double ApplyStaminaEffect(double baseSpeed, RaceRunHorse horse)
-    {
-        var staminaPercent = horse.CurrentStamina / horse.InitialStamina;
-
-        if (staminaPercent < 0.1)
-        {
-            return baseSpeed * 0.95; // Minor 5% penalty only when nearly exhausted
-        }
-        if (staminaPercent < 0.25)
-        {
-            // Mild penalty
-            var penalty = 1.0 - ((0.5 - staminaPercent) * 0.32);
-            return baseSpeed * penalty;
-        }
-        
-        return baseSpeed; // No penalty otherwise
-    }
-
-    /*
-    private static double ApplyStaminaEffect(double baseSpeed, RaceRunHorse horse)
-    {
-        // Calculate stamina percentage remaining
-        var staminaPercent = horse.CurrentStamina / horse.InitialStamina;
-
-        // Apply speed penalty as stamina depletes
-        // No penalty above 50% stamina, then gradual decline
-        if (staminaPercent > 0.5)
-        {
-            return baseSpeed; // No penalty
-        }
-        else if (staminaPercent > 0.25)
-        {
-            // Mild penalty: 50% stamina = 98% speed, 25% stamina = 90% speed
-            var penalty = 1.0 - ((0.5 - staminaPercent) * 0.32); // 0.98 to 0.90
-            return baseSpeed * penalty;
-        }
-        else if (staminaPercent > 0)
-        {
-            // Severe penalty: 25% stamina = 90% speed, 0% stamina = 70% speed
-            var penalty = 0.9 - ((0.25 - staminaPercent) * 0.8); // 0.90 to 0.70
-            return baseSpeed * penalty;
-        }
-        else
-        {
-            // Exhausted: 70% speed
-            return baseSpeed * 0.7;
-        }
-    }*/
-
-    private static double GetHappinessStaminaModifier(int happiness)
-    {
-        // Logarithmic scaling with very subtle effect on stamina consumption
-        // Uses natural log to create diminishing returns curve
-        // Neutral point is at happiness = 50
-
-        // Clamp happiness to valid range [0, 100]
-        happiness = Math.Clamp(happiness, 0, 100);
-
-        // Normalize happiness to range around 0 (shift 50 to 0)
-        var normalizedHappiness = happiness - 50.0;
-
-        // Apply logarithmic scaling with inverted effect (higher happiness = less stamina consumption)
-        // Note: Sign is inverted compared to speed modifier
-        if (normalizedHappiness == 0)
-        {
-            return 1.0; // Neutral, no effect
-        }
-
-        var logEffect = -Math.Sign(normalizedHappiness) * Math.Log(1.0 + Math.Abs(normalizedHappiness)) / 5000.0;
-
-        return 1.0 + logEffect;
-    }
-
-    private static double GetStaminaModifierForCondition(ConditionId conditionId)
-    {
-        return conditionId switch
-        {
-            ConditionId.Fast => 1.00,
-            ConditionId.WetFast => 1.01,
-            ConditionId.Muddy => 1.05,
-            ConditionId.Sloppy => 1.07,
-            ConditionId.Frozen => 1.08,
-            ConditionId.Slow => 1.10,
-            ConditionId.Heavy => 1.12,
-            ConditionId.Soft => 1.03,
-            ConditionId.Yielding => 1.04,
-            _ => 1.00
-        };
-    }
-
-    private static double GetStaminaModifierForLaneAndLegType(int lane)
-    {
-        return (lane <= 3) ? 1.02 : 1.00; // Inner lanes might cause faster stamina drain
-    }
-
-    private static double GetDurabilityModifier(int durability)
-    {
-        return 1 - ((100 - durability) / 100.0); // Durability affects stamina drain; higher durability means less stamina loss
-    }
-
-    private double ApplyTrafficInterference(double baseSpeed, RaceRunHorse horse, RaceRun raceRun)
-    {
-        const decimal proximityThreshold = 0.2m; // furlongs
-    
-        // Count nearby horses in adjacent lanes
-        var nearbyHorses = raceRun.Horses.Count(h => 
-            h != horse &&
-            Math.Abs(h.Lane - horse.Lane) <= 1 && // Adjacent lanes
-            Math.Abs(h.Distance - horse.Distance) < proximityThreshold);
-    
-        // Apply penalty: 1-2% per nearby horse
-        var trafficPenalty = nearbyHorses * 0.015;
-        return baseSpeed * (1 - trafficPenalty);
-    }
-
-    /*
-    private byte GetBaseStaminaConsumption(ConditionId conditionId, LegTypeId legTypeId)
-    {
-        // Base stamina consumption factor
-        var baseConsumption = 1.0;
-
-        // Modify base consumption based on race conditions
-        var conditionModifier = conditionId switch
-        {
-            ConditionId.Fast => 0.95,
-            ConditionId.WetFast => 0.98,
-            ConditionId.Good => 1.0,
-            ConditionId.Muddy => 1.05,
-            ConditionId.Sloppy => 1.07,
-            ConditionId.Frozen => 1.1,
-            ConditionId.Slow => 1.15,
-            ConditionId.Heavy => 1.2,
-            ConditionId.Firm => 0.98,
-            ConditionId.Soft => 1.03,
-            ConditionId.Yielding => 1.02,
-            _ => 1.0
-        };
-
-        // Modify based on leg type
-        var legTypeModifier = legTypeId switch
-        {
-            LegTypeId.StartDash => 0.9,    // Less stamina drain in the start dash phase
-            LegTypeId.LastSpurt => 1.1,    // More stamina drain in the last spurt phase
-            LegTypeId.FrontRunner => 1.0,  // Neutral
-            LegTypeId.StretchRunner => 1.05, // Slightly increased consumption
-            LegTypeId.RailRunner => 0.95,  // Slightly reduced consumption
-            _ => 1.0
-        };
-
-        // Combine the modifiers
-        baseConsumption *= conditionModifier * legTypeModifier;
-
-        // Introduce a small random fluctuation to account for unpredictable factors
-        var randomFluctuation = 1 + (randomGenerator.NextDouble() * 0.1 - 0.05); // ±5% random fluctuation
-        baseConsumption *= randomFluctuation;
-
-        // Ensure the consumption factor is not less than a certain threshold to avoid negative stamina values
-        baseConsumption = Math.Max(baseConsumption, 0.5);
-
-        // Convert to byte
-        return Convert.ToByte(Math.Min(baseConsumption, 255)); // Ensure it fits within byte range
-    }
-    */
-
-    /*private void ApplyInRaceEvents(RaceRun raceRun, int tick)
-    {
-        // Example: if two horses are too close, they might slow each other down
-        // Iterate over all horses and apply effects based on proximity
-    }*/
 
     private void HandleOvertaking(RaceRunHorse raceRunHorse, RaceRun raceRun)
     {
@@ -565,13 +302,6 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
             Math.Abs(h.Distance - horse.Distance) < lateralBlockingDistance);
     }
 
-    /*
-    private static void ApplyRandomEvents(RaceRunHorse horse, int tick)
-    {
-        // Implement random events affecting race dynamics.
-    }
-    */
-
     private static void DetermineRaceResults(RaceRun raceRun)
     {
         // Sort horses by time and assign places
@@ -611,11 +341,11 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
     }
     */
 
-    private static int CalculateTotalTicks(decimal furlongs)
+    private static short CalculateTotalTicks(decimal furlongs)
     {
         // At 0.0422 furlongs/tick (derived from ~38 mph), calculate required ticks
         // This ensures horses can actually complete the race distance
-        return (int)Math.Ceiling((double)furlongs / AverageBaseSpeed);
+        return (short)Math.Ceiling((double)furlongs / AverageBaseSpeed);
     }
 
     private static double GetStaminaModifierForSurface(SurfaceId surfaceId)
@@ -633,43 +363,5 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
     {
         var values = Enum.GetValues(typeof(ConditionId));
         return (ConditionId)values.GetValue(randomGenerator.Next(values.Length))!;
-    }
-
-    private double ApplyRandomIncidents(double baseSpeed, byte tick, RaceRunHorse horse, int totalTicks)
-    {
-        // Calculate race phase (0.0 to 1.0)
-        var racePhase = (double)tick / totalTicks;
-        
-        // Base 5% chance, but varies by race phase
-        var incidentChance = 0.05;
-        
-        // Higher incident rate in middle of race (traffic, jockeying for position)
-        if (racePhase > 0.3 && racePhase < 0.7)
-        {
-            incidentChance = 0.08; // 8% chance in heavy traffic
-        }
-        // Lower incident rate at start (clean break) and finish (horses spread out)
-        else if (racePhase < 0.1 || racePhase > 0.85)
-        {
-            incidentChance = 0.02; // 2% chance
-        }
-        
-        if (randomGenerator.NextDouble() < incidentChance)
-        {
-            // Agility helps recover from negative incidents
-            var agilityFactor = horse.Horse.Agility / 100.0; // 0.0 to 1.0
-            
-            // Base incident range: -5% to +15%
-            var incident = randomGenerator.NextDouble() * 0.2 - 0.05;
-            
-            // If negative incident, agility reduces the penalty
-            if (incident < 0)
-            {
-                incident *= (1 - (agilityFactor * 0.5)); // Up to 50% reduction in penalty
-            }
-            
-            return baseSpeed * (1 + incident);
-        }
-        return baseSpeed;
     }
 }
