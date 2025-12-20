@@ -255,17 +255,140 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(0.90, result, precision: 5);
     }
 
+    // ============================================================================
+    // Phase 4: Phase Modifier Tests
+    // ============================================================================
+
     [Fact]
-    public void CalculatePhaseModifiers_ShouldReturnNeutralValue()
+    public void CalculatePhaseModifiers_StartDashInPhase_ShouldReturn1Point04()
     {
-        // Arrange
-        var context = CreateModifierContext();
+        // Arrange - Tick 50/200 = 25% (within StartDash 0-25% phase)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.StartDash;
+        var context = new ModifierContext(
+            CurrentTick: 50,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
 
         // Act
         var result = _sut.CalculatePhaseModifiers(context);
 
         // Assert
-        Assert.Equal(1.0, result);
+        Assert.Equal(1.04, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculatePhaseModifiers_StartDashOutOfPhase_ShouldReturn1Point0()
+    {
+        // Arrange - Tick 150/200 = 75% (outside StartDash 0-25% phase)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.StartDash;
+        var context = new ModifierContext(
+            CurrentTick: 150,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context);
+
+        // Assert
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculatePhaseModifiers_LastSpurtInPhase_ShouldReturn1Point04()
+    {
+        // Arrange - Tick 170/200 = 85% (within LastSpurt 75-100% phase)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.LastSpurt;
+        var context = new ModifierContext(
+            CurrentTick: 170,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context);
+
+        // Assert
+        Assert.Equal(1.04, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculatePhaseModifiers_StretchRunnerInPhase_ShouldReturn1Point03()
+    {
+        // Arrange - Tick 140/200 = 70% (within StretchRunner 60-80% phase)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.StretchRunner;
+        var context = new ModifierContext(
+            CurrentTick: 140,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context);
+
+        // Assert
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculatePhaseModifiers_FrontRunnerInPhase_ShouldReturn1Point03()
+    {
+        // Arrange - Tick 30/200 = 15% (within FrontRunner 0-20% phase)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.FrontRunner;
+        var context = new ModifierContext(
+            CurrentTick: 30,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context);
+
+        // Assert
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculatePhaseModifiers_RailRunnerInPhase_ShouldReturn1Point02()
+    {
+        // Arrange - Tick 170/200 = 85% (within RailRunner 70-100% phase)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.RailRunner;
+        var context = new ModifierContext(
+            CurrentTick: 170,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context);
+
+        // Assert
+        Assert.Equal(1.02, result, precision: 5);
     }
 
     [Fact]

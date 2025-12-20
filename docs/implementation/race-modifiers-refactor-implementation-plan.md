@@ -268,13 +268,13 @@ Each phase follows the Red-Green-Refactor cycle:
 - [ ] Test: `PhaseModifier` record stores startPercent, endPercent, multiplier correctly
 - [ ] Test: `RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.StartDash]` has phase 0-25%, multiplier 1.04
 - [ ] Test: `RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.FrontRunner]` has phase 0-20%, multiplier 1.03
-- [ ] Test: `RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.StretchRunner]` has phase 40-60%, multiplier 1.03
+- [x] Test: `RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.StretchRunner]` has phase 60-80%, multiplier 1.03 (adjusted for realistic stretch run timing)
 - [ ] Test: `RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.LastSpurt]` has phase 75-100%, multiplier 1.04
 - [ ] Test: `RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.RailRunner]` has phase 70-100%, multiplier 1.02
 - [ ] Test: `CalculatePhaseModifiers` at tick 50/200 (25%) with StartDash returns 1.04 (in phase)
 - [ ] Test: `CalculatePhaseModifiers` at tick 150/200 (75%) with StartDash returns 1.0 (out of phase)
 - [ ] Test: `CalculatePhaseModifiers` at tick 170/200 (85%) with LastSpurt returns 1.04 (in phase)
-- [ ] Test: `CalculatePhaseModifiers` at tick 100/200 (50%) with StretchRunner returns 1.03 (in phase)
+- [x] Test: `CalculatePhaseModifiers` at tick 140/200 (70%) with StretchRunner returns 1.03 (in phase)
 
 **Why these tests**: Ensure each LegType's timing windows and modifiers are correctly configured and applied based on race progress.
 
@@ -292,7 +292,7 @@ Each phase follows the Red-Green-Refactor cycle:
       {
           { LegTypeId.StartDash, new PhaseModifier(0.00, 0.25, 1.04) },
           { LegTypeId.FrontRunner, new PhaseModifier(0.00, 0.20, 1.03) },
-          { LegTypeId.StretchRunner, new PhaseModifier(0.40, 0.60, 1.03) },
+          { LegTypeId.StretchRunner, new PhaseModifier(0.60, 0.80, 1.03) },  // Adjusted: 60-80% more realistically represents "stretch run"
           { LegTypeId.LastSpurt, new PhaseModifier(0.75, 1.00, 1.04) },
           { LegTypeId.RailRunner, new PhaseModifier(0.70, 1.00, 1.02) }
       };

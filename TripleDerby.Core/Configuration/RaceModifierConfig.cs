@@ -97,11 +97,15 @@ public static class RaceModifierConfig
     /// <summary>
     /// Phase-based modifiers for each leg type (running style).
     /// Defines when during the race each leg type gets a speed boost.
-    /// TODO: Populate in Phase 4 - Phase Modifiers
+    /// StartDash and LastSpurt get highest bonus (1.04x), balanced strategies get moderate (1.03x), RailRunner smallest (1.02x).
     /// </summary>
     public static readonly IReadOnlyDictionary<LegTypeId, PhaseModifier> LegTypePhaseModifiers =
         new Dictionary<LegTypeId, PhaseModifier>
         {
-            // Will be populated in Phase 4
+            { LegTypeId.StartDash, new PhaseModifier(0.00, 0.25, 1.04) },      // First 25%, high risk/reward
+            { LegTypeId.FrontRunner, new PhaseModifier(0.00, 0.20, 1.03) },    // First 20%, early speed
+            { LegTypeId.StretchRunner, new PhaseModifier(0.60, 0.80, 1.03) },  // 60-80%, stretch run (adjusted for realism)
+            { LegTypeId.LastSpurt, new PhaseModifier(0.75, 1.00, 1.04) },      // Final 25%, closing kick
+            { LegTypeId.RailRunner, new PhaseModifier(0.70, 1.00, 1.02) }      // Final 30%, position advantage
         };
 }

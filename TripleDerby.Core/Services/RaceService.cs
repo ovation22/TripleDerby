@@ -227,8 +227,8 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         // Phase 3: Apply environmental modifiers (Surface + Condition)
         baseSpeed *= _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
 
-        // Adjust speed dynamically during the race based on leg type (Phase 4 will replace this)
-        baseSpeed = AdjustSpeedForLegTypeDuringRace(baseSpeed, tick, totalTicks, raceRunHorse.Horse.LegTypeId);
+        // Phase 4: Apply phase modifiers (LegType timing)
+        baseSpeed *= _speedModifierCalculator.CalculatePhaseModifiers(context);
 
         // Apply random performance fluctuations (Phase 5 will replace this)
         baseSpeed = ApplyRandomPerformanceFluctuations(baseSpeed);
@@ -492,6 +492,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         return (lane <= 3) ? 1.02 : 1.00; // Inner lanes might cause faster stamina drain
     }
 
+    [Obsolete("Replaced by SpeedModifierCalculator.CalculatePhaseModifiers in Phase 4. Will be removed in Phase 6.")]
     private double AdjustSpeedForLegTypeDuringRace(double baseSpeed, int currentTick, int totalTicks, LegTypeId legTypeId)
     {
         var modifier = 1.0;

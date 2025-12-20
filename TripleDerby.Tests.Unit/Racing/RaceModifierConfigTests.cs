@@ -162,13 +162,80 @@ public class RaceModifierConfigTests
         Assert.Equal(expectedModifier, modifier);
     }
 
+    // Phase 4: Phase Modifier Tests
+
     [Fact]
-    public void LegTypePhaseModifiers_ShouldBeEmptyInPhase1()
+    public void LegTypePhaseModifiers_ShouldContainAll5LegTypes()
     {
         // Act
-        var count = RaceModifierConfig.LegTypePhaseModifiers.Count;
+        var legTypeModifiers = RaceModifierConfig.LegTypePhaseModifiers;
 
-        // Assert - Empty in Phase 1, will be populated in Phase 4
-        Assert.Equal(0, count);
+        // Assert
+        Assert.Equal(5, legTypeModifiers.Count);
+        Assert.True(legTypeModifiers.ContainsKey(LegTypeId.StartDash));
+        Assert.True(legTypeModifiers.ContainsKey(LegTypeId.FrontRunner));
+        Assert.True(legTypeModifiers.ContainsKey(LegTypeId.StretchRunner));
+        Assert.True(legTypeModifiers.ContainsKey(LegTypeId.LastSpurt));
+        Assert.True(legTypeModifiers.ContainsKey(LegTypeId.RailRunner));
+    }
+
+    [Fact]
+    public void LegTypePhaseModifiers_StartDash_ShouldHaveCorrectValues()
+    {
+        // Act
+        var modifier = RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.StartDash];
+
+        // Assert
+        Assert.Equal(0.00, modifier.StartPercent);
+        Assert.Equal(0.25, modifier.EndPercent);
+        Assert.Equal(1.04, modifier.Multiplier);
+    }
+
+    [Fact]
+    public void LegTypePhaseModifiers_FrontRunner_ShouldHaveCorrectValues()
+    {
+        // Act
+        var modifier = RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.FrontRunner];
+
+        // Assert
+        Assert.Equal(0.00, modifier.StartPercent);
+        Assert.Equal(0.20, modifier.EndPercent);
+        Assert.Equal(1.03, modifier.Multiplier);
+    }
+
+    [Fact]
+    public void LegTypePhaseModifiers_StretchRunner_ShouldHaveCorrectValues()
+    {
+        // Act
+        var modifier = RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.StretchRunner];
+
+        // Assert
+        Assert.Equal(0.60, modifier.StartPercent);
+        Assert.Equal(0.80, modifier.EndPercent);
+        Assert.Equal(1.03, modifier.Multiplier);
+    }
+
+    [Fact]
+    public void LegTypePhaseModifiers_LastSpurt_ShouldHaveCorrectValues()
+    {
+        // Act
+        var modifier = RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.LastSpurt];
+
+        // Assert
+        Assert.Equal(0.75, modifier.StartPercent);
+        Assert.Equal(1.00, modifier.EndPercent);
+        Assert.Equal(1.04, modifier.Multiplier);
+    }
+
+    [Fact]
+    public void LegTypePhaseModifiers_RailRunner_ShouldHaveCorrectValues()
+    {
+        // Act
+        var modifier = RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.RailRunner];
+
+        // Assert
+        Assert.Equal(0.70, modifier.StartPercent);
+        Assert.Equal(1.00, modifier.EndPercent);
+        Assert.Equal(1.02, modifier.Multiplier);
     }
 }

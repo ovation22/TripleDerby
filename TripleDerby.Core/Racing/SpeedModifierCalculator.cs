@@ -84,14 +84,26 @@ public class SpeedModifierCalculator
 
     /// <summary>
     /// Calculates phase-based speed modifiers (LegType timing).
-    /// Returns 1.0 (neutral) for now - implementation in Phase 4.
+    /// Each leg type gets a speed boost during specific phases of the race.
     /// </summary>
     /// <param name="context">Race context with tick progress and leg type</param>
-    /// <returns>Phase modifier (neutral = 1.0)</returns>
+    /// <returns>Phase modifier based on race progress and leg type (1.0 = neutral)</returns>
     public double CalculatePhaseModifiers(ModifierContext context)
     {
-        // TODO: Phase 4 - Implement phase-based modifiers
-        return 1.0;
+        var raceProgress = (double)context.CurrentTick / context.TotalTicks;
+
+        if (!Configuration.RaceModifierConfig.LegTypePhaseModifiers.TryGetValue(context.Horse.LegTypeId, out var phaseModifier))
+        {
+            return 1.0; // No modifier found for this leg type
+        }
+
+        // Check if current race progress is within the active phase
+        if (raceProgress >= phaseModifier.StartPercent && raceProgress <= phaseModifier.EndPercent)
+        {
+            return phaseModifier.Multiplier;
+        }
+
+        return 1.0; // Outside active phase, no bonus
     }
 
     /// <summary>

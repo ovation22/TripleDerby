@@ -2,6 +2,16 @@
 
 Break down feature specifications into concrete, manageable implementation phases with TDD vertical slices.
 
+## ⚠️ Project-Specific Workflow
+
+**IMPORTANT**: For this project, **DO NOT commit automatically** after implementation phases. Always:
+1. Complete the implementation tasks
+2. Show the user what was done
+3. **Wait for explicit approval** before creating any commits
+4. Only commit when the user explicitly requests it
+
+This allows the project owner to review all changes before they are committed to git.
+
 ## Purpose
 
 This skill helps you transition from **planning** (feature-discovery) to **execution** by creating a detailed, actionable implementation plan with appropriately sized tasks.
@@ -182,13 +192,14 @@ User: "Create an implementation plan for the race modifiers refactor"
 - [ ] Work on Phase 1 tasks from TodoWrite
 - [ ] Follow Red-Green-Refactor discipline
 - [ ] Mark todos complete as you go
-- [ ] Commit after each TDD cycle
+- [ ] **Wait for user review before committing** (project-specific)
 - [ ] When phase complete, add next phase to TodoWrite
 
 ### After Each Phase
 - [ ] Run all tests to verify no regressions
 - [ ] Review acceptance criteria - all met?
-- [ ] Commit: "Complete Phase N: [Deliverable]"
+- [ ] Present changes to user for review
+- [ ] Commit only when user explicitly requests it
 - [ ] Add next phase tasks to TodoWrite
 
 ## Customization
@@ -214,14 +225,14 @@ If the default TDD vertical slice approach doesn't fit:
 - Keep tests green (never commit failing tests)
 - Work on one phase at a time
 - Mark todos complete immediately after finishing
-- Commit frequently (after each TDD cycle)
+- **Present changes for review before committing** (project-specific)
 - Update implementation plan if you discover new requirements
 
 ### ❌ Avoid This
 - Skipping tests ("I'll add them later")
 - Working on multiple phases simultaneously
 - Letting todos go stale (mark complete promptly)
-- Large, infrequent commits
+- **Committing without user review** (project-specific)
 - Deviating from plan without documenting why
 
 ## Troubleshooting
