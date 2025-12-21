@@ -1,5 +1,9 @@
 # Race Modifiers Refactor - Feature Specification
 
+**Feature Number:** 003
+
+**Status:** Implemented
+
 ## Overview
 Redesign the RaceService modifier system to be simpler, more maintainable, less buggy, and easier to balance.
 
