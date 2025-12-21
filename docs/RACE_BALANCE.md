@@ -1,5 +1,7 @@
 # Race Balance Reference Guide
 
+> **📊 LIVING DOCUMENT** - This reference is updated as new mechanics are implemented and balance changes are made. Always refer to this document for current balance values, statistical correlations, and configuration constants.
+
 ## Overview
 
 This document provides detailed balance information for the TripleDerby race simulation system, based on statistical analysis of 1000+ simulated races.

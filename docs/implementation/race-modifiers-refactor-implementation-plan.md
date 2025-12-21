@@ -1,7 +1,7 @@
 # Race Modifiers Refactor - Implementation Plan
 
 ## Overview
-This document breaks down the [race-modifiers-refactor feature specification](../features/race-modifiers-refactor.md) into concrete, testable implementation phases following TDD principles with vertical slices.
+This document breaks down the [003-race-modifiers-refactor feature specification](../features/003-race-modifiers-refactor.md) into concrete, testable implementation phases following TDD principles with vertical slices.
 
 **Goal**: Redesign the RaceService modifier system to be simpler, more maintainable, less buggy, and easier to balance.
 

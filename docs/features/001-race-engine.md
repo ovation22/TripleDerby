@@ -1,5 +1,7 @@
 # Race Engine
 
+**Feature Number:** 001
+
 **Status:** Pending
 
 ## Actors & Goals
@@ -46,7 +48,7 @@
 
 ## Sub-Feature Documents
 
-- [001a-core-race-simulation](001a-core-race-simulation.md) - Implemented
+- [002-core-race-simulation](002-core-race-simulation.md) - Implemented
 
 ## Related Decisions
 

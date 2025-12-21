@@ -65,9 +65,9 @@ User: "/feature-discovery"
 - Open questions
 
 ### Example Features
-- [Race Engine](features/001-race-engine.md)
-- [Core Race Simulation](features/001a-core-race-simulation.md)
-- [Race Modifiers Refactor](features/race-modifiers-refactor.md)
+- [001 - Race Engine](features/001-race-engine.md)
+- [002 - Core Race Simulation](features/002-core-race-simulation.md)
+- [003 - Race Modifiers Refactor](features/003-race-modifiers-refactor.md)
 
 ---
 
@@ -386,13 +386,14 @@ Ask for guidance:
 docs/
 ├── features/                    # Feature specifications
 │   ├── 001-race-engine.md
-│   ├── 001a-core-race-simulation.md
-│   └── race-modifiers-refactor.md
+│   ├── 002-core-race-simulation.md
+│   └── 003-race-modifiers-refactor.md
 │
 ├── implementation/              # Implementation plans
 │   └── [feature]-implementation-plan.md
 │
-└── IMPLEMENTATION_WORKFLOW.md  # This guide
+├── IMPLEMENTATION_WORKFLOW.md  # This guide
+└── RACE_BALANCE.md             # Living reference for game balance
 
 .claude/skills/
 ├── feature-discovery/          # Discovery skill
