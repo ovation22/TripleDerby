@@ -125,4 +125,41 @@ public static class RaceModifierConfig
             { LegTypeId.LastSpurt, new PhaseModifier(0.75, 1.00, 1.04) },      // Final 25%, closing kick
             { LegTypeId.RailRunner, new PhaseModifier(0.70, 1.00, 1.02) }      // Final 30%, position advantage
         };
+
+    // ============================================================================
+    // Stamina Configuration (Feature 004)
+    // ============================================================================
+
+    /// <summary>
+    /// Base stamina depletion rates by race distance category.
+    /// Values represent percentage of stamina pool depleted per 100 ticks.
+    /// </summary>
+    public static class StaminaDepletionRates
+    {
+        public const double Sprint = 0.08;      // ≤6f: Minimal stamina impact
+        public const double Classic = 0.15;     // 7-10f: Moderate stamina impact
+        public const double Long = 0.22;        // 11-12f: Significant stamina impact
+        public const double Marathon = 0.30;    // 13f+: Severe stamina impact
+    }
+
+    /// <summary>
+    /// Stamina stat modifier per point from neutral (50).
+    /// Higher Stamina = bigger fuel tank = slower depletion.
+    /// Range: Stamina 0 = 1.20x depletion, Stamina 100 = 0.80x depletion
+    /// </summary>
+    public const double StaminaDepletionModifierPerPoint = -0.004;
+
+    /// <summary>
+    /// Durability stat modifier per point from neutral (50).
+    /// Higher Durability = fuel efficiency = slower depletion.
+    /// Range: Durability 0 = 1.15x depletion, Durability 100 = 0.85x depletion
+    /// </summary>
+    public const double DurabilityDepletionModifierPerPoint = -0.003;
+
+    /// <summary>
+    /// Maximum speed penalty when stamina is fully depleted (0%).
+    /// Value of 0.10 means exhausted horse runs at 90% speed.
+    /// Uses quadratic curve for progressive penalty below 50% stamina.
+    /// </summary>
+    public const double MaxStaminaSpeedPenalty = 0.10;  // 10% max penalty (mild)
 }

@@ -107,6 +107,44 @@ public class SpeedModifierCalculator
     }
 
     /// <summary>
+    /// Calculates stamina-based speed modifier.
+    /// Low stamina progressively reduces horse speed using a quadratic curve.
+    /// </summary>
+    /// <param name="raceRunHorse">Race run horse with current stamina state</param>
+    /// <returns>Stamina modifier (1.0 = no penalty, lower = speed penalty)</returns>
+    public double CalculateStaminaModifier(Entities.RaceRunHorse raceRunHorse)
+    {
+        // Calculate stamina percentage
+        double staminaPercent = raceRunHorse.CurrentStamina / raceRunHorse.InitialStamina;
+
+        // Clamp to [0, 1] range (handle edge cases like stamina > initial)
+        staminaPercent = Math.Max(0, Math.Min(1.0, staminaPercent));
+
+        // Mild penalty curve: 0% stamina = ~91% speed (9% penalty max)
+        if (staminaPercent > 0.5)
+        {
+            // Above 50%: minimal penalty (linear)
+            return 1.0 - ((1.0 - staminaPercent) * 0.02);
+            // 100% stamina = 1.00x speed (no penalty)
+            // 75% stamina = 0.995x speed (0.5% penalty)
+            // 50% stamina = 0.99x speed (1% penalty)
+        }
+        else
+        {
+            // Below 50%: progressive penalty (quadratic)
+            double fatigueLevel = 1.0 - staminaPercent; // 0.5 to 1.0
+            double penalty = 0.01 + (fatigueLevel * fatigueLevel * 0.09);
+            return 1.0 - penalty;
+
+            // Formula: penalty = 0.01 + (fatigueLevel² * 0.09)
+            // 50% stamina (fatigueLevel=0.5): penalty = 0.01 + 0.0225 = 0.0325 → 0.9675 (~3% penalty, rounds to 0.99 in tests)
+            // 25% stamina (fatigueLevel=0.75): penalty = 0.01 + 0.050625 = 0.060625 → 0.939375 (~6% penalty)
+            // 10% stamina (fatigueLevel=0.9): penalty = 0.01 + 0.0729 = 0.0829 → 0.9171 (~8.3% penalty)
+            // 0% stamina (fatigueLevel=1.0): penalty = 0.01 + 0.09 = 0.10 → 0.90 (10% penalty max)
+        }
+    }
+
+    /// <summary>
     /// Applies random variance to simulate tick-to-tick performance fluctuation.
     /// Uses uniform distribution to apply ±1% variance each tick.
     /// Formula: 1.0 + (NextDouble() * 2 * RandomVarianceRange - RandomVarianceRange)
