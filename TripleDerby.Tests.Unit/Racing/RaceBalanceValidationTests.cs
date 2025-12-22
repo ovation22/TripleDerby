@@ -20,7 +20,10 @@ namespace TripleDerby.Tests.Unit.Racing;
 /// </summary>
 public class RaceBalanceValidationTests(ITestOutputHelper output)
 {
+    // Long-running validation test - exclude from CI to prevent excessive output
+    // To run locally: dotnet test --filter Category=LongRunning
     [Fact]
+    [Trait("Category", "LongRunning")]
     public async Task Run_1000_Races_With_Varied_Stats_And_Collect_Statistics()
     {
         // Arrange
@@ -208,7 +211,10 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         Assert.Equal(10, result.DistanceCovered);
     }
 
+    // Long-running validation test - exclude from CI to prevent excessive output
+    // To run locally: dotnet test --filter Category=LongRunning
     [Fact]
+    [Trait("Category", "LongRunning")]
     public async Task RailRunner_Balance_Validation_Across_500_Races()
     {
         // Feature 005: Rail Runner Lane Position Bonus Balance Validation
