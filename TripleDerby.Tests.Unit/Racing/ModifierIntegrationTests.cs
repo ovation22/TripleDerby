@@ -13,6 +13,7 @@ namespace TripleDerby.Tests.Unit.Racing;
 public class ModifierIntegrationTests(ITestOutputHelper output)
 {
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(0, 0.90)]   // Speed=0 should give 0.90x multiplier
     [InlineData(50, 1.00)]  // Speed=50 should give 1.00x multiplier (neutral)
     [InlineData(100, 1.10)] // Speed=100 should give 1.10x multiplier
@@ -53,6 +54,7 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
     }
 
     [Fact]
+    [Trait("Category", "LongRunning")]
     public void Verify_Modifier_Pipeline_Changes_Base_Speed()
     {
         // This test simulates what happens in UpdateHorsePosition

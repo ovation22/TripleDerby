@@ -17,6 +17,7 @@ namespace TripleDerby.Tests.Unit.Racing;
 public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
 {
     [Fact]
+    [Trait("Category", "LongRunning")]
     public async Task Diagnostic_Baseline_10F_Race_With_Neutral_Stats()
     {
         // Arrange - Perfect baseline: neutral stats, neutral conditions
@@ -58,6 +59,7 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(0, "Expected: ~270 ticks (0.90 speed multiplier)")]
     [InlineData(25, "Expected: ~250 ticks (0.95 speed multiplier)")]
     [InlineData(50, "Expected: ~237 ticks (1.00 speed multiplier - baseline)")]
@@ -92,6 +94,7 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(ConditionId.Fast, 1.03, "Expected: ~230 ticks")]
     [InlineData(ConditionId.Good, 1.00, "Expected: ~237 ticks (baseline)")]
     [InlineData(ConditionId.Slow, 0.90, "Expected: ~263 ticks")]
