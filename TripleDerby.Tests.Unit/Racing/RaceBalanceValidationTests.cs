@@ -207,6 +207,111 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         Assert.Equal(10, result.DistanceCovered);
     }
 
+    [Fact]
+    public async Task RailRunner_Balance_Validation_Across_500_Races()
+    {
+        // Feature 005: Rail Runner Lane Position Bonus Balance Validation
+        // Tests that rail runner bonus is balanced vs other leg types
+
+        const int racesPerLegType = 100;
+        var legTypes = new[]
+        {
+            LegTypeId.StartDash,
+            LegTypeId.FrontRunner,
+            LegTypeId.StretchRunner,
+            LegTypeId.LastSpurt,
+            LegTypeId.RailRunner
+        };
+
+        var resultsByLegType = new Dictionary<LegTypeId, List<double>>();
+
+        // Run 100 races for each leg type
+        foreach (var legType in legTypes)
+        {
+            var finishTimes = new List<double>();
+
+            for (int i = 0; i < racesPerLegType; i++)
+            {
+                var config = new RaceConfig
+                {
+                    Furlongs = 10,
+                    Surface = SurfaceId.Dirt,
+                    Condition = ConditionId.Good,
+                    HorseSpeed = 50,  // Neutral stats for fair comparison
+                    HorseAgility = 50,
+                    HorseStamina = 50,
+                    LegType = legType
+                };
+
+                var result = await RunSingleRaceSimulation(config);
+                finishTimes.Add(result.FinishTime);
+            }
+
+            resultsByLegType[legType] = finishTimes;
+        }
+
+        // Analyze and output results
+        output.WriteLine("=== RAIL RUNNER BALANCE VALIDATION (Feature 005) ===");
+        output.WriteLine($"Total Races: {racesPerLegType * legTypes.Length}");
+        output.WriteLine($"Races per Leg Type: {racesPerLegType}");
+        output.WriteLine("");
+        output.WriteLine("=== FINISH TIME STATISTICS BY LEG TYPE ===");
+
+        var allAverages = new Dictionary<LegTypeId, double>();
+
+        foreach (var legType in legTypes)
+        {
+            var times = resultsByLegType[legType];
+            var avg = times.Average();
+            var min = times.Min();
+            var max = times.Max();
+            var stdDev = CalculateStandardDeviation(times);
+
+            allAverages[legType] = avg;
+
+            output.WriteLine($"{legType,-15} | Avg: {avg:F2} | Min: {min:F2} | Max: {max:F2} | StdDev: {stdDev:F2}");
+        }
+
+        output.WriteLine("");
+        output.WriteLine("=== BALANCE ANALYSIS ===");
+
+        var railRunnerAvg = allAverages[LegTypeId.RailRunner];
+        var overallAvg = allAverages.Values.Average();
+        var railRunnerDeviation = ((railRunnerAvg - overallAvg) / overallAvg) * 100;
+
+        output.WriteLine($"Rail Runner Average: {railRunnerAvg:F2} ticks");
+        output.WriteLine($"Overall Average: {overallAvg:F2} ticks");
+        output.WriteLine($"Rail Runner Deviation: {railRunnerDeviation:F2}%");
+        output.WriteLine("");
+
+        // Compare rail runner to each other leg type
+        output.WriteLine("=== PAIRWISE COMPARISONS ===");
+        foreach (var legType in legTypes.Where(lt => lt != LegTypeId.RailRunner))
+        {
+            var diff = railRunnerAvg - allAverages[legType];
+            var diffPercent = (diff / allAverages[legType]) * 100;
+            output.WriteLine($"RailRunner vs {legType,-15} | Diff: {diff:F2} ticks ({diffPercent:F2}%)");
+        }
+
+        output.WriteLine("");
+        output.WriteLine("=== VALIDATION RESULTS ===");
+
+        // Assert balance requirements from feature spec
+        // Target: Rail runner finish time within 3% of other leg types
+        Assert.InRange(railRunnerDeviation, -3.0, 3.0);
+        output.WriteLine($"✓ Rail runner average within 3% of overall average");
+
+        // Assert all leg types are reasonably balanced (within 5% of each other)
+        var minAvg = allAverages.Values.Min();
+        var maxAvg = allAverages.Values.Max();
+        var rangePercent = ((maxAvg - minAvg) / minAvg) * 100;
+        Assert.InRange(rangePercent, 0, 5.0);
+        output.WriteLine($"✓ All leg types within 5% range (actual: {rangePercent:F2}%)");
+
+        output.WriteLine("");
+        output.WriteLine("=== PHASE 3 BALANCE VALIDATION: PASSED ===");
+    }
+
     // Helper methods
 
     private RaceConfig GenerateVariedRaceConfig(int seed)
