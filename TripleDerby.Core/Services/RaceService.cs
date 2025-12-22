@@ -228,8 +228,8 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         var envModifier = _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
         baseSpeed *= envModifier;
 
-        // Apply phase modifiers (LegType timing)
-        var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context);
+        // Apply phase modifiers (LegType timing or conditional bonuses)
+        var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
         baseSpeed *= phaseModifier;
 
         // Feature 004: Apply stamina modifier (speed penalty when stamina low)

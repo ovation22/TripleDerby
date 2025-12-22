@@ -274,9 +274,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.04, result, precision: 5);
@@ -296,9 +297,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.0, result, precision: 5);
@@ -318,9 +320,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.04, result, precision: 5);
@@ -340,9 +343,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.03, result, precision: 5);
@@ -362,18 +366,19 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.03, result, precision: 5);
     }
 
     [Fact]
-    public void CalculatePhaseModifiers_RailRunnerInPhase_ShouldReturn1Point02()
+    public void CalculatePhaseModifiers_RailRunner_InLane1_WithClearPath_ShouldReturn1Point03()
     {
-        // Arrange - Tick 170/200 = 85% (within RailRunner 70-100% phase)
+        // Arrange - RailRunner in lane 1, no traffic ahead (Feature 005)
         var horse = CreateHorse();
         horse.LegTypeId = LegTypeId.RailRunner;
         var context = new ModifierContext(
@@ -384,12 +389,13 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse); // Single horse, lane 1, no traffic
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
-        // Assert
-        Assert.Equal(1.02, result, precision: 5);
+        // Assert - Gets conditional bonus regardless of race phase
+        Assert.Equal(1.03, result, precision: 5);
     }
 
     // ============================================================================
@@ -519,6 +525,42 @@ public class SpeedModifierCalculatorTests
     private static Horse CreateHorse()
     {
         return CreateHorseWithStats(speed: 50, agility: 50);
+    }
+
+    private static RaceRun CreateRaceRun(params Horse[] horses)
+    {
+        var race = new Race
+        {
+            Id = 1,
+            Furlongs = 10m,
+            SurfaceId = SurfaceId.Dirt
+        };
+
+        var raceRun = new RaceRun
+        {
+            Id = Guid.NewGuid(),
+            RaceId = race.Id,
+            Race = race,
+            ConditionId = ConditionId.Good,
+            Horses = new List<RaceRunHorse>()
+        };
+
+        byte lane = 1;
+        foreach (var horse in horses)
+        {
+            raceRun.Horses.Add(new RaceRunHorse
+            {
+                Id = Guid.NewGuid(),
+                Horse = horse,
+                HorseId = horse.Id,
+                Lane = lane++,
+                Distance = 0m,
+                InitialStamina = horse.Stamina,
+                CurrentStamina = horse.Stamina
+            });
+        }
+
+        return raceRun;
     }
 
     private static Horse CreateHorseWithStats(byte speed, byte agility)

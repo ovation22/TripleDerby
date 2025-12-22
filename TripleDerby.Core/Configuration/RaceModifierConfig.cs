@@ -114,7 +114,8 @@ public static class RaceModifierConfig
     /// <summary>
     /// Phase-based modifiers for each leg type (running style).
     /// Defines when during the race each leg type gets a speed boost.
-    /// StartDash and LastSpurt get highest bonus (1.04x), balanced strategies get moderate (1.03x), RailRunner smallest (1.02x).
+    /// StartDash and LastSpurt get highest bonus (1.04x), balanced strategies get moderate (1.03x).
+    /// Note: RailRunner uses conditional lane/traffic bonus instead of phase timing (Feature 005).
     /// </summary>
     public static readonly IReadOnlyDictionary<LegTypeId, PhaseModifier> LegTypePhaseModifiers =
         new Dictionary<LegTypeId, PhaseModifier>
@@ -122,9 +123,27 @@ public static class RaceModifierConfig
             { LegTypeId.StartDash, new PhaseModifier(0.00, 0.25, 1.04) },      // First 25%, high risk/reward
             { LegTypeId.FrontRunner, new PhaseModifier(0.00, 0.20, 1.03) },    // First 20%, early speed
             { LegTypeId.StretchRunner, new PhaseModifier(0.60, 0.80, 1.03) },  // 60-80%, stretch run (adjusted for realism)
-            { LegTypeId.LastSpurt, new PhaseModifier(0.75, 1.00, 1.04) },      // Final 25%, closing kick
-            { LegTypeId.RailRunner, new PhaseModifier(0.70, 1.00, 1.02) }      // Final 30%, position advantage
+            { LegTypeId.LastSpurt, new PhaseModifier(0.75, 1.00, 1.04) }       // Final 25%, closing kick
+            // RailRunner: Uses conditional lane/traffic bonus (see RailRunner configuration below)
         };
+
+    // ============================================================================
+    // Rail Runner Configuration (Feature 005)
+    // ============================================================================
+
+    /// <summary>
+    /// Rail runner speed bonus multiplier when positioned in lane 1 with clear path ahead.
+    /// Bonus applied conditionally based on lane position and traffic, not race phase.
+    /// Range: 1.03x (+3% speed) when conditions met, 1.0x (neutral) otherwise.
+    /// </summary>
+    public const double RailRunnerBonusMultiplier = 1.03;
+
+    /// <summary>
+    /// Minimum clear distance required ahead of rail runner to activate bonus (in furlongs).
+    /// Checks for horses in same lane within this distance.
+    /// Value of 0.5 furlongs balances realism (clear racing line) with playability.
+    /// </summary>
+    public const decimal RailRunnerClearPathDistance = 0.5m;
 
     // ============================================================================
     // Stamina Configuration (Feature 004)

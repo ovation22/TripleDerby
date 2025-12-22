@@ -85,11 +85,20 @@ public class SpeedModifierCalculator
     /// <summary>
     /// Calculates phase-based speed modifiers (LegType timing).
     /// Each leg type gets a speed boost during specific phases of the race.
+    /// RailRunner uses conditional lane/traffic bonus instead of phase timing (Feature 005).
     /// </summary>
     /// <param name="context">Race context with tick progress and leg type</param>
+    /// <param name="raceRun">Current race run with all horses (for traffic detection)</param>
     /// <returns>Phase modifier based on race progress and leg type (1.0 = neutral)</returns>
-    public double CalculatePhaseModifiers(ModifierContext context)
+    public double CalculatePhaseModifiers(ModifierContext context, Entities.RaceRun raceRun)
     {
+        // Special case: RailRunner uses conditional lane/traffic bonus
+        if (context.Horse.LegTypeId == SharedKernel.Enums.LegTypeId.RailRunner)
+        {
+            return CalculateRailRunnerBonus(context, raceRun);
+        }
+
+        // All other leg types use phase-based timing
         var raceProgress = (double)context.CurrentTick / context.TotalTicks;
 
         if (!Configuration.RaceModifierConfig.LegTypePhaseModifiers.TryGetValue(context.Horse.LegTypeId, out var phaseModifier))
@@ -104,6 +113,64 @@ public class SpeedModifierCalculator
         }
 
         return 1.0; // Outside active phase, no bonus
+    }
+
+    /// <summary>
+    /// Calculates rail runner conditional bonus based on lane position and traffic.
+    /// Bonus applies when horse is in lane 1 with clear path ahead (Feature 005).
+    /// </summary>
+    /// <param name="context">Race context with horse information</param>
+    /// <param name="raceRun">Current race run with all horses</param>
+    /// <returns>1.03x bonus if conditions met, 1.0x otherwise</returns>
+    private static double CalculateRailRunnerBonus(ModifierContext context, Entities.RaceRun raceRun)
+    {
+        // Find the RaceRunHorse entity for this horse
+        var raceRunHorse = raceRun.Horses.FirstOrDefault(h => h.Horse.Id == context.Horse.Id);
+
+        if (raceRunHorse == null)
+        {
+            return 1.0; // Safety fallback
+        }
+
+        // Check lane position: must be in lane 1 (the rail)
+        if (raceRunHorse.Lane != 1)
+        {
+            return 1.0; // Not on rail, no bonus
+        }
+
+        // Check for clear path ahead
+        if (!HasClearPathAhead(
+            raceRunHorse,
+            raceRun.Horses,
+            Configuration.RaceModifierConfig.RailRunnerClearPathDistance))
+        {
+            return 1.0; // Traffic ahead, no bonus
+        }
+
+        // All conditions met: apply rail position bonus
+        return Configuration.RaceModifierConfig.RailRunnerBonusMultiplier;
+    }
+
+    /// <summary>
+    /// Checks if a horse has a clear path ahead in its current lane.
+    /// Used for rail runner traffic detection (Feature 005).
+    /// </summary>
+    /// <param name="horse">The horse to check</param>
+    /// <param name="allHorses">All horses in the race</param>
+    /// <param name="clearDistance">Required clear distance (furlongs)</param>
+    /// <returns>True if path is clear, false if blocked by traffic</returns>
+    private static bool HasClearPathAhead(
+        Entities.RaceRunHorse horse,
+        IEnumerable<Entities.RaceRunHorse> allHorses,
+        decimal clearDistance)
+    {
+        // Check for horses in same lane ahead within clearDistance
+        return !allHorses.Any(h =>
+            h != horse &&                              // Not the same horse
+            h.Lane == horse.Lane &&                    // Same lane
+            h.Distance > horse.Distance &&             // Horse is ahead
+            (h.Distance - horse.Distance) < clearDistance  // Within blocking range
+        );
     }
 
     /// <summary>
