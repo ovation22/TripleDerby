@@ -2,6 +2,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Racing;
 using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel.Enums;
@@ -16,6 +17,7 @@ namespace TripleDerby.Tests.Unit.Racing;
 public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
 {
     [Fact]
+    [Trait("Category", "LongRunning")]
     public async Task Diagnostic_Baseline_10F_Race_With_Neutral_Stats()
     {
         // Arrange - Perfect baseline: neutral stats, neutral conditions
@@ -57,6 +59,7 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(0, "Expected: ~270 ticks (0.90 speed multiplier)")]
     [InlineData(25, "Expected: ~250 ticks (0.95 speed multiplier)")]
     [InlineData(50, "Expected: ~237 ticks (1.00 speed multiplier - baseline)")]
@@ -91,6 +94,7 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(ConditionId.Fast, 1.03, "Expected: ~230 ticks")]
     [InlineData(ConditionId.Good, 1.00, "Expected: ~237 ticks (baseline)")]
     [InlineData(ConditionId.Slow, 0.90, "Expected: ~263 ticks")]
@@ -181,8 +185,12 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         mockRandom.Setup(r => r.Next(It.IsAny<int>())).Returns(0);
         mockRandom.Setup(r => r.NextDouble()).Returns(0.5); // Exactly neutral (0% variance)
 
+        // Feature 005: Phase 4 - DI Refactor
+        var speedModifierCalculator = new SpeedModifierCalculator(mockRandom.Object);
+        var staminaCalculator = new StaminaCalculator();
+
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator);
 
         // We need to set the condition BEFORE the race runs
         // The issue is that RaceService.Race() calls GenerateRandomConditionId()

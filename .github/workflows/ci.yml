@@ -26,14 +26,7 @@ jobs:
           run: dotnet build --no-restore --configuration Release
             
         - name: Run tests with coverage
-          run: dotnet test --configuration Release --no-build --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage"
-            
-        - name: Add test results PR comment
-          uses: marocchino/sticky-pull-request-comment@v2
-          if: github.event_name == 'pull_request'
-          with:
-            recreate: true
-            path: TestResults/**/*.trx
+          run: dotnet test --configuration Release --no-build --logger "trx" --results-directory ./TestResults --collect:"XPlat Code Coverage" --filter "Category!=LongRunning"
           
         - name: Publish test results
           uses: EnricoMi/publish-unit-test-result-action@v2

@@ -1,4 +1,5 @@
-﻿using TripleDerby.Core.Abstractions.Repositories;
+﻿using TripleDerby.Core.Abstractions.Racing;
+using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
@@ -9,13 +10,17 @@ using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Core.Services;
 
-public class RaceService(ITripleDerbyRepository repository, IRandomGenerator randomGenerator) : IRaceService
+public class RaceService(
+    ITripleDerbyRepository repository,
+    IRandomGenerator randomGenerator,
+    ISpeedModifierCalculator speedModifierCalculator,
+    IStaminaCalculator staminaCalculator) : IRaceService
 {
-    // Phase 2: Speed Modifier Calculator
-    private readonly SpeedModifierCalculator _speedModifierCalculator = new(randomGenerator);
+    // Phase 2: Speed Modifier Calculator (injected via DI)
+    private readonly ISpeedModifierCalculator _speedModifierCalculator = speedModifierCalculator;
 
-    // Feature 004: Stamina Calculator
-    private readonly StaminaCalculator _staminaCalculator = new();
+    // Feature 004: Stamina Calculator (injected via DI)
+    private readonly IStaminaCalculator _staminaCalculator = staminaCalculator;
 
     // Configuration constants
     private const double BaseSpeedMph = 38.0; // Average horse speed in mph
@@ -228,8 +233,8 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
         var envModifier = _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
         baseSpeed *= envModifier;
 
-        // Apply phase modifiers (LegType timing)
-        var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context);
+        // Apply phase modifiers (LegType timing or conditional bonuses)
+        var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
         baseSpeed *= phaseModifier;
 
         // Feature 004: Apply stamina modifier (speed penalty when stamina low)

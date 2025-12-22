@@ -274,9 +274,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.04, result, precision: 5);
@@ -296,9 +297,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.0, result, precision: 5);
@@ -318,9 +320,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.04, result, precision: 5);
@@ -340,9 +343,10 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.03, result, precision: 5);
@@ -362,18 +366,19 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse);
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
         // Assert
         Assert.Equal(1.03, result, precision: 5);
     }
 
     [Fact]
-    public void CalculatePhaseModifiers_RailRunnerInPhase_ShouldReturn1Point02()
+    public void CalculatePhaseModifiers_RailRunner_InLane1_WithClearPath_ShouldReturn1Point03()
     {
-        // Arrange - Tick 170/200 = 85% (within RailRunner 70-100% phase)
+        // Arrange - RailRunner in lane 1, no traffic ahead (Feature 005)
         var horse = CreateHorse();
         horse.LegTypeId = LegTypeId.RailRunner;
         var context = new ModifierContext(
@@ -384,12 +389,395 @@ public class SpeedModifierCalculatorTests
             RaceSurface: SurfaceId.Dirt,
             RaceFurlongs: 10m
         );
+        var raceRun = CreateRaceRun(horse); // Single horse, lane 1, no traffic
 
         // Act
-        var result = _sut.CalculatePhaseModifiers(context);
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
 
-        // Assert
-        Assert.Equal(1.02, result, precision: 5);
+        // Assert - Gets conditional bonus regardless of race phase
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    // ============================================================================
+    // Feature 005: Rail Runner Lane Position Tests
+    // ============================================================================
+
+    [Fact]
+    public void RailRunner_InLane2_WithClearPath_ShouldReturn1Point0()
+    {
+        // Arrange - RailRunner not on rail (lane 2)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.RailRunner;
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+        var raceRun = CreateRaceRun(horse);
+        raceRun.Horses.First().Lane = 2; // Move to lane 2
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - No bonus when not in lane 1
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_WithTrafficAhead_ShouldReturn1Point0()
+    {
+        // Arrange - RailRunner in lane 1 but with traffic ahead
+        var horse1 = CreateHorse(); // Our rail runner
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse(); // Horse ahead in same lane
+
+        var raceRun = CreateRaceRun(horse1, horse2);
+        raceRun.Horses.First().Distance = 5.0m;  // RailRunner at 5f
+        raceRun.Horses.Skip(1).First().Lane = 1; // Horse 2 in lane 1
+        raceRun.Horses.Skip(1).First().Distance = 5.3m; // Only 0.3f ahead (< 0.5f threshold)
+
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - No bonus when traffic is blocking
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_WithTrafficBeyondThreshold_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner in lane 1 with traffic far enough ahead
+        var horse1 = CreateHorse(); // Our rail runner
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse(); // Horse ahead in same lane
+
+        var raceRun = CreateRaceRun(horse1, horse2);
+        raceRun.Horses.First().Distance = 5.0m;  // RailRunner at 5f
+        raceRun.Horses.Skip(1).First().Lane = 1; // Horse 2 in lane 1
+        raceRun.Horses.Skip(1).First().Distance = 5.6m; // 0.6f ahead (> 0.5f threshold)
+
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Gets bonus when traffic is beyond threshold
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_WithTrafficInDifferentLane_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner in lane 1, traffic ahead but in different lane
+        var horse1 = CreateHorse(); // Our rail runner
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse(); // Horse ahead in lane 2
+
+        var raceRun = CreateRaceRun(horse1, horse2);
+        raceRun.Horses.First().Distance = 5.0m;  // RailRunner at 5f
+        raceRun.Horses.Skip(1).First().Lane = 2; // Horse 2 in lane 2 (different lane)
+        raceRun.Horses.Skip(1).First().Distance = 5.2m; // Only 0.2f ahead but different lane
+
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Gets bonus because traffic is in different lane
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_WithTrafficBehind_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner in lane 1 with traffic behind (should not affect bonus)
+        var horse1 = CreateHorse(); // Our rail runner
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse(); // Horse behind in same lane
+
+        var raceRun = CreateRaceRun(horse1, horse2);
+        raceRun.Horses.First().Distance = 5.0m;  // RailRunner at 5f
+        raceRun.Horses.Skip(1).First().Lane = 1; // Horse 2 in lane 1
+        raceRun.Horses.Skip(1).First().Distance = 4.8m; // Behind our horse
+
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Gets bonus because traffic is behind
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_AtRaceStart_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner at start of race (tick 1)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.RailRunner;
+        var context = new ModifierContext(
+            CurrentTick: 1,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+        var raceRun = CreateRaceRun(horse);
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Bonus applies at any race phase
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_AtRaceEnd_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner at end of race (tick 200)
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.RailRunner;
+        var context = new ModifierContext(
+            CurrentTick: 200,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+        var raceRun = CreateRaceRun(horse);
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Bonus applies at any race phase
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_ExactlyAtThreshold_ShouldReturn1Point03()
+    {
+        // Arrange - Traffic exactly at 0.5f threshold
+        // Logic: (5.5 - 5.0) = 0.5, which is NOT < 0.5, so path IS clear
+        var horse1 = CreateHorse();
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse();
+
+        var raceRun = CreateRaceRun(horse1, horse2);
+        raceRun.Horses.First().Distance = 5.0m;
+        raceRun.Horses.Skip(1).First().Lane = 1;
+        raceRun.Horses.Skip(1).First().Distance = 5.5m; // Exactly 0.5f ahead
+
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Gets bonus at exact threshold (< is exclusive, so 0.5 is not blocking)
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane1_MultipleHorsesAhead_ShouldCheckClosest()
+    {
+        // Arrange - Multiple horses ahead, one within threshold
+        var horse1 = CreateHorse();
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse(); // Close traffic
+        var horse3 = CreateHorse(); // Far traffic
+
+        var raceRun = CreateRaceRun(horse1, horse2, horse3);
+        raceRun.Horses.ElementAt(0).Distance = 5.0m;  // RailRunner
+        raceRun.Horses.ElementAt(1).Lane = 1;
+        raceRun.Horses.ElementAt(1).Distance = 5.3m;  // 0.3f ahead (blocks)
+        raceRun.Horses.ElementAt(2).Lane = 1;
+        raceRun.Horses.ElementAt(2).Distance = 6.0m;  // 1.0f ahead (doesn't matter)
+
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Blocked by closest horse
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_InLane8_ShouldReturn1Point0()
+    {
+        // Arrange - RailRunner in outermost lane
+        var horse = CreateHorse();
+        horse.LegTypeId = LegTypeId.RailRunner;
+        var context = new ModifierContext(
+            CurrentTick: 100,
+            TotalTicks: 200,
+            Horse: horse,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+        var raceRun = CreateRaceRun(horse);
+        raceRun.Horses.First().Lane = 8;
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - No bonus when far from rail
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_LeadingRace_InLane1_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner leading the race (integration scenario)
+        var horse1 = CreateHorse(); // Leading rail runner
+        horse1.LegTypeId = LegTypeId.RailRunner;
+
+        var horse2 = CreateHorse(); // Trailing horse
+        var horse3 = CreateHorse(); // Another trailing horse
+
+        var raceRun = CreateRaceRun(horse1, horse2, horse3);
+        raceRun.Horses.ElementAt(0).Lane = 1;
+        raceRun.Horses.ElementAt(0).Distance = 7.0m;  // Leading
+        raceRun.Horses.ElementAt(1).Lane = 2;
+        raceRun.Horses.ElementAt(1).Distance = 6.5m;  // Behind in different lane
+        raceRun.Horses.ElementAt(2).Lane = 3;
+        raceRun.Horses.ElementAt(2).Distance = 6.3m;  // Behind in different lane
+
+        var context = new ModifierContext(
+            CurrentTick: 150,
+            TotalTicks: 200,
+            Horse: horse1,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Gets bonus when leading on rail
+        Assert.Equal(1.03, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_TrailingInPack_InLane1_WithTraffic_ShouldReturn1Point0()
+    {
+        // Arrange - RailRunner trailing in pack with traffic (integration scenario)
+        var horse1 = CreateHorse(); // Leading horse
+        var horse2 = CreateHorse(); // Our rail runner (trailing)
+        horse2.LegTypeId = LegTypeId.RailRunner;
+        var horse3 = CreateHorse(); // Another horse
+
+        var raceRun = CreateRaceRun(horse1, horse2, horse3);
+        raceRun.Horses.ElementAt(0).Lane = 1;
+        raceRun.Horses.ElementAt(0).Distance = 7.0m;  // Leading in lane 1
+        raceRun.Horses.ElementAt(1).Lane = 1;
+        raceRun.Horses.ElementAt(1).Distance = 6.6m;  // Our rail runner, blocked by leader
+        raceRun.Horses.ElementAt(2).Lane = 2;
+        raceRun.Horses.ElementAt(2).Distance = 6.8m;  // Horse in lane 2
+
+        var context = new ModifierContext(
+            CurrentTick: 150,
+            TotalTicks: 200,
+            Horse: horse2,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - No bonus when boxed in by traffic
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void RailRunner_MidPack_ClearPath_InLane1_ShouldReturn1Point03()
+    {
+        // Arrange - RailRunner mid-pack with clear path ahead (integration scenario)
+        var horse1 = CreateHorse(); // Leading horse in lane 2
+        var horse2 = CreateHorse(); // Our rail runner mid-pack
+        horse2.LegTypeId = LegTypeId.RailRunner;
+        var horse3 = CreateHorse(); // Trailing horse
+
+        var raceRun = CreateRaceRun(horse1, horse2, horse3);
+        raceRun.Horses.ElementAt(0).Lane = 2;
+        raceRun.Horses.ElementAt(0).Distance = 7.5m;  // Leading but not in lane 1
+        raceRun.Horses.ElementAt(1).Lane = 1;
+        raceRun.Horses.ElementAt(1).Distance = 7.0m;  // Our rail runner with clear path
+        raceRun.Horses.ElementAt(2).Lane = 3;
+        raceRun.Horses.ElementAt(2).Distance = 6.5m;  // Trailing
+
+        var context = new ModifierContext(
+            CurrentTick: 150,
+            TotalTicks: 200,
+            Horse: horse2,
+            RaceCondition: ConditionId.Good,
+            RaceSurface: SurfaceId.Dirt,
+            RaceFurlongs: 10m
+        );
+
+        // Act
+        var result = _sut.CalculatePhaseModifiers(context, raceRun);
+
+        // Assert - Gets bonus when clear path on rail despite not leading
+        Assert.Equal(1.03, result, precision: 5);
     }
 
     // ============================================================================
@@ -519,6 +907,42 @@ public class SpeedModifierCalculatorTests
     private static Horse CreateHorse()
     {
         return CreateHorseWithStats(speed: 50, agility: 50);
+    }
+
+    private static RaceRun CreateRaceRun(params Horse[] horses)
+    {
+        var race = new Race
+        {
+            Id = 1,
+            Furlongs = 10m,
+            SurfaceId = SurfaceId.Dirt
+        };
+
+        var raceRun = new RaceRun
+        {
+            Id = Guid.NewGuid(),
+            RaceId = race.Id,
+            Race = race,
+            ConditionId = ConditionId.Good,
+            Horses = new List<RaceRunHorse>()
+        };
+
+        byte lane = 1;
+        foreach (var horse in horses)
+        {
+            raceRun.Horses.Add(new RaceRunHorse
+            {
+                Id = Guid.NewGuid(),
+                Horse = horse,
+                HorseId = horse.Id,
+                Lane = lane++,
+                Distance = 0m,
+                InitialStamina = horse.Stamina,
+                CurrentStamina = horse.Stamina
+            });
+        }
+
+        return raceRun;
     }
 
     private static Horse CreateHorseWithStats(byte speed, byte agility)

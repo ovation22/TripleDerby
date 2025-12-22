@@ -1,7 +1,9 @@
 using Moq;
+using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Racing;
 using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
@@ -27,7 +29,11 @@ public class RaceServiceTests
             .Setup(r => r.ListAsync(It.IsAny<SimilarRaceStartsSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Horse>());
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object);
+        // Feature 005: Phase 4 - DI Refactor
+        var speedModifierCalculator = new SpeedModifierCalculator(_randomGeneratorMock.Object);
+        var staminaCalculator = new StaminaCalculator();
+
+        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator);
     }
 
     [Fact]

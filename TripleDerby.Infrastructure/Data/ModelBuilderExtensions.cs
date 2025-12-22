@@ -45,29 +45,29 @@ public static class ModelBuilderExtensions
         );
 
         modelBuilder.Entity<Statistic>().HasData(
-            new Statistic { Id = StatisticId.Speed, Name = "Speed", Description = "Speed of the horse", IsGenetic = true },
-            new Statistic { Id = StatisticId.Stamina, Name = "Stamina", Description = "Stamina", IsGenetic = true },
-            new Statistic { Id = StatisticId.Agility, Name = "Agility", Description = "Agility", IsGenetic = true },
-            new Statistic { Id = StatisticId.Durability, Name = "Durability", Description = "Durability", IsGenetic = true },
-            new Statistic { Id = StatisticId.Happiness, Name = "Happiness", Description = "Happiness", IsGenetic = false }
+            new Statistic { Id = StatisticId.Speed, Name = "Speed", Description = "Primary stat affecting race performance. Higher speed = faster base pace. Multiplier: ±10% at extremes.", IsGenetic = true },
+            new Statistic { Id = StatisticId.Stamina, Name = "Stamina", Description = "Determines stamina pool size and depletion rate. Critical for longer races. Higher stamina = slower depletion.", IsGenetic = true },
+            new Statistic { Id = StatisticId.Agility, Name = "Agility", Description = "Secondary stat affecting maneuverability and positioning. Provides moderate speed boost. Multiplier: ±5% at extremes.", IsGenetic = true },
+            new Statistic { Id = StatisticId.Durability, Name = "Durability", Description = "Affects stamina efficiency during races. High durability = fuel-efficient, slower stamina burn. Multiplier: ±15% depletion rate.", IsGenetic = true },
+            new Statistic { Id = StatisticId.Happiness, Name = "Happiness", Description = "Current mood and well-being. Affected by feeding, training, and racing. Resets monthly. Influences training effectiveness.", IsGenetic = false }
         );
 
         modelBuilder.Entity<Feeding>().HasData(
-            new Feeding { Id = 1, Name = "Apple", Description = "Apple" },
-            new Feeding { Id = 2, Name = "Carrot", Description = "Carrot" },
-            new Feeding { Id = 3, Name = "Oats", Description = "Oats" },
-            new Feeding { Id = 4, Name = "Sugar Cube", Description = "Sugar Cube" },
-            new Feeding { Id = 5, Name = "Hay", Description = "Hay" },
-            new Feeding { Id = 6, Name = "Peppermint", Description = "Peppermint" }
+            new Feeding { Id = 1, Name = "Apple", Description = "Crisp and sweet treat. Increases happiness moderately." },
+            new Feeding { Id = 2, Name = "Carrot", Description = "Crunchy and nutritious vegetable. Boosts happiness and provides minor stat benefits." },
+            new Feeding { Id = 3, Name = "Oats", Description = "High-energy grain feed. Provides sustained energy and moderate happiness increase." },
+            new Feeding { Id = 4, Name = "Sugar Cube", Description = "Sweet indulgence. Significantly increases happiness but provides little nutritional value." },
+            new Feeding { Id = 5, Name = "Hay", Description = "Basic roughage and fiber. Maintains baseline happiness and digestive health." },
+            new Feeding { Id = 6, Name = "Peppermint", Description = "Refreshing herbal treat. Calming effect that moderately increases happiness." }
         );
 
         modelBuilder.Entity<Training>().HasData(
-            new Training { Id = 1, Name = "Sprint", Description = "Sprint" },
-            new Training { Id = 2, Name = "Endurance Run", Description = "Endurance Run" },
-            new Training { Id = 3, Name = "Jump Training", Description = "Jump Training" },
-            new Training { Id = 4, Name = "Hill Climbing", Description = "Hill Climbing" },
-            new Training { Id = 5, Name = "Obstacle Course", Description = "Obstacle Course" },
-            new Training { Id = 6, Name = "Swimming", Description = "Swimming" }
+            new Training { Id = 1, Name = "Sprint", Description = "Short-distance speed work. Focuses on explosive acceleration and top speed development." },
+            new Training { Id = 2, Name = "Endurance Run", Description = "Long-distance conditioning. Builds stamina and cardiovascular fitness for extended races." },
+            new Training { Id = 3, Name = "Jump Training", Description = "Obstacle work developing power and coordination. Improves agility and muscle strength." },
+            new Training { Id = 4, Name = "Hill Climbing", Description = "Incline training for leg strength. Builds power, stamina, and durability." },
+            new Training { Id = 5, Name = "Obstacle Course", Description = "Complex navigation training. Enhances agility, decision-making, and overall athleticism." },
+            new Training { Id = 6, Name = "Swimming", Description = "Low-impact conditioning. Builds endurance and muscle without joint strain, improves durability." }
         );
 
         modelBuilder.Entity<Condition>().HasData(
@@ -97,11 +97,11 @@ public static class ModelBuilderExtensions
         );
 
         modelBuilder.Entity<LegType>().HasData(
-            new LegType { Id = LegTypeId.FrontRunner, Name = "Front-runner", Description = "Gets 5% speed boost while not in lead." },
-            new LegType { Id = LegTypeId.StartDash, Name = "Start Dash", Description = "Gets 5% speed boost for first 10% of race distance." },
-            new LegType { Id = LegTypeId.LastSpurt, Name = "Last Spurt", Description = "Gets 10% speed boost for last 10% of race distance." },
-            new LegType { Id = LegTypeId.StretchRunner, Name = "Stretch-runner", Description = "Gets 5% speed boost in straight stretches." },
-            new LegType { Id = LegTypeId.RailRunner, Name = "Rail-runner", Description = "Gets 5% speed boost while in first lane." }
+            new LegType { Id = LegTypeId.FrontRunner, Name = "Front-runner", Description = "Gets 3% speed boost during first 20% of race." },
+            new LegType { Id = LegTypeId.StartDash, Name = "Start Dash", Description = "Gets 4% speed boost during first 25% of race." },
+            new LegType { Id = LegTypeId.LastSpurt, Name = "Last Spurt", Description = "Gets 4% speed boost during final 25% of race." },
+            new LegType { Id = LegTypeId.StretchRunner, Name = "Stretch-runner", Description = "Gets 3% speed boost during 60-80% of race (stretch run)." },
+            new LegType { Id = LegTypeId.RailRunner, Name = "Rail-runner", Description = "Gets 3% speed boost when in lane 1 with clear path ahead." }
         );
 
         modelBuilder.Entity<Race>().HasData(

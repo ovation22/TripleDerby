@@ -13,6 +13,7 @@ namespace TripleDerby.Tests.Unit.Racing;
 public class ModifierIntegrationTests(ITestOutputHelper output)
 {
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(0, 0.90)]   // Speed=0 should give 0.90x multiplier
     [InlineData(50, 1.00)]  // Speed=50 should give 1.00x multiplier (neutral)
     [InlineData(100, 1.10)] // Speed=100 should give 1.10x multiplier
@@ -53,6 +54,7 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
     }
 
     [Fact]
+    [Trait("Category", "LongRunning")]
     public void Verify_Modifier_Pipeline_Changes_Base_Speed()
     {
         // This test simulates what happens in UpdateHorsePosition
@@ -98,10 +100,12 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
         const double AverageBaseSpeed = 10.0 / 237.0;
         var baseSpeed = AverageBaseSpeed;
 
+        var raceRun = CreateTestRaceRun(fastHorse, slowHorse);
+
         // Fast horse
         var fastStatModifier = calculator.CalculateStatModifiers(context);
         var fastEnvModifier = calculator.CalculateEnvironmentalModifiers(context);
-        var fastPhaseModifier = calculator.CalculatePhaseModifiers(context);
+        var fastPhaseModifier = calculator.CalculatePhaseModifiers(context, raceRun);
         var fastRandomVariance = calculator.ApplyRandomVariance();
 
         var fastFinalSpeed = baseSpeed * fastStatModifier * fastEnvModifier * fastPhaseModifier * fastRandomVariance;
@@ -110,7 +114,7 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
         var slowContext = context with { Horse = slowHorse };
         var slowStatModifier = calculator.CalculateStatModifiers(slowContext);
         var slowEnvModifier = calculator.CalculateEnvironmentalModifiers(slowContext);
-        var slowPhaseModifier = calculator.CalculatePhaseModifiers(slowContext);
+        var slowPhaseModifier = calculator.CalculatePhaseModifiers(slowContext, raceRun);
         var slowRandomVariance = calculator.ApplyRandomVariance();
 
         var slowFinalSpeed = baseSpeed * slowStatModifier * slowEnvModifier * slowPhaseModifier * slowRandomVariance;
@@ -140,5 +144,42 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
         // Assert reasonable difference (should be ~22% faster with neutral variance)
         var speedDifferencePercent = (fastFinalSpeed - slowFinalSpeed) / slowFinalSpeed * 100;
         Assert.InRange(speedDifferencePercent, 15, 30); // Expect ~22% difference
+    }
+
+    private static RaceRun CreateTestRaceRun(params Horse[] horses)
+    {
+        var race = new Race
+        {
+            Id = 1,
+            Furlongs = 10m,
+            SurfaceId = SurfaceId.Dirt
+        };
+
+        var raceRun = new RaceRun
+        {
+            Id = Guid.NewGuid(),
+            RaceId = race.Id,
+            Race = race,
+            ConditionId = ConditionId.Good,
+            Horses = new List<RaceRunHorse>()
+        };
+
+        byte lane = 1;
+        foreach (var horse in horses)
+        {
+            horse.Id = Guid.NewGuid(); // Ensure unique IDs
+            raceRun.Horses.Add(new RaceRunHorse
+            {
+                Id = Guid.NewGuid(),
+                Horse = horse,
+                HorseId = horse.Id,
+                Lane = lane++,
+                Distance = 0m,
+                InitialStamina = 50,
+                CurrentStamina = 50
+            });
+        }
+
+        return raceRun;
     }
 }

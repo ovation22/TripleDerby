@@ -264,3 +264,26 @@ All Phases Complete → Feature implemented with full test coverage
 - Focuses on actionable, concrete tasks rather than abstract planning
 - Emphasizes tests-first approach for confidence and correctness
 - Delivers working software incrementally rather than big-bang integration
+
+## CRITICAL GIT WORKFLOW RULES
+
+**NEVER commit or push code without EXPLICIT user approval.**
+
+When implementing planned features:
+1. **Plan Phase**: Create implementation plan - NO git commands
+2. **Implementation**: Write code, run tests - NO git commits
+3. **WAIT for user approval**: User must explicitly say "commit this" or "push this"
+4. **ONLY THEN**: Create commits and push to remote
+
+**Examples of what NOT to do:**
+- ❌ "Let me commit Phase 1" (without asking first)
+- ❌ Automatically committing after completing a phase
+- ❌ Assuming user wants code committed
+
+**Correct workflow:**
+- ✅ Complete phase implementation
+- ✅ Run tests to verify
+- ✅ Report results to user: "Phase 1 is complete. All tests passing."
+- ✅ ASK: "Would you like me to commit these changes?"
+- ✅ WAIT for explicit approval
+- ✅ ONLY THEN run git commands

@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Configuration;
 using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel.Enums;
@@ -8,7 +9,7 @@ namespace TripleDerby.Core.Racing;
 /// Calculates stamina depletion for horses during races.
 /// Stamina depletes based on distance, pace, horse stats (Stamina/Durability), and running style (LegType).
 /// </summary>
-public class StaminaCalculator
+public class StaminaCalculator : IStaminaCalculator
 {
     /// <summary>
     /// Calculates the base stamina depletion rate based on race distance.

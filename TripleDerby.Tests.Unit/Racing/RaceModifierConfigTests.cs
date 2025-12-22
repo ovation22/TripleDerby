@@ -165,18 +165,19 @@ public class RaceModifierConfigTests
     // Phase 4: Phase Modifier Tests
 
     [Fact]
-    public void LegTypePhaseModifiers_ShouldContainAll5LegTypes()
+    public void LegTypePhaseModifiers_ShouldContain4PhaseBasedLegTypes()
     {
+        // RailRunner excluded - uses conditional bonus instead (Feature 005)
         // Act
         var legTypeModifiers = RaceModifierConfig.LegTypePhaseModifiers;
 
         // Assert
-        Assert.Equal(5, legTypeModifiers.Count);
+        Assert.Equal(4, legTypeModifiers.Count);
         Assert.True(legTypeModifiers.ContainsKey(LegTypeId.StartDash));
         Assert.True(legTypeModifiers.ContainsKey(LegTypeId.FrontRunner));
         Assert.True(legTypeModifiers.ContainsKey(LegTypeId.StretchRunner));
         Assert.True(legTypeModifiers.ContainsKey(LegTypeId.LastSpurt));
-        Assert.True(legTypeModifiers.ContainsKey(LegTypeId.RailRunner));
+        Assert.False(legTypeModifiers.ContainsKey(LegTypeId.RailRunner)); // RailRunner uses conditional bonus
     }
 
     [Fact]
@@ -228,14 +229,16 @@ public class RaceModifierConfigTests
     }
 
     [Fact]
-    public void LegTypePhaseModifiers_RailRunner_ShouldHaveCorrectValues()
+    public void RailRunnerConfiguration_ShouldHaveCorrectValues()
     {
-        // Act
-        var modifier = RaceModifierConfig.LegTypePhaseModifiers[LegTypeId.RailRunner];
+        // RailRunner no longer uses phase-based modifiers (Feature 005)
+        // Instead uses conditional lane/traffic bonus
 
-        // Assert
-        Assert.Equal(0.70, modifier.StartPercent);
-        Assert.Equal(1.00, modifier.EndPercent);
-        Assert.Equal(1.02, modifier.Multiplier);
+        // Assert - RailRunner not in phase modifiers dictionary
+        Assert.False(RaceModifierConfig.LegTypePhaseModifiers.ContainsKey(LegTypeId.RailRunner));
+
+        // Assert - Rail runner specific configuration exists
+        Assert.Equal(1.03, RaceModifierConfig.RailRunnerBonusMultiplier);
+        Assert.Equal(0.5m, RaceModifierConfig.RailRunnerClearPathDistance);
     }
 }

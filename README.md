@@ -15,9 +15,15 @@ Triple Derby is a management and simulation game where players breed, train, fee
 - **Blazor Admin UI** for testing, debugging, and management  
 - **.NET Aspire orchestration** for local infrastructure and future cloud deployment  
 - Message-driven breeding pipeline with a background worker (`TripleDerby.Services.Breeding` / `BreedingRequestProcessor`) and transactional foal creation  
-- Breeding engine implementing Punnett-style dominant/recessive genetics and a weighted mutation system  
-- Weighted color rarity selection and leg-type influenced racing behavior  
-- Racing simulation with tick-based movement, leg types, lane modifiers, and track condition modifiers  
+- Breeding engine implementing Punnett-style dominant/recessive genetics and a weighted mutation system
+- Weighted color rarity selection and leg-type influenced racing behavior
+- Advanced racing simulation with:
+  - Tick-based movement with modifier pipeline (Stats → Environment → Phase → Stamina → Random)
+  - Five distinct leg types with strategic advantages (phase-based timing and conditional bonuses)
+  - Stamina depletion system affecting performance over race distance
+  - Track condition modifiers (11 conditions from Fast to Frozen)
+  - Surface effects (Dirt, Turf, Artificial)
+  - Lane positioning and traffic detection
 - Distributed caching for featured parent lists and performance-sensitive reads  
 - Message broker support (RabbitMQ) for message-driven workflows and background processing  
 - Training, feeding, and month-end lifecycle processing  
@@ -30,7 +36,7 @@ Triple Derby is a management and simulation game where players breed, train, fee
 
 Included in the solution:
 
-- [x] .NET 9 Web Api
+- [x] .NET 10 Web Api
 - [x] Blazor Admin UI
 - [x] .NET Aspire orchestration
 - [x] Logging
@@ -255,14 +261,21 @@ sequenceDiagram
 
 Race outcome depends on:
 
-- Track selection (surface, length, hidden conditions)  
-- Leg type (FrontRunner, StartDash, LastSpurt, StretchRunner, RailRunner)  
-- Lane position effects  
-- Condition modifiers (Fast, Muddy, Frozen, Soft, etc.)  
-- Tick-based formula:  
-  Distance = BaseSpeed × LegTypeModifier × ConditionModifier × LaneModifier  
-- Overtaking logic and random events  
-- Injury chance  
+- **Track selection** (surface, distance, conditions)
+- **Horse stats** (Speed, Agility, Stamina, Durability)
+- **Leg type** with distinct strategies:
+  - **FrontRunner**: Early race advantage (0-20%)
+  - **StartDash**: Opening quarter burst (0-25%)
+  - **StretchRunner**: Stretch run power (60-80%)
+  - **LastSpurt**: Closing kick (75-100%)
+  - **RailRunner**: Lane 1 bonus with clear path (conditional)
+- **Stamina system**: Depletes based on distance, pace, and horse efficiency
+- **Environmental modifiers**:
+  - Surface effects (Dirt, Turf, Artificial)
+  - 11 track conditions (Fast, Firm, Good, WetFast, Soft, Yielding, Muddy, Sloppy, Heavy, Frozen, Slow)
+- **Modifier pipeline**: Base Speed × Stats × Environment × Phase × Stamina × Random
+- **Lane positioning** and traffic detection
+- Injury chance after each race
 - Max 8 races per year, max 3-year racing career  
 
 ### **Month-End**
@@ -277,8 +290,8 @@ Race outcome depends on:
 
 ### **Prerequisites**
 
-- .NET 9 SDK  
-- Docker Desktop (optional, for Aspire dependencies)  
+- .NET 10 SDK
+- Docker Desktop (optional, for Aspire dependencies)
 - VS 2022 or VS Code + C# Dev Kit  
 
 ### **Start the Full System via Aspire**
