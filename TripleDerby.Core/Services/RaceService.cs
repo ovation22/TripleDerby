@@ -14,6 +14,9 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
     // Phase 2: Speed Modifier Calculator
     private readonly SpeedModifierCalculator _speedModifierCalculator = new(randomGenerator);
 
+    // Feature 004: Stamina Calculator
+    private readonly StaminaCalculator _staminaCalculator = new();
+
     // Configuration constants
     private const double BaseSpeedMph = 38.0; // Average horse speed in mph
     private const double MilesPerFurlong = 0.125; // 1 furlong = 1/8 mile
@@ -205,6 +208,7 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
     private void UpdateHorsePosition(RaceRunHorse raceRunHorse, short tick, short totalTicks, RaceRun raceRun)
     {
         var baseSpeed = AverageBaseSpeed;
+        var raceProgress = (double)tick / totalTicks;
 
         var context = new ModifierContext(
             CurrentTick: tick,
@@ -215,20 +219,53 @@ public class RaceService(ITripleDerbyRepository repository, IRandomGenerator ran
             RaceFurlongs: raceRun.Race.Furlongs
         );
 
+        // Modifier Pipeline: Stats → Environment → Phase → Stamina → Random
         // Apply stat modifiers (Speed + Agility)
         var statModifier = _speedModifierCalculator.CalculateStatModifiers(context);
         baseSpeed *= statModifier;
+
+        // Apply environmental modifiers (Surface + Condition)
         var envModifier = _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
         baseSpeed *= envModifier;
 
+        // Apply phase modifiers (LegType timing)
         var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context);
         baseSpeed *= phaseModifier;
 
+        // Feature 004: Apply stamina modifier (speed penalty when stamina low)
+        var staminaModifier = _speedModifierCalculator.CalculateStaminaModifier(raceRunHorse);
+        baseSpeed *= staminaModifier;
+
+        // Apply random variance (±1% per tick)
         var randomVariance = _speedModifierCalculator.ApplyRandomVariance();
         baseSpeed *= randomVariance;
 
+        // Calculate current speed after all modifiers
+        var currentSpeed = baseSpeed;
+
+        // Safety check: ensure speed is valid (not NaN, Infinity, or negative)
+        if (double.IsNaN(currentSpeed) || double.IsInfinity(currentSpeed))
+        {
+            currentSpeed = 0.001; // Fallback for numerical errors
+        }
+        else if (currentSpeed < 0)
+        {
+            currentSpeed = 0; // Horse doesn't move backwards
+        }
+        // Note: No upper clamp needed - extreme fast speeds are handled by natural physics
+
         // Update horse position
-        raceRunHorse.Distance += (decimal)baseSpeed;
+        raceRunHorse.Distance += (decimal)currentSpeed;
+
+        // Feature 004: Deplete stamina based on effort
+        var depletionAmount = _staminaCalculator.CalculateDepletionAmount(
+            raceRunHorse.Horse,
+            raceRun.Race.Furlongs,
+            currentSpeed,
+            AverageBaseSpeed,
+            raceProgress);
+
+        raceRunHorse.CurrentStamina = Math.Max(0, raceRunHorse.CurrentStamina - depletionAmount);
 
         // Handle overtaking or lane changing logic
         //HandleOvertaking(raceRunHorse, raceRun);

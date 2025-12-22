@@ -114,6 +114,12 @@ public class SpeedModifierCalculator
     /// <returns>Stamina modifier (1.0 = no penalty, lower = speed penalty)</returns>
     public double CalculateStaminaModifier(Entities.RaceRunHorse raceRunHorse)
     {
+        // Edge case: if initial stamina is zero, treat as no stamina system (neutral modifier)
+        if (raceRunHorse.InitialStamina == 0)
+        {
+            return 1.0; // No penalty for horses with no stamina pool
+        }
+
         // Calculate stamina percentage
         double staminaPercent = raceRunHorse.CurrentStamina / raceRunHorse.InitialStamina;
 
