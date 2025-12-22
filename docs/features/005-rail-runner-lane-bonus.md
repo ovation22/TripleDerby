@@ -398,7 +398,46 @@ public void RailRunner_InLane1_WithClearPath_GetsSpeedBonus()
 - Average finish time: Within 3% of other leg types
 - Win rate: 18-22% (balanced for 5 leg types)
 
-### Phase 4: Documentation (Estimated: 30 minutes)
+### Phase 4: Cleanup - Dependency Injection Refactor (Estimated: 1-2 hours)
+
+**Goal:** Refactor calculator instantiation to use proper dependency injection
+
+**Current Issue:**
+RaceService directly instantiates `SpeedModifierCalculator` and `StaminaCalculator`:
+```csharp
+private readonly SpeedModifierCalculator _speedModifierCalculator = new(randomGenerator);
+private readonly StaminaCalculator _staminaCalculator = new();
+```
+
+**Tasks:**
+1. Create `ISpeedModifierCalculator` interface
+   - Extract public methods from SpeedModifierCalculator
+   - Add interface to Abstractions
+
+2. Create `IStaminaCalculator` interface
+   - Extract public methods from StaminaCalculator
+   - Add interface to Abstractions
+
+3. Update RaceService constructor
+   - Inject ISpeedModifierCalculator
+   - Inject IStaminaCalculator
+   - Remove direct instantiation
+
+4. Register services in DI container
+   - Add to service registration
+   - Configure as Scoped or Transient
+
+5. Update tests
+   - Mock interfaces where needed
+   - Verify injection works correctly
+
+**Benefits:**
+- Loose coupling - depends on abstractions not concrete types
+- Testability - easy to mock calculators in unit tests
+- Consistency - aligns with existing DI patterns
+- Maintainability - easier to swap implementations
+
+### Phase 5: Documentation (Estimated: 30 minutes)
 
 **Update Files:**
 1. **RACE_BALANCE.md**

@@ -142,3 +142,26 @@ When planning features for TripleDerby, consider integration with:
 - May use AskUserQuestion to clarify ambiguous requirements
 - Produces markdown documentation for feature specifications
 - Focuses on practical, implementable plans rather than theoretical designs
+
+## CRITICAL GIT WORKFLOW RULES
+
+**NEVER commit or push code without EXPLICIT user approval.**
+
+When implementing features:
+1. **Discovery Phase**: Research, design, document - NO git commands
+2. **Implementation Phase**: Write code, run tests - NO git commits
+3. **WAIT for user approval**: User must explicitly say "commit this" or "push this"
+4. **ONLY THEN**: Create commits and push to remote
+
+**Examples of what NOT to do:**
+- ❌ "Let me commit Phase 1" (without asking first)
+- ❌ Automatically committing after tests pass
+- ❌ Assuming user wants code committed
+
+**Correct workflow:**
+- ✅ Implement feature
+- ✅ Run tests to verify
+- ✅ Report results to user
+- ✅ ASK: "Would you like me to commit these changes?"
+- ✅ WAIT for explicit approval
+- ✅ ONLY THEN run git commands
