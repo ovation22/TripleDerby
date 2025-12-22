@@ -6,9 +6,9 @@
 
 This document provides detailed balance information for the TripleDerby race simulation system, based on statistical analysis of 1000+ simulated races.
 
-**Last Updated:** 2025-12-20
-**Phase:** 7 - Rebalancing & Validation
-**Test Coverage:** 137 tests passing
+**Last Updated:** 2025-12-22
+**Phase:** 8 - Stamina Integration (Feature 004)
+**Test Coverage:** 203 tests passing
 
 ## Executive Summary
 
@@ -17,6 +17,7 @@ The race modifier system is **well-balanced** with the following characteristics
 - ✅ Strong stat impact (Speed correlation: -0.745)
 - ✅ Moderate environmental effects (Condition range: 11%)
 - ✅ Measurable leg type advantages (Phase modifiers: 2-4%)
+- ✅ Stamina depletion system integrated (mild impact on standard races, significant on marathons)
 - ✅ Reasonable variance (Std Dev: 18.54 ticks for 10f races)
 
 ---
@@ -65,7 +66,7 @@ From 1000-race simulation with randomized stats (0-100):
 |------|-------------|----------------|--------------|
 | **Speed** | -0.745 | Strong negative | Primary factor |
 | **Agility** | -0.355 | Moderate negative | Secondary factor |
-| **Stamina** | -0.040 | Weak/None | Not currently used |
+| **Stamina** | -0.043 | Weak | Distance-dependent (see below) |
 
 **Negative correlation** means higher stat values result in lower (faster) finish times.
 
@@ -101,6 +102,74 @@ Agility provides a **secondary boost** to maneuverability and positioning.
 ```
 Agility Multiplier = 1.0 + ((agility - 50) * 0.001)
 Range: 0.95x to 1.05x (±5%)
+```
+
+### Stamina Stat Impact
+
+Stamina affects race performance through **two mechanics**:
+
+1. **Stamina Pool (Fuel Tank):** Higher Stamina stat = slower depletion rate
+2. **Speed Penalty:** Low stamina during race progressively reduces speed
+
+| Stamina Value | Depletion Multiplier | Impact |
+|---------------|---------------------|--------|
+| 0 | 1.20x | Depletes 20% faster |
+| 50 | 1.00x | Neutral |
+| 100 | 0.80x | Depletes 20% slower |
+
+**Stamina Depletion Formula:**
+```
+Stamina Efficiency = 1.0 + ((stamina - 50) * -0.004)
+Depletion per tick = Base Rate × Stamina Efficiency × Durability Efficiency × Pace × LegType
+
+Base Rates by Distance:
+- Sprint (≤6f): 0.08 per 100 ticks
+- Classic (7-10f): 0.15 per 100 ticks
+- Long (11-12f): 0.22 per 100 ticks
+- Marathon (13f+): 0.30 per 100 ticks
+```
+
+**Speed Penalty Curve:**
+```
+Above 50% stamina: Minimal linear penalty (max 1% at 50%)
+Below 50% stamina: Progressive quadratic penalty
+At 0% stamina: 10% speed reduction (max penalty)
+
+Formula (below 50%):
+fatigueLevel = 1.0 - staminaPercent
+penalty = 0.01 + (fatigueLevel² * 0.09)
+speedModifier = 1.0 - penalty
+```
+
+**Distance-Dependent Impact:**
+- **10f races:** Weak correlation (-0.043) - minimal depletion, most horses finish fresh
+- **16f marathons:** Strong impact - stamina depletion significant, speed penalties accumulate
+- **Durability synergy:** Combines with Durability stat for fuel efficiency (see below)
+
+### Durability Stat Impact
+
+Durability is stamina's **fuel efficiency** companion stat.
+
+| Durability Value | Depletion Multiplier | Impact |
+|------------------|---------------------|--------|
+| 0 | 1.15x | Depletes 15% faster |
+| 50 | 1.00x | Neutral |
+| 100 | 0.85x | Depletes 15% slower |
+
+**Formula:**
+```
+Durability Efficiency = 1.0 + ((durability - 50) * -0.003)
+Range: 0.85x to 1.15x (±15%)
+```
+
+**Stamina/Durability Synergy:**
+```
+Combined Efficiency = Stamina Factor × Durability Factor
+
+Examples:
+- Stamina=100, Durability=100: 0.80 × 0.85 = 0.68x (marathon specialist)
+- Stamina=0, Durability=0: 1.20 × 1.15 = 1.38x (pure sprinter)
+- Stamina=50, Durability=50: 1.00 × 1.00 = 1.00x (neutral)
 ```
 
 ### Combined Stat Effects
@@ -198,13 +267,14 @@ Else:
 All modifiers are applied **multiplicatively** in the following order:
 
 ```
-Final Speed = Base Speed × Stat Modifiers × Environmental Modifiers × Phase Modifiers × Random Variance
+Final Speed = Base Speed × Stat Modifiers × Environmental Modifiers × Phase Modifiers × Stamina Modifier × Random Variance
 
 1. Base Speed: 0.0422 furlongs/tick (derived from 10f/237 ticks)
 2. Stat Modifiers: Speed × Agility (0.855x to 1.155x)
 3. Environmental: Surface × Condition (0.90x to 1.03x)
 4. Phase Modifiers: Leg Type timing bonus (1.00x to 1.04x)
-5. Random Variance: Per-tick fluctuation (0.99x to 1.01x)
+5. Stamina Modifier: Fatigue penalty (0.90x to 1.00x)
+6. Random Variance: Per-tick fluctuation (0.99x to 1.01x)
 ```
 
 ### Example Calculation
@@ -317,15 +387,11 @@ All modifiers are within target ranges. The system produces:
 
 ### Future Considerations
 
-1. **Stamina Integration** - Currently unused (correlation: -0.040)
-   - Consider adding stamina depletion for long races
-   - Potential mechanic: Stamina affects late-race speed decay
-
-2. **Surface Specialization** - Currently minimal (1-2% impact)
+1. **Surface Specialization** - Currently minimal (1-2% impact)
    - Consider adding horse surface preferences
    - Potential mechanic: Horses could have affinity multipliers per surface
 
-3. **Advanced Leg Type Mechanics** - Phase modifiers work well
+2. **Advanced Leg Type Mechanics** - Phase modifiers work well
    - Potential expansion: Tactical positioning, lane preference
    - Consider adding rail bias for RailRunner
 
@@ -377,6 +443,18 @@ All balance values are defined in **`RaceModifierConfig.cs`**:
 // Stat modifiers
 SpeedModifierPerPoint = 0.002;    // ±10% total range
 AgilityModifierPerPoint = 0.001;  // ±5% total range
+
+// Stamina system (Feature 004)
+StaminaDepletionModifierPerPoint = -0.004;     // ±20% depletion rate
+DurabilityDepletionModifierPerPoint = -0.003;  // ±15% depletion rate
+MaxStaminaSpeedPenalty = 0.10;                 // 10% max penalty at 0% stamina
+
+StaminaDepletionRates = {
+    Sprint: 0.08,      // ≤6f
+    Classic: 0.15,     // 7-10f
+    Long: 0.22,        // 11-12f
+    Marathon: 0.30     // 13f+
+}
 
 // Environmental modifiers
 SurfaceModifiers = { Dirt: 1.00, Turf: 1.02, Artificial: 1.01 }
@@ -438,6 +516,7 @@ var horse = new Horse
 | Date | Phase | Changes |
 |------|-------|---------|
 | 2025-12-20 | Phase 7 | Initial balance validation and documentation |
+| 2025-12-22 | Phase 8 | Stamina depletion system integrated (Feature 004) |
 
 ---
 
