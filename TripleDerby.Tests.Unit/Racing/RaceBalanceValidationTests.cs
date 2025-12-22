@@ -70,6 +70,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(4, 90, 110)] // 4 furlongs: sprint race
     [InlineData(6, 135, 160)] // 6 furlongs: standard sprint
     [InlineData(10, 220, 254)] // 10 furlongs: classic distance (target: 237)
@@ -111,6 +112,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(0, 0, 0)] // All minimum stats
     [InlineData(100, 100, 100)] // All maximum stats
     [InlineData(0, 100, 50)] // Mixed extremes
@@ -143,6 +145,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(ConditionId.Fast, 215, 245)] // Fastest condition
     [InlineData(ConditionId.Good, 225, 255)] // Neutral condition
     [InlineData(ConditionId.Slow, 250, 280)] // Slowest condition
@@ -181,6 +184,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
     }
 
     [Theory]
+    [Trait("Category", "LongRunning")]
     [InlineData(LegTypeId.StartDash)]
     [InlineData(LegTypeId.FrontRunner)]
     [InlineData(LegTypeId.StretchRunner)]
