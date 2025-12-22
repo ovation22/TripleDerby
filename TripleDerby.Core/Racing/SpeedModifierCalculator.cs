@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Utilities;
 
 namespace TripleDerby.Core.Racing;
@@ -7,7 +8,7 @@ namespace TripleDerby.Core.Racing;
 /// Applies modifiers in a consistent pipeline: Stats → Environment → Phase → Random
 /// All modifiers are multiplicative and stack together.
 /// </summary>
-public class SpeedModifierCalculator
+public class SpeedModifierCalculator : ISpeedModifierCalculator
 {
     private readonly IRandomGenerator _randomGenerator;
 

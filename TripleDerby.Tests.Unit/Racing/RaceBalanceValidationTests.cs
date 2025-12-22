@@ -2,6 +2,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Racing;
 using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel.Enums;
@@ -384,8 +385,12 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         });
         mockRandom.Setup(r => r.NextDouble()).Returns(0.5); // Neutral random variance
 
+        // Create calculator instances (Feature 005: Phase 4 - DI Refactor)
+        var speedModifierCalculator = new SpeedModifierCalculator(mockRandom.Object);
+        var staminaCalculator = new StaminaCalculator();
+
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator);
         var result = await raceService.Race(1, horse.Id, CancellationToken.None);
 
         // Extract results

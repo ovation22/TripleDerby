@@ -4,9 +4,11 @@ using Serilog.Context;
 using TripleDerby.Api.Config;
 using TripleDerby.Core.Abstractions.Caching;
 using TripleDerby.Core.Abstractions.Messaging;
+using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
+using TripleDerby.Core.Racing;
 using TripleDerby.Core.Services;
 using TripleDerby.Infrastructure.Caching;
 using TripleDerby.Infrastructure.Data;
@@ -63,6 +65,10 @@ public class Program
             builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 
             builder.Services.AddCaching(builder.Configuration);
+
+            // Racing calculators (Feature 005: Phase 4 - DI Refactor)
+            builder.Services.AddScoped<ISpeedModifierCalculator, SpeedModifierCalculator>();
+            builder.Services.AddScoped<IStaminaCalculator, StaminaCalculator>();
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();
