@@ -7,8 +7,8 @@
 This document provides detailed balance information for the TripleDerby race simulation system, based on statistical analysis of 1000+ simulated races.
 
 **Last Updated:** 2025-12-22
-**Phase:** 8 - Stamina Integration (Feature 004)
-**Test Coverage:** 203 tests passing
+**Phase:** 9 - Rail Runner Conditional Bonus (Feature 005)
+**Test Coverage:** 217 tests passing
 
 ## Executive Summary
 
@@ -224,11 +224,13 @@ Conditions have the **strongest environmental impact** on race times.
 
 ---
 
-## Leg Type Phase Modifiers
+## Leg Type Modifiers
 
-Leg types provide **strategic timing advantages** during specific phases of the race.
+Leg types provide **strategic advantages** through either timing-based bonuses or conditional bonuses.
 
-### Phase Modifier Configuration
+### Phase-Based Modifiers
+
+Most leg types receive speed bonuses during specific phases of the race:
 
 | Leg Type | Active Phase | Multiplier | Strategic Advantage |
 |----------|--------------|------------|---------------------|
@@ -236,7 +238,6 @@ Leg types provide **strategic timing advantages** during specific phases of the 
 | **FrontRunner** | 0-20% | 1.03x | +3% speed at start |
 | **StretchRunner** | 60-80% | 1.03x | +3% speed in stretch |
 | **LastSpurt** | 75-100% | 1.04x | +4% speed in final quarter |
-| **RailRunner** | 70-100% | 1.02x | +2% speed in homestretch |
 
 **Phase Calculation:**
 ```
@@ -248,17 +249,46 @@ Else:
     Multiplier = 1.0 (no bonus)
 ```
 
+### Rail Runner Conditional Bonus (Feature 005)
+
+**RailRunner** uses a unique conditional bonus system based on **lane position and traffic**, not race phase.
+
+**Activation Conditions:**
+1. **Lane Position:** Must be in lane 1 (the rail)
+2. **Clear Path:** No horses in same lane within 0.5 furlongs ahead
+
+**Bonus When Active:** 1.03x (+3% speed)
+**Bonus When Inactive:** 1.0x (neutral)
+
+**Configuration:**
+```csharp
+RailRunnerBonusMultiplier = 1.03;        // +3% speed bonus
+RailRunnerClearPathDistance = 0.5m;      // 0.5 furlongs clear path required
+```
+
+**Balance Validation (500 races):**
+- Rail runner average: 230.11 ticks (10f race)
+- Overall average: 234.14 ticks
+- Rail runner deviation: **-1.72% faster** (within 3% target)
+- Performance range across all leg types: **2.39%** (within 5% target)
+
+**Strategic Characteristics:**
+- Bonus activates frequently when in lane 1 with clear running
+- Incentivizes rail position strategy
+- Competitive but not dominant vs other leg types
+- Well-balanced for both single-player and multiplayer racing
+
 ### Leg Type Strategy Guide
 
-| Leg Type | Best For | Race Phase Advantage |
-|----------|----------|----------------------|
+| Leg Type | Best For | Advantage Type |
+|----------|----------|----------------|
 | **StartDash** | Short races (4-6f) | Explosive start, fades late |
 | **FrontRunner** | Front-running tactics | Wire-to-wire races |
 | **StretchRunner** | Mid-distance (8-10f) | Strong middle-to-late kick |
 | **LastSpurt** | Closers | Come-from-behind wins |
-| **RailRunner** | Rail position | Late positioning advantage |
+| **RailRunner** | Rail position racing | Conditional lane bonus with clear path |
 
-**Impact:** 2-4% speed during active phase. Leg types are **balanced** - no dominant strategy.
+**Impact:** 2-4% speed bonus during optimal conditions. All leg types are **balanced** - no dominant strategy.
 
 ---
 
@@ -272,7 +302,9 @@ Final Speed = Base Speed × Stat Modifiers × Environmental Modifiers × Phase M
 1. Base Speed: 0.0422 furlongs/tick (derived from 10f/237 ticks)
 2. Stat Modifiers: Speed × Agility (0.855x to 1.155x)
 3. Environmental: Surface × Condition (0.90x to 1.03x)
-4. Phase Modifiers: Leg Type timing bonus (1.00x to 1.04x)
+4. Phase Modifiers: Leg Type timing or conditional bonus (1.00x to 1.04x)
+   - Phase-based: StartDash, FrontRunner, StretchRunner, LastSpurt
+   - Conditional: RailRunner (lane position + traffic)
 5. Stamina Modifier: Fatigue penalty (0.90x to 1.00x)
 6. Random Variance: Per-tick fluctuation (0.99x to 1.01x)
 ```
@@ -460,14 +492,18 @@ StaminaDepletionRates = {
 SurfaceModifiers = { Dirt: 1.00, Turf: 1.02, Artificial: 1.01 }
 ConditionModifiers = { Fast: 1.03, Good: 1.00, Slow: 0.90, ... }
 
-// Phase modifiers (LegType)
+// Phase modifiers (LegType) - Phase-based leg types
 LegTypePhaseModifiers = {
     StartDash: (0.00, 0.25, 1.04),
     FrontRunner: (0.00, 0.20, 1.03),
     StretchRunner: (0.60, 0.80, 1.03),
-    LastSpurt: (0.75, 1.00, 1.04),
-    RailRunner: (0.70, 1.00, 1.02)
+    LastSpurt: (0.75, 1.00, 1.04)
+    // Note: RailRunner uses conditional bonus (see below)
 }
+
+// Rail Runner Configuration (Feature 005)
+RailRunnerBonusMultiplier = 1.03;        // +3% speed when in lane 1 with clear path
+RailRunnerClearPathDistance = 0.5m;      // 0.5 furlongs minimum clear distance
 
 // Random variance
 RandomVarianceRange = 0.01;  // ±1% per tick
@@ -517,6 +553,7 @@ var horse = new Horse
 |------|-------|---------|
 | 2025-12-20 | Phase 7 | Initial balance validation and documentation |
 | 2025-12-22 | Phase 8 | Stamina depletion system integrated (Feature 004) |
+| 2025-12-22 | Phase 9 | Rail Runner conditional bonus system (Feature 005) |
 
 ---
 
