@@ -18,7 +18,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
     private readonly IConfiguration _configuration;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly string _exchange;
-    private readonly object _connectionLock = new();
+    private readonly SemaphoreSlim _connectionLock = new(1, 1);
     private readonly TimeSpan _publisherConfirmTimeout;
     private readonly int _maxPublishRetries;
     private readonly TimeSpan _initialRetryDelay;
@@ -93,34 +93,46 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
         return factory;
     }
 
-    private void EnsureConnected()
+    private async Task EnsureConnectedAsync()
     {
         if (_connection != null && _connection.IsOpen) return;
 
-        lock (_connectionLock)
+        await _connectionLock.WaitAsync();
+        try
         {
             if (_connection != null && _connection.IsOpen) return;
 
             _logger.LogInformation("Creating RabbitMQ connection...");
 
-            // CreateConnection can throw; allow caller to handle/log and possibly retry.
-            _connection = _factory.CreateConnection();
+            // CreateConnectionAsync can throw; allow caller to handle/log and possibly retry.
+            _connection = await _factory.CreateConnectionAsync();
 
             _logger.LogInformation("RabbitMQ connection established (node: {Node})", _connection.Endpoint.HostName ?? "(unknown)");
 
             // Ensure exchange exists using a short-lived channel
-            using var channel = _connection.CreateModel();
-            channel.ExchangeDeclare(_exchange, ExchangeType.Topic, durable: true);
+            var channel = await _connection.CreateChannelAsync();
+            try
+            {
+                await channel.ExchangeDeclareAsync(_exchange, ExchangeType.Topic, durable: true);
+            }
+            finally
+            {
+                await channel.DisposeAsync();
+            }
+        }
+        finally
+        {
+            _connectionLock.Release();
         }
     }
 
-    public async Task PublishAsync<T>(T message, string? exchange = null, string? routingKey = null, CancellationToken cancellationToken = default)
+    public async Task PublishAsync<T>(T message, MessagePublishOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (message is null) throw new ArgumentNullException(nameof(message));
         cancellationToken.ThrowIfCancellationRequested();
 
-        var ex = exchange ?? _exchange;
-        var rk = routingKey ?? typeof(T).Name;
+        var ex = options?.Destination ?? _exchange;
+        var rk = options?.Subject ?? typeof(T).Name;
 
         var payload = JsonSerializer.Serialize(message, _jsonOptions);
         var body = Encoding.UTF8.GetBytes(payload);
@@ -135,17 +147,16 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
             try
             {
-                EnsureConnected();
+                await EnsureConnectedAsync();
 
-                // create short-lived channel per publish (IModel not thread-safe)
-                using var channel = _connection!.CreateModel();
+                // create short-lived channel per publish (IChannel not thread-safe)
+                await using var channel = await _connection!.CreateChannelAsync();
 
-                // Request confirms so we know the broker accepted the message
-                channel.ConfirmSelect();
-
-                var props = channel.CreateBasicProperties();
-                props.ContentType = "application/json";
-                props.DeliveryMode = 2; // persistent
+                var props = new BasicProperties
+                {
+                    ContentType = "application/json",
+                    DeliveryMode = DeliveryModes.Persistent
+                };
 
                 var correlationId = Activity.Current?.Tags.FirstOrDefault(t => t.Key == "client.correlation_id").Value
                                     ?? Activity.Current?.Baggage?.FirstOrDefault(kv => kv.Key == "client.correlation_id").Value
@@ -160,13 +171,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
                 props.Headers["message-type"] = Encoding.UTF8.GetBytes(typeof(T).FullName ?? typeof(T).Name);
                 props.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-                channel.BasicPublish(exchange: ex, routingKey: rk, basicProperties: props, body: body);
-
-                // wait for broker confirm (throws on nack or timeout)
-                if (!channel.WaitForConfirms(_publisherConfirmTimeout))
-                {
-                    throw new Exception("Publish not confirmed by RabbitMQ within the timeout.");
-                }
+                await channel.BasicPublishAsync(exchange: ex, routingKey: rk, mandatory: false, basicProperties: props, body: body, cancellationToken: cancellationToken);
 
                 _logger.LogInformation("Published message {Type} to exchange {Exchange} with routing key {RoutingKey} (attempt {Attempt})", typeof(T).Name, ex, rk, attempt);
                 return;
@@ -180,8 +185,8 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
                 await Task.Delay(delay, cancellationToken);
                 delay = TimeSpan.FromMilliseconds(Math.Min(delay.TotalMilliseconds * 2, 5000));
-                // connection may be in an error state — dispose and allow recreation on next loop
-                SafeCloseConnection();
+                // connection may be in an error state â€“ dispose and allow recreation on next loop
+                await SafeCloseConnectionAsync();
             }
             catch (BrokerUnreachableException bue)
             {
@@ -192,7 +197,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
                 await Task.Delay(delay, cancellationToken);
                 delay = TimeSpan.FromMilliseconds(Math.Min(delay.TotalMilliseconds * 2, 5000));
-                SafeCloseConnection();
+                await SafeCloseConnectionAsync();
             }
             catch (Exception exn)
             {
@@ -203,12 +208,12 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
                 await Task.Delay(delay, cancellationToken);
                 delay = TimeSpan.FromMilliseconds(Math.Min(delay.TotalMilliseconds * 2, 5000));
-                SafeCloseConnection();
+                await SafeCloseConnectionAsync();
             }
         }
     }
 
-    private void SafeCloseConnection()
+    private async Task SafeCloseConnectionAsync()
     {
         try
         {
@@ -216,7 +221,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
             {
                 if (_connection.IsOpen)
                 {
-                    try { _connection.Close(); } catch { }
+                    try { await _connection.CloseAsync(); } catch { }
                 }
 
                 _connection.Dispose();
@@ -229,16 +234,33 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
         }
     }
 
-    public ValueTask DisposeAsync()
+    /// <summary>
+    /// Disposes resources asynchronously. Prefer this over Dispose() to avoid potential deadlocks.
+    /// </summary>
+    public async ValueTask DisposeAsync()
     {
-        SafeCloseConnection();
+        await SafeCloseConnectionAsync();
+        _connectionLock.Dispose();
         GC.SuppressFinalize(this);
-        return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// Synchronous disposal. Note: This blocks on async cleanup which may cause issues in some contexts.
+    /// Prefer DisposeAsync() when possible.
+    /// </summary>
     public void Dispose()
     {
-        SafeCloseConnection();
-        GC.SuppressFinalize(this);
+        // We must block here since IDisposable.Dispose is synchronous
+        // This is safe in most contexts but could deadlock in ASP.NET synchronization contexts
+        // Callers should prefer DisposeAsync when possible
+        try
+        {
+            SafeCloseConnectionAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            _connectionLock.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }

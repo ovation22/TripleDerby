@@ -68,7 +68,7 @@ public class BreedingRequestProcessorTests
 
         // Assert - no publish, no further repository updates
         repo.Verify(r => r.UpdateAsync(It.IsAny<BreedingRequest>(), It.IsAny<CancellationToken>()), Times.Never);
-        publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<MessagePublishOptions?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     
@@ -108,7 +108,7 @@ public class BreedingRequestProcessorTests
 
         // Assert - we shouldn't attempt to claim or publish
         repo.Verify(r => r.UpdateAsync(It.IsAny<BreedingRequest>(), It.IsAny<CancellationToken>()), Times.Never);
-        publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<MessagePublishOptions?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -160,6 +160,6 @@ public class BreedingRequestProcessorTests
         repo.Verify(r => r.UpdateAsync(It.IsAny<BreedingRequest>(), It.IsAny<CancellationToken>()), Times.Once);
 
         // No publish should have occurred
-        publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<MessagePublishOptions?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

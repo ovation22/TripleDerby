@@ -2,19 +2,20 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
+using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.SharedKernel.Messages;
 
 namespace TripleDerby.Services.Breeding;
 
-public class RabbitMqBreedingConsumer : IDisposable
+public class RabbitMqBreedingConsumer : IMessageConsumer
 {
     private readonly ILogger<RabbitMqBreedingConsumer> _logger;
     private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
     private IConnection? _connection;
-    private IModel? _channel;
+    private IChannel? _channel;
     private readonly SemaphoreSlim _semaphore;
-    private readonly object _channelLock = new();
+    private readonly SemaphoreSlim _channelLock = new(1, 1);
     private readonly int _concurrency;
     private string? _queueName;
     private string? _exchange;
@@ -31,7 +32,7 @@ public class RabbitMqBreedingConsumer : IDisposable
         _semaphore = new SemaphoreSlim(_concurrency, _concurrency);
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         // Resolve connection string (same keys as the publisher)
         var connectionString =
@@ -47,7 +48,6 @@ public class RabbitMqBreedingConsumer : IDisposable
 
         var factory = new ConnectionFactory
         {
-            DispatchConsumersAsync = true,
             AutomaticRecoveryEnabled = true,
             TopologyRecoveryEnabled = true,
             NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
@@ -79,25 +79,23 @@ public class RabbitMqBreedingConsumer : IDisposable
         _queueName = _configuration["MessageBus:Queue"] ?? "triplederby.breeding.requests";
         _routingKey = _configuration["MessageBus:RoutingKey"] ?? nameof(BreedingRequested);
 
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
+        _connection = await factory.CreateConnectionAsync(cancellationToken);
+        _channel = await _connection.CreateChannelAsync();
 
         // set prefetch to concurrency so broker delivers at most this many unacked messages
-        _channel.BasicQos(0, (ushort)_concurrency, false);
+        await _channel.BasicQosAsync(0, (ushort)_concurrency, false);
 
         // durable topic exchange and durable queue
-        _channel.ExchangeDeclare(_exchange, ExchangeType.Topic, durable: true);
-        _channel.QueueDeclare(queue: _queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
-        _channel.QueueBind(queue: _queueName, exchange: _exchange, routingKey: _routingKey);
+        await _channel.ExchangeDeclareAsync(_exchange, ExchangeType.Topic, durable: true);
+        await _channel.QueueDeclareAsync(queue: _queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
+        await _channel.QueueBindAsync(queue: _queueName, exchange: _exchange, routingKey: _routingKey);
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.Received += OnMessageAsync;
+        consumer.ReceivedAsync += OnMessageAsync;
 
-        _channel.BasicConsume(queue: _queueName, autoAck: false, consumer: consumer);
+        await _channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
 
         _logger.LogInformation("RabbitMqBreedingConsumer started (queue={Queue}, routingKey={RoutingKey}, concurrency={Concurrency})", _queueName, _routingKey, _concurrency);
-
-        return Task.CompletedTask;
     }
 
     private async Task OnMessageAsync(object sender, BasicDeliverEventArgs ea)
@@ -131,32 +129,54 @@ public class RabbitMqBreedingConsumer : IDisposable
                 var processor = scope.ServiceProvider.GetRequiredService<IBreedingRequestProcessor>();
                 await processor.ProcessAsync(request, CancellationToken.None);
 
-                lock (_channelLock)
+                await _channelLock.WaitAsync();
+                try
                 {
-                    _channel!.BasicAck(ea.DeliveryTag, multiple: false);
+                    await _channel!.BasicAckAsync(ea.DeliveryTag, multiple: false);
+                }
+                finally
+                {
+                    _channelLock.Release();
                 }
             }
             else
             {
-                lock (_channelLock)
+                await _channelLock.WaitAsync();
+                try
                 {
-                    _channel!.BasicAck(ea.DeliveryTag, multiple: false);
+                    await _channel!.BasicAckAsync(ea.DeliveryTag, multiple: false);
+                }
+                finally
+                {
+                    _channelLock.Release();
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            lock (_channelLock)
+            await _channelLock.WaitAsync();
+            try
             {
-                try { _channel!.BasicNack(ea.DeliveryTag, false, requeue: true); } catch { }
+                await _channel!.BasicNackAsync(ea.DeliveryTag, false, requeue: true);
+            }
+            catch { }
+            finally
+            {
+                _channelLock.Release();
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Processing failed for message {DeliveryTag}", ea.DeliveryTag);
-            lock (_channelLock)
+            await _channelLock.WaitAsync();
+            try
             {
-                try { _channel!.BasicNack(ea.DeliveryTag, false, requeue: false); } catch { }
+                await _channel!.BasicNackAsync(ea.DeliveryTag, false, requeue: false);
+            }
+            catch { }
+            finally
+            {
+                _channelLock.Release();
             }
         }
         finally
@@ -165,17 +185,37 @@ public class RabbitMqBreedingConsumer : IDisposable
         }
     }
 
-    public Task StopAsync()
+    public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        try { _channel?.Close(); } catch { }
-        try { _connection?.Close(); } catch { }
-        return Task.CompletedTask;
+        try { if (_channel != null) await _channel.CloseAsync(); } catch { }
+        try { if (_connection != null) await _connection.CloseAsync(); } catch { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopAsync();
+
+        _semaphore.Dispose();
+        _channelLock.Dispose();
+
+        try { _channel?.Dispose(); } catch { }
+        try { _connection?.Dispose(); } catch { }
+
+        GC.SuppressFinalize(this);
     }
 
     public void Dispose()
     {
+        // For synchronous disposal, we need to block on async cleanup
+        // Ideally consumers should use DisposeAsync instead
+        StopAsync().GetAwaiter().GetResult();
+
         _semaphore.Dispose();
+        _channelLock.Dispose();
+
         try { _channel?.Dispose(); } catch { }
         try { _connection?.Dispose(); } catch { }
+
+        GC.SuppressFinalize(this);
     }
 }
