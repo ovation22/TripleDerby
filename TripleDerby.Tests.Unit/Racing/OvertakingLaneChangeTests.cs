@@ -32,36 +32,36 @@ public class OvertakingLaneChangeTests
     }
 
     [Fact]
-    public void Cooldown_WithAgility50_ShouldBe5Ticks()
+    public void Cooldown_WithAgility50_ShouldBe6Ticks()
     {
-        // Arrange - Agility 50: 10 - (50 × 0.1) = 5 ticks
+        // Arrange - Agility 50: 10 - (50 × 0.08) = 6 ticks (tuned in Phase 3 from 5)
         var expectedCooldown = RaceModifierConfig.BaseLaneChangeCooldown -
                               (50 * RaceModifierConfig.AgilityCooldownReduction);
 
         // Assert
-        Assert.Equal(5.0, expectedCooldown, precision: 5);
+        Assert.Equal(6.0, expectedCooldown, precision: 5);
     }
 
     [Fact]
-    public void Cooldown_WithAgility100_ShouldBe0Ticks()
+    public void Cooldown_WithAgility100_ShouldBe2Ticks()
     {
-        // Arrange - Agility 100: 10 - (100 × 0.1) = 0 ticks (no cooldown)
+        // Arrange - Agility 100: 10 - (100 × 0.08) = 2 ticks (tuned in Phase 3 from 0)
         var expectedCooldown = RaceModifierConfig.BaseLaneChangeCooldown -
                               (100 * RaceModifierConfig.AgilityCooldownReduction);
 
         // Assert
-        Assert.Equal(0.0, expectedCooldown, precision: 5);
+        Assert.Equal(2.0, expectedCooldown, precision: 5);
     }
 
     [Fact]
-    public void Cooldown_WithAgility75_ShouldBe2Point5Ticks()
+    public void Cooldown_WithAgility75_ShouldBe4Ticks()
     {
-        // Arrange - Agility 75: 10 - (75 × 0.1) = 2.5 ticks
+        // Arrange - Agility 75: 10 - (75 × 0.08) = 4 ticks (tuned in Phase 3 from 2.5)
         var expectedCooldown = RaceModifierConfig.BaseLaneChangeCooldown -
                               (75 * RaceModifierConfig.AgilityCooldownReduction);
 
         // Assert
-        Assert.Equal(2.5, expectedCooldown, precision: 5);
+        Assert.Equal(4.0, expectedCooldown, precision: 5);
     }
 
     // ============================================================================
@@ -441,10 +441,10 @@ public class OvertakingLaneChangeTests
     }
 
     [Fact]
-    public void Config_AgilityCooldownReduction_ShouldBe0Point1()
+    public void Config_AgilityCooldownReduction_ShouldBe0Point08()
     {
-        // Arrange & Assert
-        Assert.Equal(0.1, RaceModifierConfig.AgilityCooldownReduction);
+        // Arrange & Assert (tuned in Phase 3 from 0.1 to 0.08)
+        Assert.Equal(0.08, RaceModifierConfig.AgilityCooldownReduction);
     }
 
     [Fact]

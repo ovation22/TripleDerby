@@ -252,9 +252,10 @@ public static class RaceModifierConfig
 
     /// <summary>
     /// Reduction in cooldown per point of agility.
-    /// Range: Agility 0 = 10 tick cooldown, Agility 100 = 0 tick cooldown
+    /// Range: Agility 0 = 10 tick cooldown, Agility 100 = 2 tick cooldown
+    /// Tuned: Reduced from 0.1 to 0.08 to decrease lane change frequency (Phase 3 balance tuning)
     /// </summary>
-    public const double AgilityCooldownReduction = 0.1;
+    public const double AgilityCooldownReduction = 0.08;
 
     /// <summary>
     /// Minimum clearance required behind horse when changing lanes (in furlongs).
@@ -294,9 +295,10 @@ public static class RaceModifierConfig
     /// <summary>
     /// Divisor for calculating risky squeeze play success probability from agility.
     /// Formula: successChance = Agility / RiskySqueezeAgilityDivisor
-    /// Value of 200.0 yields: Agility 0 = 0%, Agility 50 = 25%, Agility 100 = 50%
+    /// Value of 250.0 yields: Agility 0 = 0%, Agility 50 = 20%, Agility 100 = 40%
+    /// Tuned: Increased from 200.0 to 250.0 to reduce risky attempt success rate (Phase 3 balance tuning)
     /// </summary>
-    public const double RiskySqueezeAgilityDivisor = 200.0;
+    public const double RiskySqueezeAgilityDivisor = 250.0;
 
     // ============================================================================
     // Traffic Response Configuration (Feature 007 - Phase 2)
