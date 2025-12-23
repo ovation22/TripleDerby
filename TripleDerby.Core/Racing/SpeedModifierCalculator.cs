@@ -22,17 +22,19 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     }
 
     /// <summary>
-    /// Calculates stat-based speed modifiers (Speed and Agility).
-    /// Uses linear scaling from neutral point (50) for both stats.
+    /// Calculates stat-based speed modifiers (Speed, Agility, and Happiness).
+    /// Speed and Agility use linear scaling from neutral point (50).
+    /// Happiness uses two-phase logarithmic scaling for diminishing returns.
     /// </summary>
     /// <param name="context">Race context with horse stats</param>
-    /// <returns>Combined stat modifier (Speed × Agility multipliers)</returns>
+    /// <returns>Combined stat modifier (Speed × Agility × Happiness multipliers)</returns>
     public double CalculateStatModifiers(ModifierContext context)
     {
         var speedMultiplier = CalculateSpeedMultiplier(context.Horse.Speed);
         var agilityMultiplier = CalculateAgilityMultiplier(context.Horse.Agility);
+        var happinessMultiplier = CalculateHappinessSpeedModifier(context.Horse.Happiness);
 
-        return speedMultiplier * agilityMultiplier;
+        return speedMultiplier * agilityMultiplier * happinessMultiplier;
     }
 
     /// <summary>
@@ -53,6 +55,54 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     private static double CalculateAgilityMultiplier(int agility)
     {
         return 1.0 + ((agility - 50) * Configuration.RaceModifierConfig.AgilityModifierPerPoint);
+    }
+
+    /// <summary>
+    /// Calculates happiness stat multiplier using two-phase logarithmic scaling.
+    /// Uses logarithmic curves to create diminishing returns effect.
+    /// Asymmetric design: unhappiness penalty (3.39%) > happiness bonus (2.55%).
+    ///
+    /// Formula:
+    ///   If happiness >= 50: 1.0 + log10(1 + excess) / HappinessSpeedBonusDivisor
+    ///   If happiness < 50:  1.0 - log10(1 + deficit) / HappinessSpeedPenaltyDivisor
+    ///
+    /// Range: Happiness 0 = 0.9661x (-3.39%), Happiness 50 = 1.0x, Happiness 100 = 1.0255x (+2.55%)
+    /// Total effect: ±3% (tertiary stat, weaker than Agility ±5%)
+    ///
+    /// Rationale: Logarithmic curve reflects psychological reality - mood changes have bigger
+    /// impact at extremes (0→25) than when already content (75→100). Happy horses run more
+    /// enthusiastically, unhappy horses are reluctant.
+    /// </summary>
+    private static double CalculateHappinessSpeedModifier(int happiness)
+    {
+        // Clamp happiness to valid range [0, 100]
+        happiness = Math.Clamp(happiness, 0, 100);
+
+        if (happiness >= 50)
+        {
+            // Above neutral: logarithmic growth with diminishing returns
+            // Happy horses run modestly faster, but gains diminish at high happiness
+            double excess = happiness - 50.0;
+            if (excess == 0)
+                return 1.0; // Exactly neutral, no effect
+
+            // log10(1 + x) provides smooth diminishing returns curve
+            // Divided by 20 to scale to ~2.5% bonus at happiness=100
+            double modifier = Math.Log10(1.0 + excess) / Configuration.RaceModifierConfig.HappinessSpeedBonusDivisor;
+            return 1.0 + modifier;
+        }
+        else
+        {
+            // Below neutral: logarithmic penalty with steeper curve
+            // Unhappiness has bigger impact than happiness (negative emotions stronger)
+            // Psychological realism: depression/frustration affects performance more than joy improves it
+            double deficit = 50.0 - happiness;
+
+            // Divided by 15 instead of 20 for steeper penalty curve
+            // Creates asymmetry: happiness=0 penalty > happiness=100 bonus
+            double modifier = Math.Log10(1.0 + deficit) / Configuration.RaceModifierConfig.HappinessSpeedPenaltyDivisor;
+            return 1.0 - modifier;
+        }
     }
 
     /// <summary>

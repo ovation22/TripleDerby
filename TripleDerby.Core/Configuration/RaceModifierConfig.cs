@@ -54,6 +54,25 @@ public static class RaceModifierConfig
     /// </summary>
     public const double AgilityModifierPerPoint = 0.001;
 
+    /// <summary>
+    /// Divisor for happiness bonus calculation (above neutral).
+    /// Smaller value = stronger bonus effect.
+    /// Formula: modifier = log10(1 + excess) / HappinessSpeedBonusDivisor
+    /// Current value (20) yields ~2.5% bonus at happiness=100.
+    /// </summary>
+    public const double HappinessSpeedBonusDivisor = 20.0;
+
+    /// <summary>
+    /// Divisor for happiness penalty calculation (below neutral).
+    /// Smaller value = stronger penalty effect.
+    /// Formula: modifier = log10(1 + deficit) / HappinessSpeedPenaltyDivisor
+    /// Current value (15) yields ~3.4% penalty at happiness=0.
+    /// Asymmetric design: penalty divisor < bonus divisor (unhappiness hurts more).
+    /// Range: Happiness 0 = 0.9661x (-3.39%), Happiness 50 = 1.0x, Happiness 100 = 1.0255x (+2.55%)
+    /// Total effect: ±3% (tertiary stat, weaker than Agility ±5%, stronger than Stamina at 10f)
+    /// </summary>
+    public const double HappinessSpeedPenaltyDivisor = 15.0;
+
     // ============================================================================
     // Random Variance Configuration
     // ============================================================================
