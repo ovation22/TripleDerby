@@ -268,4 +268,83 @@ public static class RaceModifierConfig
     /// Asymmetric: requires more clearance ahead than behind for safety.
     /// </summary>
     public const decimal LaneChangeMinClearanceAhead = 0.2m;
+
+    // ============================================================================
+    // Risky Lane Change Configuration (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// Base penalty duration for successful risky lane changes at 0 durability (in ticks).
+    /// Reduced by durability: penaltyTicks = RiskyLaneChangePenaltyBaseTicks - (Durability × RiskyLaneChangePenaltyReduction)
+    /// </summary>
+    public const int RiskyLaneChangePenaltyBaseTicks = 5;
+
+    /// <summary>
+    /// Reduction in penalty duration per point of durability.
+    /// Range: Durability 0 = 5 tick penalty, Durability 100 = 1 tick penalty
+    /// </summary>
+    public const double RiskyLaneChangePenaltyReduction = 0.04;
+
+    /// <summary>
+    /// Speed multiplier applied during risky lane change penalty.
+    /// Value of 0.95 means 5% speed reduction while penalty is active.
+    /// </summary>
+    public const double RiskyLaneChangeSpeedPenalty = 0.95;
+
+    /// <summary>
+    /// Divisor for calculating risky squeeze play success probability from agility.
+    /// Formula: successChance = Agility / RiskySqueezeAgilityDivisor
+    /// Value of 200.0 yields: Agility 0 = 0%, Agility 50 = 25%, Agility 100 = 50%
+    /// </summary>
+    public const double RiskySqueezeAgilityDivisor = 200.0;
+
+    // ============================================================================
+    // Traffic Response Configuration (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// FrontRunner frustration penalty magnitude when blocked with no clear lanes.
+    /// Applied as speed multiplier: speed *= (1.0 - FrontRunnerFrustrationPenalty)
+    /// </summary>
+    public const double FrontRunnerFrustrationPenalty = 0.03;  // 3% penalty
+
+    /// <summary>
+    /// StartDash speed cap penalty when blocked (follows leader minus this penalty).
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - StartDashSpeedCapPenalty)
+    /// </summary>
+    public const double StartDashSpeedCapPenalty = 0.01;  // 1% below leader
+
+    /// <summary>
+    /// LastSpurt speed cap penalty when blocked (minimal, patient behavior).
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - LastSpurtSpeedCapPenalty)
+    /// </summary>
+    public const double LastSpurtSpeedCapPenalty = 0.001;  // 0.1% below leader
+
+    /// <summary>
+    /// StretchRunner speed cap penalty when blocked.
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - StretchRunnerSpeedCapPenalty)
+    /// </summary>
+    public const double StretchRunnerSpeedCapPenalty = 0.01;  // 1% below leader
+
+    /// <summary>
+    /// RailRunner speed cap penalty when blocked on rail (extra cautious).
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - RailRunnerSpeedCapPenalty)
+    /// </summary>
+    public const double RailRunnerSpeedCapPenalty = 0.02;  // 2% below leader
+
+    /// <summary>
+    /// Distance threshold for detecting horse ahead as "blocking" (in furlongs).
+    /// Used by traffic response system to identify when horse is close enough to apply effects.
+    /// </summary>
+    public const decimal TrafficBlockingDistance = 0.2m;
+
+    // ============================================================================
+    // Lane Finding Configuration (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// Look-ahead distance for StartDash to evaluate lane congestion (in furlongs).
+    /// Checks for horses ahead within this distance to find least congested lane.
+    /// </summary>
+    public const decimal StartDashLookAheadDistance = 0.5m;
 }

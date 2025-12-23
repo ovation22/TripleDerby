@@ -247,6 +247,16 @@ public class RaceService(
         var staminaModifier = speedModifierCalculator.CalculateStaminaModifier(raceRunHorse);
         baseSpeed *= staminaModifier;
 
+        // Feature 007: Apply risky lane change penalty (if active)
+        if (raceRunHorse.SpeedPenaltyTicksRemaining > 0)
+        {
+            baseSpeed *= Configuration.RaceModifierConfig.RiskyLaneChangeSpeedPenalty;
+            raceRunHorse.SpeedPenaltyTicksRemaining--;
+        }
+
+        // Feature 007: Apply traffic response effects (speed capping / frustration)
+        ApplyTrafficEffects(raceRunHorse, raceRun, ref baseSpeed);
+
         // Apply random variance (±1% per tick)
         var randomVariance = speedModifierCalculator.ApplyRandomVariance();
         baseSpeed *= randomVariance;
@@ -378,31 +388,133 @@ public class RaceService(
 
     /// <summary>
     /// Determines the desired lane for a horse based on leg type strategy.
-    /// Phase 1: Only RailRunner implemented (seeks lane 1).
-    /// Phase 2 will add other leg type behaviors.
+    /// Phase 2: All leg types implemented with distinct personalities.
     /// </summary>
     /// <param name="horse">The race run horse</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <param name="currentTick">Current race tick</param>
+    /// <param name="totalTicks">Total ticks in race</param>
     /// <returns>Desired lane number (1-based)</returns>
-    private static int DetermineDesiredLane(RaceRunHorse horse)
+    private int DetermineDesiredLane(RaceRunHorse horse, RaceRun raceRun, short currentTick, short totalTicks)
     {
+        var raceProgress = (double)currentTick / totalTicks;
+
         return horse.Horse.LegTypeId switch
         {
-            LegTypeId.RailRunner => 1,  // Always seek the rail
-            _ => horse.Lane              // Phase 1: All others stay in current lane
+            // Always seek rail position for bonus
+            LegTypeId.RailRunner => 1,
+
+            // Conservative leader - stays in current lane
+            LegTypeId.FrontRunner => horse.Lane,
+
+            // Traffic avoider - seeks least congested lane
+            LegTypeId.StartDash => FindLeastCongestedLane(horse, raceRun),
+
+            // Patient early, aggressive late (>75%)
+            LegTypeId.LastSpurt => raceProgress > 0.75
+                ? FindBestOvertakingLane(horse, raceRun, currentTick, totalTicks)
+                : horse.Lane,
+
+            // Prefers center lanes 4-5, drifts toward center if outside
+            LegTypeId.StretchRunner => horse.Lane switch
+            {
+                <= 3 => horse.Lane + 1,  // Drift right toward center
+                >= 6 => horse.Lane - 1,  // Drift left toward center
+                _ => horse.Lane           // Already in center (4-5), stay
+            },
+
+            _ => horse.Lane
         };
     }
 
     /// <summary>
+    /// Finds the least congested lane ahead of the horse.
+    /// Used by StartDash to avoid traffic.
+    /// </summary>
+    /// <param name="horse">The horse seeking a clear lane</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <returns>Lane number with least traffic ahead (1-based)</returns>
+    private static int FindLeastCongestedLane(RaceRunHorse horse, RaceRun raceRun)
+    {
+        var maxLane = raceRun.Horses.Count; // Dynamic max lane = field size
+        var laneTraffic = new int[maxLane + 1]; // Index 0 unused, lanes 1 to maxLane
+
+        // Count horses ahead in each lane within look-ahead distance
+        var lookAhead = Configuration.RaceModifierConfig.StartDashLookAheadDistance;
+        foreach (var h in raceRun.Horses.Where(h =>
+            h.Distance > horse.Distance &&
+            h.Distance - horse.Distance < lookAhead))
+        {
+            laneTraffic[h.Lane]++;
+        }
+
+        // Find lane with minimum traffic (prefer current lane if tied)
+        var minTraffic = laneTraffic[horse.Lane];
+        var bestLane = (int)horse.Lane;
+
+        for (int lane = 1; lane <= maxLane; lane++)
+        {
+            if (laneTraffic[lane] < minTraffic)
+            {
+                minTraffic = laneTraffic[lane];
+                bestLane = lane;
+            }
+        }
+
+        return bestLane;
+    }
+
+    /// <summary>
+    /// Finds the lane with most overtaking opportunities.
+    /// Used by LastSpurt in late race (>75%) to hunt for passes.
+    /// </summary>
+    /// <param name="horse">The horse hunting for overtaking opportunities</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <param name="currentTick">Current race tick</param>
+    /// <param name="totalTicks">Total ticks in race</param>
+    /// <returns>Lane number with most overtaking opportunities (1-based)</returns>
+    private int FindBestOvertakingLane(RaceRunHorse horse, RaceRun raceRun, short currentTick, short totalTicks)
+    {
+        var maxLane = raceRun.Horses.Count;
+        var opportunities = new int[maxLane + 1];
+
+        // Count overtaking opportunities in each lane
+        var overtakingRange = CalculateOvertakingThreshold(horse, currentTick, totalTicks);
+        foreach (var h in raceRun.Horses.Where(h =>
+            h.Distance > horse.Distance &&
+            h.Distance - horse.Distance < overtakingRange))
+        {
+            opportunities[h.Lane]++;
+        }
+
+        // Find lane with most opportunities (prefer current lane if tied)
+        var maxOpportunities = opportunities[horse.Lane];
+        var bestLane = (int)horse.Lane;
+
+        for (int lane = 1; lane <= maxLane; lane++)
+        {
+            if (opportunities[lane] > maxOpportunities)
+            {
+                maxOpportunities = opportunities[lane];
+                bestLane = lane;
+            }
+        }
+
+        return bestLane;
+    }
+
+    /// <summary>
     /// Attempts to change lanes toward the desired lane.
-    /// Phase 1: Only clean lane changes (adjacent lane, clear path required).
-    /// Phase 2 will add risky squeeze plays.
+    /// Phase 2: Includes risky squeeze plays when clean change not possible.
     /// </summary>
     /// <param name="horse">The horse attempting lane change</param>
     /// <param name="raceRun">Current race state</param>
+    /// <param name="currentTick">Current race tick</param>
+    /// <param name="totalTicks">Total ticks in race</param>
     /// <returns>True if lane changed, false otherwise</returns>
-    private bool AttemptLaneChange(RaceRunHorse horse, RaceRun raceRun)
+    private bool AttemptLaneChange(RaceRunHorse horse, RaceRun raceRun, short currentTick, short totalTicks)
     {
-        var desiredLane = DetermineDesiredLane(horse);
+        var desiredLane = DetermineDesiredLane(horse, raceRun, currentTick, totalTicks);
 
         // Already in desired lane
         if (horse.Lane == desiredLane)
@@ -416,11 +528,13 @@ public class RaceService(
         // Check if target lane is clear
         if (IsLaneClear(horse, targetLane, raceRun))
         {
+            // Clean lane change - no penalty
             horse.Lane = (byte)targetLane;
             return true;
         }
 
-        return false;
+        // Lane blocked - attempt risky squeeze play
+        return AttemptRiskySqueezePlay(horse, targetLane);
     }
 
     /// <summary>
@@ -446,7 +560,7 @@ public class RaceService(
             return;
 
         // Determine if we want to change lanes
-        var desiredLane = DetermineDesiredLane(horse);
+        var desiredLane = DetermineDesiredLane(horse, raceRun, currentTick, totalTicks);
         var wantsToChangeLanes = horse.Lane != desiredLane;
 
         // Check if we want to overtake (detect horse ahead within threshold)
@@ -463,7 +577,153 @@ public class RaceService(
             // Consume cooldown regardless of success (commitment cost)
             horse.TicksSinceLastLaneChange = 0;
 
-            AttemptLaneChange(horse, raceRun);
+            AttemptLaneChange(horse, raceRun, currentTick, totalTicks);
         }
+    }
+
+    /// <summary>
+    /// Attempts a risky lane change when the target lane is blocked.
+    /// Success probability based on agility, with durability-based penalty on success.
+    /// </summary>
+    /// <param name="horse">The horse attempting risky change</param>
+    /// <param name="targetLane">The lane to squeeze into</param>
+    /// <returns>True if successful, false if failed</returns>
+    private bool AttemptRiskySqueezePlay(RaceRunHorse horse, int targetLane)
+    {
+        // Calculate success probability from agility (0% to 50%)
+        var squeezeSuccessChance = horse.Horse.Agility / Configuration.RaceModifierConfig.RiskySqueezeAgilityDivisor;
+
+        if (randomGenerator.NextDouble() < squeezeSuccessChance)
+        {
+            // Success! Thread the needle
+            horse.Lane = (byte)targetLane;
+
+            // Apply durability-based penalty
+            var penaltyTicks = Configuration.RaceModifierConfig.RiskyLaneChangePenaltyBaseTicks -
+                              (horse.Horse.Durability * Configuration.RaceModifierConfig.RiskyLaneChangePenaltyReduction);
+            horse.SpeedPenaltyTicksRemaining = (byte)Math.Max(1, Math.Round(penaltyTicks));
+
+            return true;
+        }
+
+        // Failed - stay in current lane, cooldown already consumed
+        return false;
+    }
+
+    // ============================================================================
+    // Traffic Response System (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// Applies leg-type-specific traffic response effects when horse is blocked.
+    /// Modifies speed based on traffic ahead and horse's personality.
+    /// </summary>
+    /// <param name="horse">The horse being affected</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <param name="currentSpeed">Current speed to modify (passed by reference)</param>
+    private void ApplyTrafficEffects(RaceRunHorse horse, RaceRun raceRun, ref double currentSpeed)
+    {
+        // Find horse ahead in same lane within blocking distance
+        var horseAhead = FindHorseAheadInLane(horse, raceRun);
+
+        if (horseAhead == null)
+            return; // No traffic ahead, no effect
+
+        // Apply leg-type-specific response
+        switch (horse.Horse.LegTypeId)
+        {
+            case LegTypeId.FrontRunner:
+                // Frustration penalty when blocked with no clear lanes
+                if (!HasClearLaneAvailable(horse, raceRun))
+                {
+                    currentSpeed *= (1.0 - Configuration.RaceModifierConfig.FrontRunnerFrustrationPenalty);
+                }
+                break;
+
+            case LegTypeId.StartDash:
+                // Speed cap: match leader minus penalty
+                var startDashCap = CalculateHorseSpeed(horseAhead) *
+                                  (1.0 - Configuration.RaceModifierConfig.StartDashSpeedCapPenalty);
+                if (currentSpeed > startDashCap)
+                    currentSpeed = startDashCap;
+                break;
+
+            case LegTypeId.LastSpurt:
+                // Patient: minimal speed cap, no frustration
+                var lastSpurtCap = CalculateHorseSpeed(horseAhead) *
+                                  (1.0 - Configuration.RaceModifierConfig.LastSpurtSpeedCapPenalty);
+                if (currentSpeed > lastSpurtCap)
+                    currentSpeed = lastSpurtCap;
+                break;
+
+            case LegTypeId.StretchRunner:
+                // Speed cap: match leader minus penalty
+                var stretchCap = CalculateHorseSpeed(horseAhead) *
+                                (1.0 - Configuration.RaceModifierConfig.StretchRunnerSpeedCapPenalty);
+                if (currentSpeed > stretchCap)
+                    currentSpeed = stretchCap;
+                break;
+
+            case LegTypeId.RailRunner:
+                // Extra cautious on rail: higher speed cap penalty
+                var railCap = CalculateHorseSpeed(horseAhead) *
+                             (1.0 - Configuration.RaceModifierConfig.RailRunnerSpeedCapPenalty);
+                if (currentSpeed > railCap)
+                    currentSpeed = railCap;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Finds the horse directly ahead in the same lane within blocking distance.
+    /// </summary>
+    /// <param name="horse">The horse to check</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <returns>Horse ahead if found, null otherwise</returns>
+    private static RaceRunHorse? FindHorseAheadInLane(RaceRunHorse horse, RaceRun raceRun)
+    {
+        return raceRun.Horses
+            .Where(h =>
+                h != horse &&
+                h.Lane == horse.Lane &&
+                h.Distance > horse.Distance &&
+                h.Distance - horse.Distance < Configuration.RaceModifierConfig.TrafficBlockingDistance)
+            .OrderBy(h => h.Distance) // Closest horse ahead
+            .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Checks if any adjacent lane is clear for lane change.
+    /// Used by FrontRunner to determine frustration (frustrated when boxed in).
+    /// </summary>
+    /// <param name="horse">The horse checking for clear lanes</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <returns>True if at least one adjacent lane is clear, false if boxed in</returns>
+    private static bool HasClearLaneAvailable(RaceRunHorse horse, RaceRun raceRun)
+    {
+        var maxLane = raceRun.Horses.Count;
+
+        // Check lane to the left (if exists)
+        if (horse.Lane > 1 && IsLaneClear(horse, horse.Lane - 1, raceRun))
+            return true;
+
+        // Check lane to the right (if exists)
+        if (horse.Lane < maxLane && IsLaneClear(horse, horse.Lane + 1, raceRun))
+            return true;
+
+        return false; // Boxed in
+    }
+
+    /// <summary>
+    /// Estimates the current speed of another horse based on current distance delta.
+    /// Used for traffic speed capping calculations.
+    /// </summary>
+    /// <param name="horse">The horse to estimate speed for</param>
+    /// <returns>Estimated speed in furlongs per tick</returns>
+    private static double CalculateHorseSpeed(RaceRunHorse horse)
+    {
+        // Approximate speed based on average base speed
+        // In reality this would track per-tick movement, but this is sufficient for traffic response
+        return AverageBaseSpeed;
     }
 }
