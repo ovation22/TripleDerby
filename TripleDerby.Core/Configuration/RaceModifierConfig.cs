@@ -220,4 +220,52 @@ public static class RaceModifierConfig
     /// Uses quadratic curve for progressive penalty below 50% stamina.
     /// </summary>
     public const double MaxStaminaSpeedPenalty = 0.10;  // 10% max penalty (mild)
+
+    // ============================================================================
+    // Overtaking & Lane Change Configuration (Feature 007 - Phase 1)
+    // ============================================================================
+
+    /// <summary>
+    /// Base threshold distance for detecting overtaking opportunities (in furlongs).
+    /// Modified by speed factor and race phase multiplier.
+    /// </summary>
+    public const decimal OvertakingBaseThreshold = 0.25m;
+
+    /// <summary>
+    /// Speed stat influence on overtaking threshold per point.
+    /// Higher speed = larger detection range.
+    /// Range: Speed 0 = 1.0x threshold, Speed 100 = 1.2x threshold
+    /// </summary>
+    public const double OvertakingSpeedFactor = 0.002;
+
+    /// <summary>
+    /// Multiplier applied to overtaking threshold in final 25% of race.
+    /// Creates more aggressive overtaking behavior late in races.
+    /// </summary>
+    public const double OvertakingLateRaceMultiplier = 1.5;
+
+    /// <summary>
+    /// Base cooldown between lane change attempts at 0 agility (in ticks).
+    /// Reduced by agility: cooldown = BaseLaneChangeCooldown - (Agility × AgilityCooldownReduction)
+    /// </summary>
+    public const int BaseLaneChangeCooldown = 10;
+
+    /// <summary>
+    /// Reduction in cooldown per point of agility.
+    /// Range: Agility 0 = 10 tick cooldown, Agility 100 = 0 tick cooldown
+    /// </summary>
+    public const double AgilityCooldownReduction = 0.1;
+
+    /// <summary>
+    /// Minimum clearance required behind horse when changing lanes (in furlongs).
+    /// Prevents cutting off horses that are close behind.
+    /// </summary>
+    public const decimal LaneChangeMinClearanceBehind = 0.1m;
+
+    /// <summary>
+    /// Minimum clearance required ahead of horse when changing lanes (in furlongs).
+    /// Prevents collisions with horses ahead in target lane.
+    /// Asymmetric: requires more clearance ahead than behind for safety.
+    /// </summary>
+    public const decimal LaneChangeMinClearanceAhead = 0.2m;
 }

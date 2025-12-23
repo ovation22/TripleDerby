@@ -26,4 +26,19 @@ public class RaceRunHorse
     public byte Place { get; set; }
 
     public double Time { get; set; }
+
+    /// <summary>
+    /// Tracks ticks since last lane change for cooldown calculation.
+    /// Reset to 0 when lane change attempted (success or failure).
+    /// Agility-based cooldown: 10 - (Agility × 0.1) ticks required between attempts.
+    /// </summary>
+    public short TicksSinceLastLaneChange { get; set; }
+
+    /// <summary>
+    /// Remaining ticks of speed penalty from risky lane change.
+    /// Applied when successful risky squeeze play occurs.
+    /// Duration based on Durability: 5 - (Durability × 0.04) ticks.
+    /// Penalty magnitude: 0.95x speed (5% reduction).
+    /// </summary>
+    public byte SpeedPenaltyTicksRemaining { get; set; }
 }
