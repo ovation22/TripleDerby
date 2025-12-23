@@ -295,6 +295,7 @@ public class StaminaCalculatorTests
         int stamina = 50,
         int agility = 50,
         int durability = 50,
+        int happiness = 50,
         LegTypeId legType = LegTypeId.FrontRunner)
     {
         return new Horse
@@ -307,8 +308,167 @@ public class StaminaCalculatorTests
                 new() { StatisticId = StatisticId.Speed, Actual = (byte)speed },
                 new() { StatisticId = StatisticId.Stamina, Actual = (byte)stamina },
                 new() { StatisticId = StatisticId.Agility, Actual = (byte)agility },
-                new() { StatisticId = StatisticId.Durability, Actual = (byte)durability }
+                new() { StatisticId = StatisticId.Durability, Actual = (byte)durability },
+                new() { StatisticId = StatisticId.Happiness, Actual = (byte)happiness }
             }
         };
+    }
+
+    // ============================================================================
+    // Happiness Stamina Efficiency Tests (Phase 2)
+    // ============================================================================
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void CalculateStaminaEfficiency_WithHappiness0_ShouldIncreaseDepletion()
+    {
+        // Arrange - Minimum happiness with neutral Stamina/Durability
+        var calculator = new StaminaCalculator();
+        var horse = CreateHorseWithStats(stamina: 50, durability: 50, happiness: 0);
+
+        // Act
+        var result = calculator.CalculateStaminaEfficiency(horse);
+
+        // Assert - Expected: 1.0 + log10(51)/20 ≈ 1.0854 (more depletion when unhappy)
+        Assert.Equal(1.0854, result, precision: 3);
+        Assert.True(result > 1.0, "Unhappy horses should deplete stamina faster");
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void CalculateStaminaEfficiency_WithHappiness100_ShouldDecreaseDepletion()
+    {
+        // Arrange - Maximum happiness with neutral Stamina/Durability
+        var calculator = new StaminaCalculator();
+        var horse = CreateHorseWithStats(stamina: 50, durability: 50, happiness: 100);
+
+        // Act
+        var result = calculator.CalculateStaminaEfficiency(horse);
+
+        // Assert - Expected: 1.0 - log10(51)/25 ≈ 0.9318 (less depletion when happy)
+        Assert.Equal(0.9318, result, precision: 3);
+        Assert.True(result < 1.0, "Happy horses should deplete stamina slower");
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void CalculateStaminaEfficiency_WithHappiness50_ShouldBeNeutral()
+    {
+        // Arrange - Neutral happiness with neutral Stamina/Durability
+        var calculator = new StaminaCalculator();
+        var horse = CreateHorseWithStats(stamina: 50, durability: 50, happiness: 50);
+
+        // Act
+        var result = calculator.CalculateStaminaEfficiency(horse);
+
+        // Assert
+        Assert.Equal(1.0, result, precision: 3);
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Theory]
+    [InlineData(0, 1.0854)]   // 1.0 + log10(51)/20 penalty
+    [InlineData(10, 1.0806)]  // 1.0 + log10(41)/20 penalty
+    [InlineData(25, 1.0707)]  // 1.0 + log10(26)/20 penalty
+    [InlineData(40, 1.0521)]  // 1.0 + log10(11)/20 penalty
+    [InlineData(50, 1.0000)]  // Neutral
+    [InlineData(60, 0.9583)]  // 1.0 - log10(11)/25 bonus
+    [InlineData(75, 0.9434)]  // 1.0 - log10(26)/25 bonus
+    [InlineData(90, 0.9355)]  // 1.0 - log10(41)/25 bonus
+    [InlineData(100, 0.9318)] // 1.0 - log10(51)/25 bonus
+    public void CalculateStaminaEfficiency_WithVaryingHappiness_FollowsLogarithmicCurve(
+        int happiness, double expectedModifier)
+    {
+        // Arrange - Only happiness varies, Stamina/Durability neutral
+        var calculator = new StaminaCalculator();
+        var horse = CreateHorseWithStats(stamina: 50, durability: 50, happiness: happiness);
+
+        // Act
+        var result = calculator.CalculateStaminaEfficiency(horse);
+
+        // Assert
+        Assert.Equal(expectedModifier, result, precision: 2);
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void HappinessStaminaModifier_ShowsDiminishingReturns()
+    {
+        // Arrange
+        var calculator = new StaminaCalculator();
+
+        // Act - Calculate marginal changes at different happiness levels
+        var eff0 = calculator.CalculateStaminaEfficiency(CreateHorseWithStats(stamina: 50, durability: 50, happiness: 0));
+        var eff25 = calculator.CalculateStaminaEfficiency(CreateHorseWithStats(stamina: 50, durability: 50, happiness: 25));
+        var eff75 = calculator.CalculateStaminaEfficiency(CreateHorseWithStats(stamina: 50, durability: 50, happiness: 75));
+        var eff100 = calculator.CalculateStaminaEfficiency(CreateHorseWithStats(stamina: 50, durability: 50, happiness: 100));
+
+        // Calculate per-point changes
+        double change0to25 = Math.Abs(eff25 - eff0) / 25.0;  // Change per point in low range
+        double change75to100 = Math.Abs(eff100 - eff75) / 25.0;  // Change per point in high range
+
+        // Assert - Diminishing returns: smaller marginal gains at higher happiness
+        Assert.True(change75to100 < change0to25,
+            $"Expected diminishing returns: {change75to100:F6} < {change0to25:F6}");
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void HappinessStaminaModifier_IsAsymmetric_PenaltyExceedsBonus()
+    {
+        // Arrange
+        var calculator = new StaminaCalculator();
+        var eff0 = calculator.CalculateStaminaEfficiency(CreateHorseWithStats(stamina: 50, durability: 50, happiness: 0));
+        var eff100 = calculator.CalculateStaminaEfficiency(CreateHorseWithStats(stamina: 50, durability: 50, happiness: 100));
+
+        // Act - Calculate penalty and bonus magnitudes
+        var penaltyMagnitude = Math.Abs(eff0 - 1.0);   // ~8.54%
+        var bonusMagnitude = Math.Abs(1.0 - eff100);   // ~6.82%
+
+        // Assert: Unhappiness hurts more than happiness helps
+        Assert.True(penaltyMagnitude > bonusMagnitude,
+            $"Expected penalty ({penaltyMagnitude:P2}) > bonus ({bonusMagnitude:P2})");
+
+        // Specific expectations
+        Assert.Equal(0.0854, penaltyMagnitude, precision: 3);
+        Assert.Equal(0.0682, bonusMagnitude, precision: 3);
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void CalculateStaminaEfficiency_CombinesAllThreeStats()
+    {
+        // Arrange - High Stamina, High Durability, High Happiness
+        var calculator = new StaminaCalculator();
+        var horse = CreateHorseWithStats(stamina: 100, durability: 100, happiness: 100);
+
+        // Act
+        var result = calculator.CalculateStaminaEfficiency(horse);
+
+        // Assert
+        // Stamina 100: 0.80
+        // Durability 100: 0.85
+        // Happiness 100: 0.9318
+        // Combined: 0.80 * 0.85 * 0.9318 ≈ 0.6336
+        Assert.Equal(0.6336, result, precision: 3);
+    }
+
+    [Trait("Category", "StaminaEfficiency")]
+    [Fact]
+    public void CalculateStaminaEfficiency_WithLowEverything_MaximumDepletion()
+    {
+        // Arrange - Low Stamina, Low Durability, Low Happiness
+        var calculator = new StaminaCalculator();
+        var horse = CreateHorseWithStats(stamina: 0, durability: 0, happiness: 0);
+
+        // Act
+        var result = calculator.CalculateStaminaEfficiency(horse);
+
+        // Assert
+        // Stamina 0: 1.20
+        // Durability 0: 1.15
+        // Happiness 0: 1.0854
+        // Combined: 1.20 * 1.15 * 1.0854 ≈ 1.4978
+        Assert.Equal(1.4978, result, precision: 3);
     }
 }

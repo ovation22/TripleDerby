@@ -51,7 +51,52 @@ public class StaminaCalculator : IStaminaCalculator
         // Durability 50 = 1.00x depletion (neutral)
         // Durability 100 = 0.85x depletion (very efficient)
 
-        return staminaFactor * durabilityFactor;
+        // Happiness affects stamina efficiency (INVERTED effect)
+        double happinessFactor = CalculateHappinessStaminaModifier(horse.Happiness);
+        // Happiness 0 = 1.0854x depletion (unhappy horses burn more energy)
+        // Happiness 50 = 1.00x depletion (neutral)
+        // Happiness 100 = 0.9318x depletion (happy horses conserve energy better)
+
+        return staminaFactor * durabilityFactor * happinessFactor;
+    }
+
+    /// <summary>
+    /// Calculates happiness-based stamina efficiency modifier using two-phase logarithmic scaling.
+    /// INVERTED effect compared to speed: high happiness = LESS stamina depletion.
+    /// Happy horses "enjoy" racing and conserve energy better.
+    /// Unhappy horses are "reluctant" and burn more energy.
+    /// Asymmetric design: unhappiness penalty > happiness bonus.
+    ///
+    /// Formula:
+    ///   If happiness >= 50: 1.0 - log10(1 + excess) / HappinessStaminaBonusDivisor
+    ///   If happiness < 50: 1.0 + log10(1 + deficit) / HappinessStaminaPenaltyDivisor
+    ///
+    /// Range: Happiness 0 = 1.0854x (8.54% more depletion), Happiness 100 = 0.9318x (6.82% less depletion)
+    /// </summary>
+    private static double CalculateHappinessStaminaModifier(int happiness)
+    {
+        happiness = Math.Clamp(happiness, 0, 100);
+
+        if (happiness >= 50)
+        {
+            // Above neutral: improved stamina efficiency (LESS depletion)
+            double excess = happiness - 50.0;
+            if (excess == 0)
+                return 1.0; // Neutral efficiency
+
+            // Efficiency improvement: lower multiplier = less depletion
+            double efficiency = Math.Log10(1.0 + excess) / Configuration.RaceModifierConfig.HappinessStaminaBonusDivisor;
+            return 1.0 - efficiency;
+        }
+        else
+        {
+            // Below neutral: worse stamina efficiency (MORE depletion)
+            double deficit = 50.0 - happiness;
+
+            // Efficiency penalty: higher multiplier = more depletion
+            double efficiency = Math.Log10(1.0 + deficit) / Configuration.RaceModifierConfig.HappinessStaminaPenaltyDivisor;
+            return 1.0 + efficiency;
+        }
     }
 
     /// <summary>
