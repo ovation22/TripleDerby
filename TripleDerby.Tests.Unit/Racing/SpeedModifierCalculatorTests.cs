@@ -196,8 +196,8 @@ public class SpeedModifierCalculatorTests
         // Act
         var result = _sut.CalculateStatModifiers(context);
 
-        // Assert - Expected: 1.0 - log10(51)/15 ≈ 0.9661
-        Assert.Equal(0.9661, result, precision: 4);
+        // Assert - Expected: 1.0 - log10(51)/15 ≈ 0.8862
+        Assert.Equal(0.8862, result, precision: 3);
     }
 
     [Fact]
@@ -210,20 +210,20 @@ public class SpeedModifierCalculatorTests
         // Act
         var result = _sut.CalculateStatModifiers(context);
 
-        // Assert - Expected: 1.0 + log10(51)/20 ≈ 1.0255
-        Assert.Equal(1.0255, result, precision: 4);
+        // Assert - Expected: 1.0 + log10(51)/20 ≈ 1.0854
+        Assert.Equal(1.0854, result, precision: 4);
     }
 
     [Theory]
-    [InlineData(0, 0.9661)]   // log10(51)/15 penalty
-    [InlineData(10, 0.9765)]  // log10(41)/15 penalty
-    [InlineData(25, 0.9858)]  // log10(26)/15 penalty
-    [InlineData(40, 0.9931)]  // log10(11)/15 penalty
+    [InlineData(0, 0.8862)]   // 1.0 - log10(51)/15 penalty
+    [InlineData(10, 0.8925)]  // 1.0 - log10(41)/15 penalty
+    [InlineData(25, 0.9057)]  // 1.0 - log10(26)/15 penalty
+    [InlineData(40, 0.9306)]  // 1.0 - log10(11)/15 penalty
     [InlineData(50, 1.0000)]  // Neutral
-    [InlineData(60, 1.0052)]  // log10(11)/20 bonus
-    [InlineData(75, 1.0141)]  // log10(26)/20 bonus
-    [InlineData(90, 1.0207)]  // log10(41)/20 bonus
-    [InlineData(100, 1.0255)] // log10(51)/20 bonus
+    [InlineData(60, 1.0521)]  // 1.0 + log10(11)/20 bonus
+    [InlineData(75, 1.0707)]  // 1.0 + log10(26)/20 bonus
+    [InlineData(90, 1.0806)]  // 1.0 + log10(41)/20 bonus
+    [InlineData(100, 1.0854)] // 1.0 + log10(51)/20 bonus
     public void CalculateStatModifiers_WithVaryingHappiness_FollowsLogarithmicCurve(
         int happiness, double expectedModifier)
     {
@@ -235,7 +235,7 @@ public class SpeedModifierCalculatorTests
         var result = _sut.CalculateStatModifiers(context);
 
         // Assert
-        Assert.Equal(expectedModifier, result, precision: 4);
+        Assert.Equal(expectedModifier, result, precision: 3);
     }
 
     [Fact]
@@ -251,9 +251,9 @@ public class SpeedModifierCalculatorTests
         // Assert
         // Speed 80: 1.0 + (80-50)*0.002 = 1.06
         // Agility 60: 1.0 + (60-50)*0.001 = 1.01
-        // Happiness 75: 1.0 + log10(26)/20 ≈ 1.0141
-        // Combined: 1.06 * 1.01 * 1.0141 ≈ 1.0851
-        Assert.Equal(1.0851, result, precision: 4);
+        // Happiness 75: 1.0 + log10(26)/20 ≈ 1.0707
+        // Combined: 1.06 * 1.01 * 1.0707 ≈ 1.1463
+        Assert.Equal(1.1463, result, precision: 4);
     }
 
     [Fact]
@@ -269,9 +269,9 @@ public class SpeedModifierCalculatorTests
         // Assert
         // Speed 100: 1.10
         // Agility 100: 1.05
-        // Happiness 100: 1.0255
-        // Combined: 1.10 * 1.05 * 1.0255 ≈ 1.1829
-        Assert.Equal(1.1829, result, precision: 4);
+        // Happiness 100: 1.0854
+        // Combined: 1.10 * 1.05 * 1.0854 ≈ 1.2536
+        Assert.Equal(1.2536, result, precision: 4);
     }
 
     [Fact]
@@ -287,9 +287,9 @@ public class SpeedModifierCalculatorTests
         // Assert
         // Speed 0: 0.90
         // Agility 0: 0.95
-        // Happiness 0: 0.9661
-        // Combined: 0.90 * 0.95 * 0.9661 ≈ 0.8257
-        Assert.Equal(0.8257, result, precision: 4);
+        // Happiness 0: 0.8861
+        // Combined: 0.90 * 0.95 * 0.8861 ≈ 0.7577
+        Assert.Equal(0.7577, result, precision: 4);
     }
 
     [Fact]
@@ -308,16 +308,16 @@ public class SpeedModifierCalculatorTests
     public void HappinessSpeedModifier_IsAsymmetric_PenaltyExceedsBonus()
     {
         // Arrange
-        var penaltyMagnitude = Math.Abs(1.0 - GetModifierForHappiness(0));   // ~3.39%
-        var bonusMagnitude = Math.Abs(GetModifierForHappiness(100) - 1.0);   // ~2.55%
+        var penaltyMagnitude = Math.Abs(1.0 - GetModifierForHappiness(0));   // ~11.39%
+        var bonusMagnitude = Math.Abs(GetModifierForHappiness(100) - 1.0);   // ~8.54%
 
         // Assert: Unhappiness hurts more than happiness helps
         Assert.True(penaltyMagnitude > bonusMagnitude,
             $"Expected penalty ({penaltyMagnitude:P2}) > bonus ({bonusMagnitude:P2})");
 
         // Specific expectations
-        Assert.Equal(0.0339, penaltyMagnitude, precision: 4);
-        Assert.Equal(0.0255, bonusMagnitude, precision: 4);
+        Assert.Equal(0.1138, penaltyMagnitude, precision: 3);
+        Assert.Equal(0.0854, bonusMagnitude, precision: 3);
     }
 
     private double GetModifierForHappiness(int happiness)

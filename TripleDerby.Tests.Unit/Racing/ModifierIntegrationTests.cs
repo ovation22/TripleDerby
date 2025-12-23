@@ -30,7 +30,8 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
             {
                 new() { StatisticId = StatisticId.Speed, Actual = (byte)speed },
                 new() { StatisticId = StatisticId.Agility, Actual = 50 },
-                new() { StatisticId = StatisticId.Stamina, Actual = 50 }
+                new() { StatisticId = StatisticId.Stamina, Actual = 50 },
+                new() { StatisticId = StatisticId.Happiness, Actual = 50 }
             }
         };
 
@@ -71,7 +72,8 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
             {
                 new() { StatisticId = StatisticId.Speed, Actual = 100 },
                 new() { StatisticId = StatisticId.Agility, Actual = 50 },
-                new() { StatisticId = StatisticId.Stamina, Actual = 50 }
+                new() { StatisticId = StatisticId.Stamina, Actual = 50 },
+                new() { StatisticId = StatisticId.Happiness, Actual = 50 }
             }
         };
 
@@ -83,7 +85,8 @@ public class ModifierIntegrationTests(ITestOutputHelper output)
             {
                 new() { StatisticId = StatisticId.Speed, Actual = 0 },
                 new() { StatisticId = StatisticId.Agility, Actual = 50 },
-                new() { StatisticId = StatisticId.Stamina, Actual = 50 }
+                new() { StatisticId = StatisticId.Stamina, Actual = 50 },
+                new() { StatisticId = StatisticId.Happiness, Actual = 50 }
             }
         };
 
