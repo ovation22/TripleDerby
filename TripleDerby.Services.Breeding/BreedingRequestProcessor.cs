@@ -243,8 +243,8 @@ public class BreedingRequestProcessor(
         double totalWeight = 0.0;
         foreach (var c in candidates)
         {
-            var denom = Math.Max(1.0, (double)c.Weight);
-            double frequency = 1.0 / denom;
+            var denominator = Math.Max(1.0, c.Weight);
+            double frequency = 1.0 / denominator;
 
             if (c.IsSpecial)
                 frequency *= specialMultiplier;
@@ -273,9 +273,9 @@ public class BreedingRequestProcessor(
         if (damStats == null) throw new ArgumentNullException(nameof(damStats));
 
         List<HorseStatistic> foalStatistics =
-            [new() { StatisticId = StatisticId.Happiness, DominantPotential = 100 }];
+            [new() { StatisticId = StatisticId.Happiness, Actual = 50, DominantPotential = 100 }];
 
-        var requiredStats = Enum.GetValues(typeof(StatisticId)).Cast<StatisticId>().Where(x => x != StatisticId.Happiness);
+        var requiredStats = Enum.GetValues(typeof(StatisticId)).Cast<StatisticId>().Where(x => x != StatisticId.Happiness).ToList();
         foreach (var stat in requiredStats)
         {
             if (sireStats.All(x => x.StatisticId != stat))
@@ -353,6 +353,7 @@ public class BreedingRequestProcessor(
             DominantPotential = dominantPotential,
             RecessivePotential = recessivePotential
         };
+
         return foalStatistic;
     }
 
