@@ -16,12 +16,6 @@ public class RaceService(
     ISpeedModifierCalculator speedModifierCalculator,
     IStaminaCalculator staminaCalculator) : IRaceService
 {
-    // Phase 2: Speed Modifier Calculator (injected via DI)
-    private readonly ISpeedModifierCalculator _speedModifierCalculator = speedModifierCalculator;
-
-    // Feature 004: Stamina Calculator (injected via DI)
-    private readonly IStaminaCalculator _staminaCalculator = staminaCalculator;
-
     // Configuration constants
     private const double BaseSpeedMph = 38.0; // Average horse speed in mph
     private const double MilesPerFurlong = 0.125; // 1 furlong = 1/8 mile
@@ -226,23 +220,23 @@ public class RaceService(
 
         // Modifier Pipeline: Stats → Environment → Phase → Stamina → Random
         // Apply stat modifiers (Speed + Agility)
-        var statModifier = _speedModifierCalculator.CalculateStatModifiers(context);
+        var statModifier = speedModifierCalculator.CalculateStatModifiers(context);
         baseSpeed *= statModifier;
 
         // Apply environmental modifiers (Surface + Condition)
-        var envModifier = _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
+        var envModifier = speedModifierCalculator.CalculateEnvironmentalModifiers(context);
         baseSpeed *= envModifier;
 
         // Apply phase modifiers (LegType timing or conditional bonuses)
-        var phaseModifier = _speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
+        var phaseModifier = speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
         baseSpeed *= phaseModifier;
 
         // Feature 004: Apply stamina modifier (speed penalty when stamina low)
-        var staminaModifier = _speedModifierCalculator.CalculateStaminaModifier(raceRunHorse);
+        var staminaModifier = speedModifierCalculator.CalculateStaminaModifier(raceRunHorse);
         baseSpeed *= staminaModifier;
 
         // Apply random variance (±1% per tick)
-        var randomVariance = _speedModifierCalculator.ApplyRandomVariance();
+        var randomVariance = speedModifierCalculator.ApplyRandomVariance();
         baseSpeed *= randomVariance;
 
         // Calculate current speed after all modifiers
@@ -263,7 +257,7 @@ public class RaceService(
         raceRunHorse.Distance += (decimal)currentSpeed;
 
         // Feature 004: Deplete stamina based on effort
-        var depletionAmount = _staminaCalculator.CalculateDepletionAmount(
+        var depletionAmount = staminaCalculator.CalculateDepletionAmount(
             raceRunHorse.Horse,
             raceRun.Race.Furlongs,
             currentSpeed,

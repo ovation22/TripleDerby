@@ -336,6 +336,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
             HorseSpeed = random.Next(0, 101),
             HorseAgility = random.Next(0, 101),
             HorseStamina = random.Next(0, 101),
+            HorseHappiness = random.Next(0, 101),
             LegType = (LegTypeId)random.Next(1, 6)
         };
     }
@@ -369,7 +370,8 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
             {
                 new() { StatisticId = StatisticId.Speed, Actual = (byte)config.HorseSpeed },
                 new() { StatisticId = StatisticId.Agility, Actual = (byte)config.HorseAgility },
-                new() { StatisticId = StatisticId.Stamina, Actual = (byte)config.HorseStamina }
+                new() { StatisticId = StatisticId.Stamina, Actual = (byte)config.HorseStamina },
+                new() { StatisticId = StatisticId.Happiness, Actual = (byte)config.HorseHappiness }
             }
         };
 
@@ -466,6 +468,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         public int HorseSpeed { get; set; }
         public int HorseAgility { get; set; }
         public int HorseStamina { get; set; }
+        public int HorseHappiness { get; set; } = 50; // Default to neutral
         public LegTypeId LegType { get; set; }
     }
 

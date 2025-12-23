@@ -169,6 +169,165 @@ public class SpeedModifierCalculatorTests
     }
 
     // ============================================================================
+    // Happiness Modifier Tests
+    // ============================================================================
+
+    [Fact]
+    public void CalculateStatModifiers_WithHappiness50_ShouldReturnNeutral()
+    {
+        // Arrange - Happiness 50 is neutral point with Speed/Agility also neutral
+        var horse = CreateHorseWithStats(speed: 50, agility: 50, happiness: 50);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert
+        Assert.Equal(1.0, result, precision: 5);
+    }
+
+    [Fact]
+    public void CalculateStatModifiers_WithHappiness0_ShouldReturnPenalty()
+    {
+        // Arrange - Happiness 0 with Speed/Agility neutral
+        var horse = CreateHorseWithStats(speed: 50, agility: 50, happiness: 0);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert - Expected: 1.0 - log10(51)/15 ≈ 0.8862
+        Assert.Equal(0.8862, result, precision: 3);
+    }
+
+    [Fact]
+    public void CalculateStatModifiers_WithHappiness100_ShouldReturnBonus()
+    {
+        // Arrange - Happiness 100 with Speed/Agility neutral
+        var horse = CreateHorseWithStats(speed: 50, agility: 50, happiness: 100);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert - Expected: 1.0 + log10(51)/20 ≈ 1.0854
+        Assert.Equal(1.0854, result, precision: 4);
+    }
+
+    [Theory]
+    [InlineData(0, 0.8862)]   // 1.0 - log10(51)/15 penalty
+    [InlineData(10, 0.8925)]  // 1.0 - log10(41)/15 penalty
+    [InlineData(25, 0.9057)]  // 1.0 - log10(26)/15 penalty
+    [InlineData(40, 0.9306)]  // 1.0 - log10(11)/15 penalty
+    [InlineData(50, 1.0000)]  // Neutral
+    [InlineData(60, 1.0521)]  // 1.0 + log10(11)/20 bonus
+    [InlineData(75, 1.0707)]  // 1.0 + log10(26)/20 bonus
+    [InlineData(90, 1.0806)]  // 1.0 + log10(41)/20 bonus
+    [InlineData(100, 1.0854)] // 1.0 + log10(51)/20 bonus
+    public void CalculateStatModifiers_WithVaryingHappiness_FollowsLogarithmicCurve(
+        int happiness, double expectedModifier)
+    {
+        // Arrange - Only happiness varies, Speed/Agility neutral
+        var horse = CreateHorseWithStats(speed: 50, agility: 50, happiness: (byte)happiness);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert
+        Assert.Equal(expectedModifier, result, precision: 3);
+    }
+
+    [Fact]
+    public void CalculateStatModifiers_WithSpeed80Agility60Happiness75_ShouldCombineAllThree()
+    {
+        // Arrange - All three stats above neutral
+        var horse = CreateHorseWithStats(speed: 80, agility: 60, happiness: 75);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert
+        // Speed 80: 1.0 + (80-50)*0.002 = 1.06
+        // Agility 60: 1.0 + (60-50)*0.001 = 1.01
+        // Happiness 75: 1.0 + log10(26)/20 ≈ 1.0707
+        // Combined: 1.06 * 1.01 * 1.0707 ≈ 1.1463
+        Assert.Equal(1.1463, result, precision: 4);
+    }
+
+    [Fact]
+    public void CalculateStatModifiers_WithSpeed100Agility100Happiness100_ShouldReturnMaxBonus()
+    {
+        // Arrange - All stats at maximum
+        var horse = CreateHorseWithStats(speed: 100, agility: 100, happiness: 100);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert
+        // Speed 100: 1.10
+        // Agility 100: 1.05
+        // Happiness 100: 1.0854
+        // Combined: 1.10 * 1.05 * 1.0854 ≈ 1.2536
+        Assert.Equal(1.2536, result, precision: 4);
+    }
+
+    [Fact]
+    public void CalculateStatModifiers_WithSpeed0Agility0Happiness0_ShouldReturnMaxPenalty()
+    {
+        // Arrange - All stats at minimum
+        var horse = CreateHorseWithStats(speed: 0, agility: 0, happiness: 0);
+        var context = CreateModifierContext(horse);
+
+        // Act
+        var result = _sut.CalculateStatModifiers(context);
+
+        // Assert
+        // Speed 0: 0.90
+        // Agility 0: 0.95
+        // Happiness 0: 0.8861
+        // Combined: 0.90 * 0.95 * 0.8861 ≈ 0.7577
+        Assert.Equal(0.7577, result, precision: 4);
+    }
+
+    [Fact]
+    public void HappinessSpeedModifier_ShowsDiminishingReturns()
+    {
+        // Arrange: Calculate change per happiness point in different ranges
+        var change0to25 = (GetModifierForHappiness(25) - GetModifierForHappiness(0)) / 25.0;
+        var change75to100 = (GetModifierForHappiness(100) - GetModifierForHappiness(75)) / 25.0;
+
+        // Assert: Later range shows smaller change per point (diminishing returns)
+        Assert.True(change75to100 < change0to25,
+            $"Expected diminishing returns: {change75to100:F6} < {change0to25:F6}");
+    }
+
+    [Fact]
+    public void HappinessSpeedModifier_IsAsymmetric_PenaltyExceedsBonus()
+    {
+        // Arrange
+        var penaltyMagnitude = Math.Abs(1.0 - GetModifierForHappiness(0));   // ~11.39%
+        var bonusMagnitude = Math.Abs(GetModifierForHappiness(100) - 1.0);   // ~8.54%
+
+        // Assert: Unhappiness hurts more than happiness helps
+        Assert.True(penaltyMagnitude > bonusMagnitude,
+            $"Expected penalty ({penaltyMagnitude:P2}) > bonus ({bonusMagnitude:P2})");
+
+        // Specific expectations
+        Assert.Equal(0.1138, penaltyMagnitude, precision: 3);
+        Assert.Equal(0.0854, bonusMagnitude, precision: 3);
+    }
+
+    private double GetModifierForHappiness(int happiness)
+    {
+        var horse = CreateHorseWithStats(speed: 50, agility: 50, happiness: (byte)happiness);
+        var context = CreateModifierContext(horse);
+        return _sut.CalculateStatModifiers(context);
+    }
+
+    // ============================================================================
     // Phase 3: Environmental Modifier Tests
     // ============================================================================
 
@@ -945,7 +1104,7 @@ public class SpeedModifierCalculatorTests
         return raceRun;
     }
 
-    private static Horse CreateHorseWithStats(byte speed, byte agility)
+    private static Horse CreateHorseWithStats(byte speed, byte agility, byte happiness = 50)
     {
         return new Horse
         {
@@ -977,7 +1136,7 @@ public class SpeedModifierCalculatorTests
                 new()
                 {
                     StatisticId = StatisticId.Happiness,
-                    Actual = 50
+                    Actual = happiness
                 }
             }
         };
