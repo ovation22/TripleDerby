@@ -220,4 +220,133 @@ public static class RaceModifierConfig
     /// Uses quadratic curve for progressive penalty below 50% stamina.
     /// </summary>
     public const double MaxStaminaSpeedPenalty = 0.10;  // 10% max penalty (mild)
+
+    // ============================================================================
+    // Overtaking & Lane Change Configuration (Feature 007 - Phase 1)
+    // ============================================================================
+
+    /// <summary>
+    /// Base threshold distance for detecting overtaking opportunities (in furlongs).
+    /// Modified by speed factor and race phase multiplier.
+    /// </summary>
+    public const decimal OvertakingBaseThreshold = 0.25m;
+
+    /// <summary>
+    /// Speed stat influence on overtaking threshold per point.
+    /// Higher speed = larger detection range.
+    /// Range: Speed 0 = 1.0x threshold, Speed 100 = 1.2x threshold
+    /// </summary>
+    public const double OvertakingSpeedFactor = 0.002;
+
+    /// <summary>
+    /// Multiplier applied to overtaking threshold in final 25% of race.
+    /// Creates more aggressive overtaking behavior late in races.
+    /// </summary>
+    public const double OvertakingLateRaceMultiplier = 1.5;
+
+    /// <summary>
+    /// Base cooldown between lane change attempts at 0 agility (in ticks).
+    /// Reduced by agility: cooldown = BaseLaneChangeCooldown - (Agility × AgilityCooldownReduction)
+    /// </summary>
+    public const int BaseLaneChangeCooldown = 10;
+
+    /// <summary>
+    /// Reduction in cooldown per point of agility.
+    /// Range: Agility 0 = 10 tick cooldown, Agility 100 = 2 tick cooldown
+    /// Tuned: Reduced from 0.1 to 0.08 to decrease lane change frequency (Phase 3 balance tuning)
+    /// </summary>
+    public const double AgilityCooldownReduction = 0.08;
+
+    /// <summary>
+    /// Minimum clearance required behind horse when changing lanes (in furlongs).
+    /// Prevents cutting off horses that are close behind.
+    /// </summary>
+    public const decimal LaneChangeMinClearanceBehind = 0.1m;
+
+    /// <summary>
+    /// Minimum clearance required ahead of horse when changing lanes (in furlongs).
+    /// Prevents collisions with horses ahead in target lane.
+    /// Asymmetric: requires more clearance ahead than behind for safety.
+    /// </summary>
+    public const decimal LaneChangeMinClearanceAhead = 0.2m;
+
+    // ============================================================================
+    // Risky Lane Change Configuration (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// Base penalty duration for successful risky lane changes at 0 durability (in ticks).
+    /// Reduced by durability: penaltyTicks = RiskyLaneChangePenaltyBaseTicks - (Durability × RiskyLaneChangePenaltyReduction)
+    /// </summary>
+    public const int RiskyLaneChangePenaltyBaseTicks = 5;
+
+    /// <summary>
+    /// Reduction in penalty duration per point of durability.
+    /// Range: Durability 0 = 5 tick penalty, Durability 100 = 1 tick penalty
+    /// </summary>
+    public const double RiskyLaneChangePenaltyReduction = 0.04;
+
+    /// <summary>
+    /// Speed multiplier applied during risky lane change penalty.
+    /// Value of 0.95 means 5% speed reduction while penalty is active.
+    /// </summary>
+    public const double RiskyLaneChangeSpeedPenalty = 0.95;
+
+    /// <summary>
+    /// Divisor for calculating risky squeeze play success probability from agility.
+    /// Formula: successChance = Agility / RiskySqueezeAgilityDivisor
+    /// Value of 250.0 yields: Agility 0 = 0%, Agility 50 = 20%, Agility 100 = 40%
+    /// Tuned: Increased from 200.0 to 250.0 to reduce risky attempt success rate (Phase 3 balance tuning)
+    /// </summary>
+    public const double RiskySqueezeAgilityDivisor = 250.0;
+
+    // ============================================================================
+    // Traffic Response Configuration (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// FrontRunner frustration penalty magnitude when blocked with no clear lanes.
+    /// Applied as speed multiplier: speed *= (1.0 - FrontRunnerFrustrationPenalty)
+    /// </summary>
+    public const double FrontRunnerFrustrationPenalty = 0.03;  // 3% penalty
+
+    /// <summary>
+    /// StartDash speed cap penalty when blocked (follows leader minus this penalty).
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - StartDashSpeedCapPenalty)
+    /// </summary>
+    public const double StartDashSpeedCapPenalty = 0.01;  // 1% below leader
+
+    /// <summary>
+    /// LastSpurt speed cap penalty when blocked (minimal, patient behavior).
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - LastSpurtSpeedCapPenalty)
+    /// </summary>
+    public const double LastSpurtSpeedCapPenalty = 0.001;  // 0.1% below leader
+
+    /// <summary>
+    /// StretchRunner speed cap penalty when blocked.
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - StretchRunnerSpeedCapPenalty)
+    /// </summary>
+    public const double StretchRunnerSpeedCapPenalty = 0.01;  // 1% below leader
+
+    /// <summary>
+    /// RailRunner speed cap penalty when blocked on rail (extra cautious).
+    /// Applied as: cappedSpeed = leaderSpeed * (1.0 - RailRunnerSpeedCapPenalty)
+    /// </summary>
+    public const double RailRunnerSpeedCapPenalty = 0.02;  // 2% below leader
+
+    /// <summary>
+    /// Distance threshold for detecting horse ahead as "blocking" (in furlongs).
+    /// Used by traffic response system to identify when horse is close enough to apply effects.
+    /// </summary>
+    public const decimal TrafficBlockingDistance = 0.2m;
+
+    // ============================================================================
+    // Lane Finding Configuration (Feature 007 - Phase 2)
+    // ============================================================================
+
+    /// <summary>
+    /// Look-ahead distance for StartDash to evaluate lane congestion (in furlongs).
+    /// Checks for horses ahead within this distance to find least congested lane.
+    /// </summary>
+    public const decimal StartDashLookAheadDistance = 0.5m;
 }
