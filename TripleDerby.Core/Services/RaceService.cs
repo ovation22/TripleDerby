@@ -897,6 +897,32 @@ public class RaceService(
             }
         }
 
+        // Photo finish detection (check if top 2 have both finished and were close)
+        var finishedHorses = raceRun.Horses
+            .Where(h => h.Distance >= raceRun.Race.Furlongs)
+            .OrderBy(h => h.Time)
+            .ToList();
+
+        // Check for photo finish when top 2 have finished
+        if (finishedHorses.Count >= 2)
+        {
+            var top2 = finishedHorses.Take(2).ToList();
+            var margin = top2[1].Time - top2[0].Time;
+
+            // Only report photo finish once (check if we haven't already detected it)
+            if (margin <= CommentaryConfig.PhotoFinishMargin && events.PhotoFinish == null)
+            {
+                // Check if the 2nd place horse just finished this tick
+                if (top2[1].Time >= tick - 1 && top2[1].Time < tick)
+                {
+                    events.PhotoFinish = new PhotoFinish(
+                        top2[0].Horse.Name,
+                        top2[1].Horse.Name,
+                        margin);
+                }
+            }
+        }
+
         // Horses crossing finish line (check Time field set this tick)
         var finishedThisTick = raceRun.Horses
             .Where(h => h.Distance >= raceRun.Race.Furlongs &&
@@ -908,24 +934,6 @@ public class RaceService(
         foreach (var horse in finishedThisTick)
         {
             events.Finishes.Add(new HorseFinish(horse.Horse.Name, horse.Place));
-        }
-
-        // Photo finish detection (all horses finished, check top 2 margin)
-        if (raceRun.Horses.All(h => h.Distance >= raceRun.Race.Furlongs))
-        {
-            var top2 = raceRun.Horses.OrderBy(h => h.Time).Take(2).ToList();
-            if (top2.Count == 2)
-            {
-                var margin = top2[1].Time - top2[0].Time;
-
-                if (margin <= CommentaryConfig.PhotoFinishMargin)
-                {
-                    events.PhotoFinish = new PhotoFinish(
-                        top2[0].Horse.Name,
-                        top2[1].Horse.Name,
-                        margin);
-                }
-            }
         }
 
         return events;

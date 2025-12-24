@@ -30,10 +30,11 @@ public class RaceCommentaryGenerator(IRandomGenerator random) : IRaceCommentaryG
         if (events.IsFinalStretch)
             notes.Add(GenerateFinalStretch(raceRun));
 
-        notes.AddRange(events.Finishes.Select(GenerateFinish));
-
+        // Photo finish must come BEFORE individual finish announcements
         if (events.PhotoFinish != null)
             notes.Add(GeneratePhotoFinish(events.PhotoFinish));
+
+        notes.AddRange(events.Finishes.Select(GenerateFinish));
 
         // Join with semicolon only for special events (start, lead change, stretch, finishes)
         // Horse events are kept separate to avoid narrative clustering
@@ -207,7 +208,7 @@ public class RaceCommentaryGenerator(IRandomGenerator random) : IRaceCommentaryG
     /// </summary>
     private static string GeneratePhotoFinish(PhotoFinish pf)
     {
-        return $"Photo finish! {pf.Horse1} edges {pf.Horse2} by {pf.Margin:F2} ticks!";
+        return $"Photo finish! {pf.Horse1} edges {pf.Horse2} by a nose!";
     }
 
     /// <summary>
