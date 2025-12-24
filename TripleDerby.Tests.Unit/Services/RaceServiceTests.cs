@@ -1,6 +1,7 @@
 using Moq;
 using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
+using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
@@ -33,7 +34,10 @@ public class RaceServiceTests
         var speedModifierCalculator = new SpeedModifierCalculator(_randomGeneratorMock.Object);
         var staminaCalculator = new StaminaCalculator();
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator);
+        // Feature 008: Commentary generator
+        var commentaryGenerator = new RaceCommentaryGenerator(_randomGeneratorMock.Object);
+
+        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator);
     }
 
     [Fact]
