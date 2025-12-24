@@ -14,7 +14,8 @@ public class RaceService(
     ITripleDerbyRepository repository,
     IRandomGenerator randomGenerator,
     ISpeedModifierCalculator speedModifierCalculator,
-    IStaminaCalculator staminaCalculator) : IRaceService
+    IStaminaCalculator staminaCalculator,
+    IRaceCommentaryGenerator commentaryGenerator) : IRaceService
 {
     // Configuration constants
     private const double BaseSpeedMph = 38.0; // Average horse speed in mph
@@ -66,8 +67,8 @@ public class RaceService(
         var cpuHorses = await repository.ListAsync(cpuHorseSpec, cancellationToken);
 
         // Combine player's horse with CPU horses
-        var horses = new List<Horse> { myHorse };
-        horses.AddRange(cpuHorses);
+        var horses = new HashSet<Horse> { myHorse };
+        horses.UnionWith(cpuHorses);
 
         var raceRun = new RaceRun
         {
@@ -81,9 +82,14 @@ public class RaceService(
 
         // Calculate total ticks for the race
         var totalTicks = CalculateTotalTicks(race.Furlongs);
-            
+
         var allHorsesFinished = false;
         short tick = 0;
+
+        // Feature 008: Track previous state for event detection
+        var previousPositions = new Dictionary<Guid, int>();
+        var previousLanes = new Dictionary<Guid, byte>();
+        Guid? previousLeader = null;
 
         // Run the simulation until all horses finish
         while (!allHorsesFinished)
@@ -127,12 +133,16 @@ public class RaceService(
                 //ApplyRandomEvents(horse, tick);
             }
 
+            // Feature 008: Detect events and generate commentary
+            var events = DetectEvents(tick, totalTicks, raceRun, previousPositions, previousLanes, previousLeader);
+            var commentary = commentaryGenerator.GenerateCommentary(events, tick, raceRun);
+
             // THEN create the tick record with the updated positions
             var raceRunTick = new RaceRunTick
             {
                 Tick = tick,
                 RaceRunTickHorses = new List<RaceRunTickHorse>(),
-                Note = "TODO"
+                Note = commentary
             };
 
             foreach (var raceRunHorse in raceRun.Horses)
@@ -149,6 +159,9 @@ public class RaceService(
             }
 
             raceRun.RaceRunTicks.Add(raceRunTick);
+
+            // Feature 008: Update previous state for next tick
+            UpdatePreviousState(raceRun, previousPositions, previousLanes, ref previousLeader);
 
             // Check if all horses have finished
             allHorsesFinished = raceRun.Horses.All(horse => horse.Distance >= race.Furlongs);
@@ -177,6 +190,10 @@ public class RaceService(
             Furlongs = race.Furlongs,
             SurfaceId = race.SurfaceId,
             SurfaceName = race.Surface.Name,
+            PlayByPlay = raceRun.RaceRunTicks
+                .Where(t => !string.IsNullOrEmpty(t.Note))
+                .Select(t => t.Note)
+                .ToList(),
             HorseResults = raceRun.Horses
                 .OrderBy(h => h.Place)
                 .Select(h => new RaceRunHorseResult
@@ -725,5 +742,163 @@ public class RaceService(
         // Approximate speed based on average base speed
         // In reality this would track per-tick movement, but this is sufficient for traffic response
         return AverageBaseSpeed;
+    }
+
+    // ============================================================================
+    // Play-by-Play Commentary System (Feature 008)
+    // ============================================================================
+
+    /// <summary>
+    /// Detects notable events during a race tick for commentary generation.
+    /// Compares current race state with previous tick to identify changes.
+    /// </summary>
+    /// <param name="tick">Current tick number</param>
+    /// <param name="totalTicks">Total ticks in race</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <param name="previousPositions">Horse positions from previous tick</param>
+    /// <param name="previousLanes">Horse lanes from previous tick</param>
+    /// <param name="previousLeader">Leader horse ID from previous tick</param>
+    /// <returns>Collection of detected events</returns>
+    private static TickEvents DetectEvents(
+        short tick,
+        short totalTicks,
+        RaceRun raceRun,
+        Dictionary<Guid, int> previousPositions,
+        Dictionary<Guid, byte> previousLanes,
+        Guid? previousLeader)
+    {
+        var events = new TickEvents();
+
+        // Race start
+        if (tick == 1)
+            events.IsRaceStart = true;
+
+        // Final stretch (last 25%)
+        var raceProgress = (double)tick / totalTicks;
+        if (raceProgress >= 0.75 && (tick - 1) / (double)totalTicks < 0.75)
+            events.IsFinalStretch = true;
+
+        // Current positions (sorted by distance)
+        var currentPositions = raceRun.Horses
+            .OrderByDescending(h => h.Distance)
+            .Select((h, index) => new { h.Horse.Id, h.Horse.Name, Position = index + 1 })
+            .ToList();
+
+        var currentLeader = currentPositions.FirstOrDefault()?.Id;
+
+        // Lead change
+        if (currentLeader != null && previousLeader != null && currentLeader != previousLeader)
+        {
+            var newLeaderName = currentPositions.First(p => p.Id == currentLeader).Name;
+            var oldLeaderName = raceRun.Horses.First(h => h.Horse.Id == previousLeader).Horse.Name;
+            events.LeadChange = new LeadChange(newLeaderName, oldLeaderName);
+        }
+
+        // Position changes (only report improvements)
+        foreach (var current in currentPositions)
+        {
+            if (previousPositions.TryGetValue(current.Id, out var oldPos))
+            {
+                if (current.Position < oldPos) // Improved position (lower number = better)
+                {
+                    events.PositionChanges.Add(new PositionChange(
+                        current.Name,
+                        oldPos,
+                        current.Position));
+                }
+            }
+        }
+
+        // Lane changes (compare current vs previous lanes)
+        foreach (var horse in raceRun.Horses)
+        {
+            if (previousLanes.TryGetValue(horse.Horse.Id, out var oldLane))
+            {
+                if (horse.Lane != oldLane)
+                {
+                    // Determine type: risky success if speed penalty active
+                    var type = horse.SpeedPenaltyTicksRemaining > 0
+                        ? LaneChangeType.RiskySuccess
+                        : LaneChangeType.Clean;
+
+                    events.LaneChanges.Add(new LaneChange(
+                        horse.Horse.Name,
+                        oldLane,
+                        horse.Lane,
+                        type));
+                }
+            }
+        }
+
+        // Horses crossing finish line (check Time field set this tick)
+        var finishedThisTick = raceRun.Horses
+            .Where(h => h.Distance >= raceRun.Race.Furlongs &&
+                       h.Time >= tick - 1 &&
+                       h.Time < tick)
+            .OrderBy(h => h.Time)
+            .ToList();
+
+        foreach (var horse in finishedThisTick)
+        {
+            events.Finishes.Add(new HorseFinish(horse.Horse.Name, horse.Place));
+        }
+
+        // Photo finish detection (all horses finished, check top 2 margin)
+        if (raceRun.Horses.All(h => h.Distance >= raceRun.Race.Furlongs))
+        {
+            var top2 = raceRun.Horses.OrderBy(h => h.Time).Take(2).ToList();
+            if (top2.Count == 2)
+            {
+                var margin = top2[1].Time - top2[0].Time;
+                const double photoFinishMargin = 0.5; // ticks
+
+                if (margin <= photoFinishMargin)
+                {
+                    events.PhotoFinish = new PhotoFinish(
+                        top2[0].Horse.Name,
+                        top2[1].Horse.Name,
+                        margin);
+                }
+            }
+        }
+
+        return events;
+    }
+
+    /// <summary>
+    /// Updates the previous state tracking dictionaries for the next tick.
+    /// </summary>
+    /// <param name="raceRun">Current race state</param>
+    /// <param name="previousPositions">Dictionary to update with current positions</param>
+    /// <param name="previousLanes">Dictionary to update with current lanes</param>
+    /// <param name="previousLeader">Reference to update with current leader</param>
+    private static void UpdatePreviousState(
+        RaceRun raceRun,
+        Dictionary<Guid, int> previousPositions,
+        Dictionary<Guid, byte> previousLanes,
+        ref Guid? previousLeader)
+    {
+        previousPositions.Clear();
+        previousLanes.Clear();
+
+        // Calculate current positions
+        var positions = raceRun.Horses
+            .OrderByDescending(h => h.Distance)
+            .Select((h, index) => new { h.Horse.Id, Position = index + 1 })
+            .ToList();
+
+        foreach (var pos in positions)
+        {
+            previousPositions[pos.Id] = pos.Position;
+        }
+
+        // Store current lanes
+        foreach (var horse in raceRun.Horses)
+        {
+            previousLanes[horse.Horse.Id] = horse.Lane;
+        }
+
+        // Store current leader
+        previousLeader = positions.FirstOrDefault()?.Id;
     }
 }

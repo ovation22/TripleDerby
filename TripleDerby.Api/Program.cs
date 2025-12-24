@@ -69,6 +69,7 @@ public class Program
             // Racing calculators (Feature 005: Phase 4 - DI Refactor)
             builder.Services.AddScoped<ISpeedModifierCalculator, SpeedModifierCalculator>();
             builder.Services.AddScoped<IStaminaCalculator, StaminaCalculator>();
+            builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>(); // Feature 008
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();

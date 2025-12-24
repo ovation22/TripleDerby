@@ -401,8 +401,11 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         var speedModifierCalculator = new SpeedModifierCalculator(mockRandom.Object);
         var staminaCalculator = new StaminaCalculator();
 
+        // Feature 008: Commentary generator
+        var commentaryGenerator = new RaceCommentaryGenerator();
+
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator);
         var result = await raceService.Race(1, horse.Id, CancellationToken.None);
 
         // Extract results
