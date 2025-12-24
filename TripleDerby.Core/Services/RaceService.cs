@@ -2,6 +2,7 @@
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
+using TripleDerby.Core.Configuration;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
 using TripleDerby.Core.Specifications;
@@ -809,8 +810,6 @@ public class RaceService(
         }
 
         // Position changes (only report improvements for horses still racing)
-        const short positionChangeCooldown = 10; // Ticks before same horse can have another position change reported
-
         foreach (var current in currentPositions)
         {
             var horse = raceRun.Horses.First(h => h.Horse.Id == current.Id);
@@ -826,7 +825,7 @@ public class RaceService(
                     // Check if this horse had a recent position change (within cooldown window)
                     if (recentPositionChanges.TryGetValue(current.Id, out var lastChangeTick))
                     {
-                        if (tick - lastChangeTick < positionChangeCooldown)
+                        if (tick - lastChangeTick < CommentaryConfig.PositionChangeCooldown)
                             continue; // Skip this position change, too soon after last one
                     }
 

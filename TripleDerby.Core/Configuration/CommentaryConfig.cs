@@ -161,4 +161,11 @@ public static class CommentaryConfig
     /// Default: 1 (narrate all improvements).
     /// </summary>
     public const int MinimumPositionGainToNarrate = 1;
+
+    /// <summary>
+    /// Cooldown window (in ticks) before a horse can have another position change reported.
+    /// Prevents repetitive back-and-forth position swap commentary.
+    /// Default: 10 ticks.
+    /// </summary>
+    public const short PositionChangeCooldown = 10;
 }
