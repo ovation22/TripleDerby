@@ -90,6 +90,7 @@ public class RaceService(
         var previousPositions = new Dictionary<Guid, int>();
         var previousLanes = new Dictionary<Guid, byte>();
         Guid? previousLeader = null;
+        var recentPositionChanges = new Dictionary<Guid, short>(); // Track last tick each horse had a position change
 
         // Run the simulation until all horses finish
         while (!allHorsesFinished)
@@ -123,6 +124,10 @@ public class RaceService(
                             horse.Time = tick;
                         }
 
+                        // Assign place based on finish order (Feature 008)
+                        var finishedCount = raceRun.Horses.Count(h => h.Distance >= race.Furlongs);
+                        horse.Place = (byte)finishedCount;
+
                         // NOW cap the distance at finish line
                         horse.Distance = race.Furlongs;
                     }
@@ -134,7 +139,7 @@ public class RaceService(
             }
 
             // Feature 008: Detect events and generate commentary
-            var events = DetectEvents(tick, totalTicks, raceRun, previousPositions, previousLanes, previousLeader);
+            var events = DetectEvents(tick, totalTicks, raceRun, previousPositions, previousLanes, previousLeader, recentPositionChanges);
             var commentary = commentaryGenerator.GenerateCommentary(events, tick, raceRun);
 
             // THEN create the tick record with the updated positions
@@ -758,6 +763,7 @@ public class RaceService(
     /// <param name="previousPositions">Horse positions from previous tick</param>
     /// <param name="previousLanes">Horse lanes from previous tick</param>
     /// <param name="previousLeader">Leader horse ID from previous tick</param>
+    /// <param name="recentPositionChanges">Tracks last tick each horse had a position change</param>
     /// <returns>Collection of detected events</returns>
     private static TickEvents DetectEvents(
         short tick,
@@ -765,7 +771,8 @@ public class RaceService(
         RaceRun raceRun,
         Dictionary<Guid, int> previousPositions,
         Dictionary<Guid, byte> previousLanes,
-        Guid? previousLeader)
+        Guid? previousLeader,
+        Dictionary<Guid, short> recentPositionChanges)
     {
         var events = new TickEvents();
 
@@ -786,25 +793,59 @@ public class RaceService(
 
         var currentLeader = currentPositions.FirstOrDefault()?.Id;
 
-        // Lead change
+        // Lead change (only report if both horses are still racing)
         if (currentLeader != null && previousLeader != null && currentLeader != previousLeader)
         {
-            var newLeaderName = currentPositions.First(p => p.Id == currentLeader).Name;
-            var oldLeaderName = raceRun.Horses.First(h => h.Horse.Id == previousLeader).Horse.Name;
-            events.LeadChange = new LeadChange(newLeaderName, oldLeaderName);
+            var newLeaderHorse = raceRun.Horses.First(h => h.Horse.Id == currentLeader);
+            var oldLeaderHorse = raceRun.Horses.First(h => h.Horse.Id == previousLeader);
+
+            // Skip lead change if either horse has finished
+            if (newLeaderHorse.Distance < raceRun.Race.Furlongs && oldLeaderHorse.Distance < raceRun.Race.Furlongs)
+            {
+                var newLeaderName = currentPositions.First(p => p.Id == currentLeader).Name;
+                var oldLeaderName = oldLeaderHorse.Horse.Name;
+                events.LeadChange = new LeadChange(newLeaderName, oldLeaderName);
+            }
         }
 
-        // Position changes (only report improvements)
+        // Position changes (only report improvements for horses still racing)
+        const short positionChangeCooldown = 10; // Ticks before same horse can have another position change reported
+
         foreach (var current in currentPositions)
         {
+            var horse = raceRun.Horses.First(h => h.Horse.Id == current.Id);
+
+            // Skip horses that finished this tick (they'll get finish commentary instead)
+            if (horse.Distance >= raceRun.Race.Furlongs)
+                continue;
+
             if (previousPositions.TryGetValue(current.Id, out var oldPos))
             {
                 if (current.Position < oldPos) // Improved position (lower number = better)
                 {
+                    // Check if this horse had a recent position change (within cooldown window)
+                    if (recentPositionChanges.TryGetValue(current.Id, out var lastChangeTick))
+                    {
+                        if (tick - lastChangeTick < positionChangeCooldown)
+                            continue; // Skip this position change, too soon after last one
+                    }
+
+                    // Find who they passed (the horse now in the position they left)
+                    string? opponentPassed = null;
+                    var horseInOldPosition = currentPositions.FirstOrDefault(p => p.Position == oldPos);
+                    if (horseInOldPosition != null && horseInOldPosition.Id != current.Id)
+                    {
+                        opponentPassed = horseInOldPosition.Name;
+                    }
+
                     events.PositionChanges.Add(new PositionChange(
                         current.Name,
                         oldPos,
-                        current.Position));
+                        current.Position,
+                        opponentPassed));
+
+                    // Record this position change
+                    recentPositionChanges[current.Id] = tick;
                 }
             }
         }
@@ -835,7 +876,7 @@ public class RaceService(
             .Where(h => h.Distance >= raceRun.Race.Furlongs &&
                        h.Time >= tick - 1 &&
                        h.Time < tick)
-            .OrderBy(h => h.Time)
+            .OrderBy(h => h.Place)  // Report in place order, not time order
             .ToList();
 
         foreach (var horse in finishedThisTick)

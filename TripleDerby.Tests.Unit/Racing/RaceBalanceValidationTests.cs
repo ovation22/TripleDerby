@@ -402,7 +402,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         var staminaCalculator = new StaminaCalculator();
 
         // Feature 008: Commentary generator
-        var commentaryGenerator = new RaceCommentaryGenerator();
+        var commentaryGenerator = new RaceCommentaryGenerator(mockRandom.Object);
 
         // Create race service and run simulation
         var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator);

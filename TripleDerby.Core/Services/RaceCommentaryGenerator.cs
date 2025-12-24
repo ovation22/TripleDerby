@@ -1,14 +1,24 @@
 using TripleDerby.Core.Abstractions.Services;
+using TripleDerby.Core.Abstractions.Utilities;
+using TripleDerby.Core.Configuration;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Utilities;
 
 namespace TripleDerby.Core.Services;
 
 /// <summary>
 /// Generates natural language commentary for race events.
-/// Phase 1 implementation uses simple templates.
+/// Phase 2 implementation uses synonym pools for language variation.
 /// </summary>
 public class RaceCommentaryGenerator : IRaceCommentaryGenerator
 {
+    private readonly IRandomGenerator _random;
+
+    public RaceCommentaryGenerator(IRandomGenerator random)
+    {
+        _random = random;
+    }
+
     public string GenerateCommentary(TickEvents events, short tick, RaceRun raceRun)
     {
         var notes = new List<string>();
@@ -49,61 +59,112 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
     }
 
     /// <summary>
-    /// Generates lead change commentary.
+    /// Generates lead change commentary with varied language.
     /// </summary>
-    private static string GenerateLeadChange(LeadChange leadChange)
+    private string GenerateLeadChange(LeadChange leadChange)
     {
-        return $"{leadChange.NewLeader} takes the lead from {leadChange.OldLeader}!";
+        var leadPhrase = _random.PickRandom(CommentaryConfig.LeadPhrases);
+        var template = _random.PickRandom(CommentaryConfig.LeadChangeTemplates);
+
+        return template
+            .Replace("{newLeader}", leadChange.NewLeader)
+            .Replace("{oldLeader}", leadChange.OldLeader)
+            .Replace("{leadPhrase}", leadPhrase);
     }
 
     /// <summary>
-    /// Generates lane change commentary based on type.
+    /// Generates lane change commentary based on type with varied language.
     /// </summary>
-    private static string GenerateLaneChange(LaneChange lc)
+    private string GenerateLaneChange(LaneChange lc)
     {
         return lc.Type switch
         {
-            LaneChangeType.Clean =>
-                $"{lc.HorseName} moves to lane {lc.NewLane}",
-
-            LaneChangeType.RiskySuccess =>
-                $"{lc.HorseName} threads through traffic into lane {lc.NewLane}!",
-
-            LaneChangeType.RiskyFailure =>
-                $"{lc.HorseName} blocked, unable to change lanes",
-
+            LaneChangeType.Clean => GenerateCleanLaneChange(lc),
+            LaneChangeType.RiskySuccess => GenerateRiskySqueezeSuccess(lc),
+            LaneChangeType.RiskyFailure => $"{lc.HorseName} blocked, unable to change lanes",
             _ => ""
         };
     }
 
-    /// <summary>
-    /// Generates position change commentary.
-    /// </summary>
-    private static string GeneratePositionChange(PositionChange pc)
+    private string GenerateCleanLaneChange(LaneChange lc)
     {
-        var ordinal = GetOrdinal(pc.NewPosition);
-        return $"{pc.HorseName} advances to {ordinal} place";
+        var laneVerb = _random.PickRandom(CommentaryConfig.LaneChangeVerbs);
+        var template = _random.PickRandom(CommentaryConfig.LaneChangeTemplates);
+
+        return template
+            .Replace("{horse}", lc.HorseName)
+            .Replace("{laneVerb}", laneVerb)
+            .Replace("{lane}", lc.NewLane.ToString())
+            .Replace("{oldLane}", lc.OldLane.ToString())
+            .Replace("{newLane}", lc.NewLane.ToString());
+    }
+
+    private string GenerateRiskySqueezeSuccess(LaneChange lc)
+    {
+        var squeezeVerb = _random.PickRandom(CommentaryConfig.RiskySqueezeVerbs);
+        var template = _random.PickRandom(CommentaryConfig.RiskySqueezeTemplates);
+
+        return template
+            .Replace("{horse}", lc.HorseName)
+            .Replace("{squeezeVerb}", squeezeVerb)
+            .Replace("{lane}", lc.NewLane.ToString());
     }
 
     /// <summary>
-    /// Generates final stretch entry commentary.
+    /// Generates position change commentary with varied language.
     /// </summary>
-    private static string GenerateFinalStretch(RaceRun raceRun)
+    private string GeneratePositionChange(PositionChange pc)
+    {
+        var ordinal = GetOrdinal(pc.NewPosition);
+        var passVerb = _random.PickRandom(CommentaryConfig.PassVerbs);
+        var surgeVerb = _random.PickRandom(CommentaryConfig.SurgeVerbs);
+
+        // If we know who was passed, include them in the commentary
+        if (!string.IsNullOrEmpty(pc.OpponentPassed))
+        {
+            var templateChoice = _random.Next(2);
+            return templateChoice switch
+            {
+                0 => $"{pc.HorseName} {passVerb} {pc.OpponentPassed} into {ordinal} place",
+                _ => $"{pc.HorseName} {surgeVerb} past {pc.OpponentPassed}"
+            };
+        }
+
+        // Otherwise, just mention the new position
+        var simpleTemplateChoice = _random.Next(2);
+        return simpleTemplateChoice switch
+        {
+            0 => $"{pc.HorseName} {passVerb} into {ordinal} place",
+            _ => $"{pc.HorseName} {surgeVerb} to {ordinal} place"
+        };
+    }
+
+    /// <summary>
+    /// Generates final stretch entry commentary with varied language.
+    /// </summary>
+    private string GenerateFinalStretch(RaceRun raceRun)
     {
         var leader = raceRun.Horses
             .OrderByDescending(h => h.Distance)
             .FirstOrDefault();
 
-        return leader != null ? $"Into the final stretch! {leader.Horse.Name} leads" : "Into the final stretch!";
+        var intro = _random.PickRandom(CommentaryConfig.FinalStretchIntros);
+        return leader != null ? $"{intro} {leader.Horse.Name} leads" : intro;
     }
 
     /// <summary>
-    /// Generates finish line commentary.
+    /// Generates finish line commentary with varied language.
     /// </summary>
-    private static string GenerateFinish(HorseFinish finish)
+    private string GenerateFinish(HorseFinish finish)
     {
         var ordinal = GetOrdinal(finish.Place);
-        return $"{finish.HorseName} crosses the line in {ordinal} place";
+        var finishVerb = _random.PickRandom(CommentaryConfig.FinishVerbs);
+        var template = _random.PickRandom(CommentaryConfig.FinishTemplates);
+
+        return template
+            .Replace("{horse}", finish.HorseName)
+            .Replace("{finishVerb}", finishVerb)
+            .Replace("{place}", ordinal);
     }
 
     /// <summary>

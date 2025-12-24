@@ -35,7 +35,7 @@ public class RaceServiceTests
         var staminaCalculator = new StaminaCalculator();
 
         // Feature 008: Commentary generator
-        var commentaryGenerator = new RaceCommentaryGenerator();
+        var commentaryGenerator = new RaceCommentaryGenerator(_randomGeneratorMock.Object);
 
         _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator);
     }

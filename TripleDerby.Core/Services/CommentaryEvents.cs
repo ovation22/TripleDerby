@@ -21,7 +21,8 @@ public class TickEvents
 /// <param name="HorseName">Name of the horse that advanced</param>
 /// <param name="OldPosition">Previous position (higher number)</param>
 /// <param name="NewPosition">New position (lower number = better)</param>
-public record PositionChange(string HorseName, int OldPosition, int NewPosition);
+/// <param name="OpponentPassed">Name of the horse that was passed (optional)</param>
+public record PositionChange(string HorseName, int OldPosition, int NewPosition, string? OpponentPassed = null);
 
 /// <summary>
 /// Represents a horse changing lanes during the race.
