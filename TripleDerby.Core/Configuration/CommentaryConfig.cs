@@ -90,18 +90,6 @@ public static class CommentaryConfig
     // ============================================================================
 
     /// <summary>
-    /// Templates for position change commentary.
-    /// Placeholders: {horse}, {passVerb}, {opponent}, {position}
-    /// </summary>
-    public static readonly string[] PositionChangeTemplates =
-    [
-        "{horse} {passVerb} {opponent} to move into {position}",
-        "{horse} {surgeVerb} past {opponent}",
-        "{horse} advances to {position}, passing {opponent}",
-        "{horse} {passVerb} {opponent} for {position}"
-    ];
-
-    /// <summary>
     /// Templates for clean lane changes.
     /// Placeholders: {horse}, {laneVerb}, {lane}, {oldLane}, {newLane}
     /// </summary>
@@ -155,12 +143,6 @@ public static class CommentaryConfig
     /// Default: 0.5 ticks between 1st and 2nd place.
     /// </summary>
     public const double PhotoFinishMargin = 0.5;
-
-    /// <summary>
-    /// Minimum number of positions gained to narrate a position change.
-    /// Default: 1 (narrate all improvements).
-    /// </summary>
-    public const int MinimumPositionGainToNarrate = 1;
 
     /// <summary>
     /// Cooldown window (in ticks) before a horse can have another position change reported.

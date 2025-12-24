@@ -890,9 +890,8 @@ public class RaceService(
             if (top2.Count == 2)
             {
                 var margin = top2[1].Time - top2[0].Time;
-                const double photoFinishMargin = 0.5; // ticks
 
-                if (margin <= photoFinishMargin)
+                if (margin <= CommentaryConfig.PhotoFinishMargin)
                 {
                     events.PhotoFinish = new PhotoFinish(
                         top2[0].Horse.Name,
