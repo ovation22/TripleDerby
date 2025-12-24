@@ -92,6 +92,7 @@ public class RaceService(
         var previousLanes = new Dictionary<Guid, byte>();
         Guid? previousLeader = null;
         var recentPositionChanges = new Dictionary<Guid, short>(); // Track last tick each horse had a position change
+        var recentLaneChanges = new Dictionary<Guid, short>(); // Track last tick each horse had a lane change
 
         // Run the simulation until all horses finish
         while (!allHorsesFinished)
@@ -140,7 +141,7 @@ public class RaceService(
             }
 
             // Feature 008: Detect events and generate commentary
-            var events = DetectEvents(tick, totalTicks, raceRun, previousPositions, previousLanes, previousLeader, recentPositionChanges);
+            var events = DetectEvents(tick, totalTicks, raceRun, previousPositions, previousLanes, previousLeader, recentPositionChanges, recentLaneChanges);
             var commentary = commentaryGenerator.GenerateCommentary(events, tick, raceRun);
 
             // THEN create the tick record with the updated positions
@@ -273,7 +274,7 @@ public class RaceService(
         // Feature 007: Apply risky lane change penalty (if active)
         if (raceRunHorse.SpeedPenaltyTicksRemaining > 0)
         {
-            baseSpeed *= Configuration.RaceModifierConfig.RiskyLaneChangeSpeedPenalty;
+            baseSpeed *= RaceModifierConfig.RiskyLaneChangeSpeedPenalty;
             raceRunHorse.SpeedPenaltyTicksRemaining--;
         }
 
@@ -375,13 +376,13 @@ public class RaceService(
 
         // Late race aggression: 1.5x threshold in final 25%
         var phaseMultiplier = raceProgress > 0.75
-            ? Configuration.RaceModifierConfig.OvertakingLateRaceMultiplier
+            ? RaceModifierConfig.OvertakingLateRaceMultiplier
             : 1.0;
 
         // Speed influence: faster horses detect from further away
-        var speedFactor = 1.0 + (horse.Horse.Speed * Configuration.RaceModifierConfig.OvertakingSpeedFactor);
+        var speedFactor = 1.0 + (horse.Horse.Speed * RaceModifierConfig.OvertakingSpeedFactor);
 
-        return Configuration.RaceModifierConfig.OvertakingBaseThreshold * (decimal)(speedFactor * phaseMultiplier);
+        return RaceModifierConfig.OvertakingBaseThreshold * (decimal)(speedFactor * phaseMultiplier);
     }
 
     /// <summary>
@@ -399,11 +400,11 @@ public class RaceService(
             h.Lane == targetLane &&
             (
                 // Horse behind us - prevent cutting off
-                (horse.Distance - h.Distance < Configuration.RaceModifierConfig.LaneChangeMinClearanceBehind &&
+                (horse.Distance - h.Distance < RaceModifierConfig.LaneChangeMinClearanceBehind &&
                  h.Distance < horse.Distance) ||
 
                 // Horse ahead of us - prevent collisions
-                (h.Distance - horse.Distance < Configuration.RaceModifierConfig.LaneChangeMinClearanceAhead &&
+                (h.Distance - horse.Distance < RaceModifierConfig.LaneChangeMinClearanceAhead &&
                  h.Distance > horse.Distance)
             )
         );
@@ -463,7 +464,7 @@ public class RaceService(
         var laneTraffic = new int[maxLane + 1]; // Index 0 unused, lanes 1 to maxLane
 
         // Count horses ahead in each lane within look-ahead distance
-        var lookAhead = Configuration.RaceModifierConfig.StartDashLookAheadDistance;
+        var lookAhead = RaceModifierConfig.StartDashLookAheadDistance;
         foreach (var h in raceRun.Horses.Where(h =>
             h.Distance > horse.Distance &&
             h.Distance - horse.Distance < lookAhead))
@@ -575,8 +576,8 @@ public class RaceService(
         horse.TicksSinceLastLaneChange++;
 
         // Calculate agility-based cooldown requirement
-        var requiredCooldown = Configuration.RaceModifierConfig.BaseLaneChangeCooldown -
-                              (horse.Horse.Agility * Configuration.RaceModifierConfig.AgilityCooldownReduction);
+        var requiredCooldown = RaceModifierConfig.BaseLaneChangeCooldown -
+                              (horse.Horse.Agility * RaceModifierConfig.AgilityCooldownReduction);
 
         // Check if cooldown allows lane change attempt
         if (horse.TicksSinceLastLaneChange < requiredCooldown)
@@ -614,7 +615,7 @@ public class RaceService(
     private bool AttemptRiskySqueezePlay(RaceRunHorse horse, int targetLane)
     {
         // Calculate success probability from agility (0% to 50%)
-        var squeezeSuccessChance = horse.Horse.Agility / Configuration.RaceModifierConfig.RiskySqueezeAgilityDivisor;
+        var squeezeSuccessChance = horse.Horse.Agility / RaceModifierConfig.RiskySqueezeAgilityDivisor;
 
         if (randomGenerator.NextDouble() < squeezeSuccessChance)
         {
@@ -622,8 +623,8 @@ public class RaceService(
             horse.Lane = (byte)targetLane;
 
             // Apply durability-based penalty
-            var penaltyTicks = Configuration.RaceModifierConfig.RiskyLaneChangePenaltyBaseTicks -
-                              (horse.Horse.Durability * Configuration.RaceModifierConfig.RiskyLaneChangePenaltyReduction);
+            var penaltyTicks = RaceModifierConfig.RiskyLaneChangePenaltyBaseTicks -
+                              (horse.Horse.Durability * RaceModifierConfig.RiskyLaneChangePenaltyReduction);
             horse.SpeedPenaltyTicksRemaining = (byte)Math.Max(1, Math.Round(penaltyTicks));
 
             return true;
@@ -659,14 +660,14 @@ public class RaceService(
                 // Frustration penalty when blocked with no clear lanes
                 if (!HasClearLaneAvailable(horse, raceRun))
                 {
-                    currentSpeed *= (1.0 - Configuration.RaceModifierConfig.FrontRunnerFrustrationPenalty);
+                    currentSpeed *= (1.0 - RaceModifierConfig.FrontRunnerFrustrationPenalty);
                 }
                 break;
 
             case LegTypeId.StartDash:
                 // Speed cap: match leader minus penalty
                 var startDashCap = CalculateHorseSpeed(horseAhead) *
-                                  (1.0 - Configuration.RaceModifierConfig.StartDashSpeedCapPenalty);
+                                  (1.0 - RaceModifierConfig.StartDashSpeedCapPenalty);
                 if (currentSpeed > startDashCap)
                     currentSpeed = startDashCap;
                 break;
@@ -674,7 +675,7 @@ public class RaceService(
             case LegTypeId.LastSpurt:
                 // Patient: minimal speed cap, no frustration
                 var lastSpurtCap = CalculateHorseSpeed(horseAhead) *
-                                  (1.0 - Configuration.RaceModifierConfig.LastSpurtSpeedCapPenalty);
+                                  (1.0 - RaceModifierConfig.LastSpurtSpeedCapPenalty);
                 if (currentSpeed > lastSpurtCap)
                     currentSpeed = lastSpurtCap;
                 break;
@@ -682,7 +683,7 @@ public class RaceService(
             case LegTypeId.StretchRunner:
                 // Speed cap: match leader minus penalty
                 var stretchCap = CalculateHorseSpeed(horseAhead) *
-                                (1.0 - Configuration.RaceModifierConfig.StretchRunnerSpeedCapPenalty);
+                                (1.0 - RaceModifierConfig.StretchRunnerSpeedCapPenalty);
                 if (currentSpeed > stretchCap)
                     currentSpeed = stretchCap;
                 break;
@@ -690,7 +691,7 @@ public class RaceService(
             case LegTypeId.RailRunner:
                 // Extra cautious on rail: higher speed cap penalty
                 var railCap = CalculateHorseSpeed(horseAhead) *
-                             (1.0 - Configuration.RaceModifierConfig.RailRunnerSpeedCapPenalty);
+                             (1.0 - RaceModifierConfig.RailRunnerSpeedCapPenalty);
                 if (currentSpeed > railCap)
                     currentSpeed = railCap;
                 break;
@@ -710,7 +711,7 @@ public class RaceService(
                 h != horse &&
                 h.Lane == horse.Lane &&
                 h.Distance > horse.Distance &&
-                h.Distance - horse.Distance < Configuration.RaceModifierConfig.TrafficBlockingDistance)
+                h.Distance - horse.Distance < RaceModifierConfig.TrafficBlockingDistance)
             .OrderBy(h => h.Distance) // Closest horse ahead
             .FirstOrDefault();
     }
@@ -765,6 +766,7 @@ public class RaceService(
     /// <param name="previousLanes">Horse lanes from previous tick</param>
     /// <param name="previousLeader">Leader horse ID from previous tick</param>
     /// <param name="recentPositionChanges">Tracks last tick each horse had a position change</param>
+    /// <param name="recentLaneChanges">Tracks last tick each horse had a lane change</param>
     /// <returns>Collection of detected events</returns>
     private static TickEvents DetectEvents(
         short tick,
@@ -773,7 +775,8 @@ public class RaceService(
         Dictionary<Guid, int> previousPositions,
         Dictionary<Guid, byte> previousLanes,
         Guid? previousLeader,
-        Dictionary<Guid, short> recentPositionChanges)
+        Dictionary<Guid, short> recentPositionChanges,
+        Dictionary<Guid, short> recentLaneChanges)
     {
         var events = new TickEvents();
 
@@ -861,11 +864,35 @@ public class RaceService(
                         ? LaneChangeType.RiskySuccess
                         : LaneChangeType.Clean;
 
-                    events.LaneChanges.Add(new LaneChange(
-                        horse.Horse.Name,
-                        oldLane,
-                        horse.Lane,
-                        type));
+                    // Check cooldown for clean lane changes (risky squeezes always reported)
+                    var shouldReport = type == LaneChangeType.RiskySuccess;
+
+                    if (!shouldReport)
+                    {
+                        // Check if this horse had a recent lane change
+                        if (recentLaneChanges.TryGetValue(horse.Horse.Id, out var lastChangeTick))
+                        {
+                            if (tick - lastChangeTick >= CommentaryConfig.LaneChangeCooldown)
+                                shouldReport = true;
+                        }
+                        else
+                        {
+                            // First lane change for this horse
+                            shouldReport = true;
+                        }
+                    }
+
+                    if (shouldReport)
+                    {
+                        events.LaneChanges.Add(new LaneChange(
+                            horse.Horse.Name,
+                            oldLane,
+                            horse.Lane,
+                            type));
+
+                        // Record this lane change
+                        recentLaneChanges[horse.Horse.Id] = tick;
+                    }
                 }
             }
         }

@@ -10,15 +10,8 @@ namespace TripleDerby.Core.Services;
 /// Generates natural language commentary for race events.
 /// Phase 2 implementation uses synonym pools for language variation.
 /// </summary>
-public class RaceCommentaryGenerator : IRaceCommentaryGenerator
+public class RaceCommentaryGenerator(IRandomGenerator random) : IRaceCommentaryGenerator
 {
-    private readonly IRandomGenerator _random;
-
-    public RaceCommentaryGenerator(IRandomGenerator random)
-    {
-        _random = random;
-    }
-
     public string GenerateCommentary(TickEvents events, short tick, RaceRun raceRun)
     {
         var notes = new List<string>();
@@ -30,9 +23,9 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
         if (events.LeadChange != null)
             notes.Add(GenerateLeadChange(events.LeadChange));
 
-        notes.AddRange(events.LaneChanges.Select(GenerateLaneChange));
-
-        notes.AddRange(events.PositionChanges.Select(GeneratePositionChange));
+        // Interleave lane changes and position changes by horse for more natural flow
+        // Each horse's events are returned as separate strings for better narrative separation
+        notes.AddRange(GenerateInterleavedHorseEvents(events));
 
         if (events.IsFinalStretch)
             notes.Add(GenerateFinalStretch(raceRun));
@@ -42,8 +35,50 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
         if (events.PhotoFinish != null)
             notes.Add(GeneratePhotoFinish(events.PhotoFinish));
 
-        // Combine multiple events with semicolon separator
-        return string.Join("; ", notes);
+        // Join with semicolon only for special events (start, lead change, stretch, finishes)
+        // Horse events are kept separate to avoid narrative clustering
+        return notes.Count > 0 ? string.Join("; ", notes) : string.Empty;
+    }
+
+    /// <summary>
+    /// Generates commentary for lane changes and position changes, interleaved by horse.
+    /// Groups each horse's events together for more natural narrative flow.
+    /// Maintains insertion order (chronological) rather than sorting, for natural event flow.
+    /// </summary>
+    private IEnumerable<string> GenerateInterleavedHorseEvents(TickEvents events)
+    {
+        // Track which horses we've already narrated (to avoid duplicates)
+        var narratedHorses = new HashSet<string>();
+        var allNotes = new List<string>();
+
+        // Process position changes first (they're usually more important than lane changes)
+        foreach (var pc in events.PositionChanges)
+        {
+            var horseNotes = new List<string>();
+
+            // Add position change
+            horseNotes.Add(GeneratePositionChange(pc));
+
+            // Check if this horse also has a lane change to include
+            var laneChange = events.LaneChanges.FirstOrDefault(lc => lc.HorseName == pc.HorseName);
+            if (laneChange != null)
+                horseNotes.Add(GenerateLaneChange(laneChange));
+
+            allNotes.Add(string.Join("; ", horseNotes));
+            narratedHorses.Add(pc.HorseName);
+        }
+
+        // Process remaining lane changes (for horses that didn't have position changes)
+        foreach (var lc in events.LaneChanges)
+        {
+            if (!narratedHorses.Contains(lc.HorseName))
+            {
+                allNotes.Add(GenerateLaneChange(lc));
+                narratedHorses.Add(lc.HorseName);
+            }
+        }
+
+        return allNotes;
     }
 
     /// <summary>
@@ -63,8 +98,8 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
     /// </summary>
     private string GenerateLeadChange(LeadChange leadChange)
     {
-        var leadPhrase = _random.PickRandom(CommentaryConfig.LeadPhrases);
-        var template = _random.PickRandom(CommentaryConfig.LeadChangeTemplates);
+        var leadPhrase = random.PickRandom(CommentaryConfig.LeadPhrases);
+        var template = random.PickRandom(CommentaryConfig.LeadChangeTemplates);
 
         return template
             .Replace("{newLeader}", leadChange.NewLeader)
@@ -88,8 +123,8 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
 
     private string GenerateCleanLaneChange(LaneChange lc)
     {
-        var laneVerb = _random.PickRandom(CommentaryConfig.LaneChangeVerbs);
-        var template = _random.PickRandom(CommentaryConfig.LaneChangeTemplates);
+        var laneVerb = random.PickRandom(CommentaryConfig.LaneChangeVerbs);
+        var template = random.PickRandom(CommentaryConfig.LaneChangeTemplates);
 
         return template
             .Replace("{horse}", lc.HorseName)
@@ -101,8 +136,8 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
 
     private string GenerateRiskySqueezeSuccess(LaneChange lc)
     {
-        var squeezeVerb = _random.PickRandom(CommentaryConfig.RiskySqueezeVerbs);
-        var template = _random.PickRandom(CommentaryConfig.RiskySqueezeTemplates);
+        var squeezeVerb = random.PickRandom(CommentaryConfig.RiskySqueezeVerbs);
+        var template = random.PickRandom(CommentaryConfig.RiskySqueezeTemplates);
 
         return template
             .Replace("{horse}", lc.HorseName)
@@ -116,13 +151,13 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
     private string GeneratePositionChange(PositionChange pc)
     {
         var ordinal = GetOrdinal(pc.NewPosition);
-        var passVerb = _random.PickRandom(CommentaryConfig.PassVerbs);
-        var surgeVerb = _random.PickRandom(CommentaryConfig.SurgeVerbs);
+        var passVerb = random.PickRandom(CommentaryConfig.PassVerbs);
+        var surgeVerb = random.PickRandom(CommentaryConfig.SurgeVerbs);
 
         // If we know who was passed, include them in the commentary
         if (!string.IsNullOrEmpty(pc.OpponentPassed))
         {
-            var templateChoice = _random.Next(2);
+            var templateChoice = random.Next(2);
             return templateChoice switch
             {
                 0 => $"{pc.HorseName} {passVerb} {pc.OpponentPassed} into {ordinal} place",
@@ -131,7 +166,7 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
         }
 
         // Otherwise, just mention the new position
-        var simpleTemplateChoice = _random.Next(2);
+        var simpleTemplateChoice = random.Next(2);
         return simpleTemplateChoice switch
         {
             0 => $"{pc.HorseName} {passVerb} into {ordinal} place",
@@ -148,7 +183,7 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
             .OrderByDescending(h => h.Distance)
             .FirstOrDefault();
 
-        var intro = _random.PickRandom(CommentaryConfig.FinalStretchIntros);
+        var intro = random.PickRandom(CommentaryConfig.FinalStretchIntros);
         return leader != null ? $"{intro} {leader.Horse.Name} leads" : intro;
     }
 
@@ -158,8 +193,8 @@ public class RaceCommentaryGenerator : IRaceCommentaryGenerator
     private string GenerateFinish(HorseFinish finish)
     {
         var ordinal = GetOrdinal(finish.Place);
-        var finishVerb = _random.PickRandom(CommentaryConfig.FinishVerbs);
-        var template = _random.PickRandom(CommentaryConfig.FinishTemplates);
+        var finishVerb = random.PickRandom(CommentaryConfig.FinishVerbs);
+        var template = random.PickRandom(CommentaryConfig.FinishTemplates);
 
         return template
             .Replace("{horse}", finish.HorseName)

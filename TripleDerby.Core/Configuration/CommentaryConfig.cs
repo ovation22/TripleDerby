@@ -17,7 +17,11 @@ public static class CommentaryConfig
     public static readonly string[] SurgeVerbs =
     [
         "surges", "charges", "accelerates", "pushes", "advances",
-        "drives", "powers", "rockets", "bolts", "flies", "rushes"
+        "drives", "powers", "rockets", "bolts", "flies", "rushes",
+        "quickens", "picks up the pace", "steps it up",
+        "presses on", "builds momentum", "lengthens stride",
+        "starts to roll", "gathers speed", "ups the tempo",
+        "moves up"
     ];
 
     /// <summary>
@@ -27,7 +31,13 @@ public static class CommentaryConfig
     public static readonly string[] PassVerbs =
     [
         "passes", "overtakes", "moves past", "goes by",
-        "slips past", "edges past", "gets around", "sweeps by"
+        "slips past", "edges past", "gets around", "sweeps by",
+        "edges ahead of", "draws alongside", "takes over from",
+        "moves in front of", "claims position on",
+        "reaches the shoulder of", "pulls ahead of",
+        "goes on by",
+        "works by",
+        "gets the better of"
     ];
 
     /// <summary>
@@ -36,7 +46,10 @@ public static class CommentaryConfig
     /// </summary>
     public static readonly string[] LaneChangeVerbs =
     [
-        "moves", "shifts", "drifts", "cuts", "slides", "swings", "settles"
+        "moves", "shifts", "drifts", "cuts", "slides", "swings", "settles",
+        "angles out", "eases over", "guides inside",
+        "works outward", "tucks in", "drops down",
+        "switches"
     ];
 
     /// <summary>
@@ -45,9 +58,17 @@ public static class CommentaryConfig
     /// </summary>
     public static readonly string[] RiskySqueezeVerbs =
     [
-        "threads through", "squeezes between", "darts through",
+        "threads through", "squeezes by", "darts through",
         "slips through traffic", "finds a seam", "navigates through",
-        "weaves through", "splits horses"
+        "weaves through", "splits horses",
+        "squeezes through at the last moment",
+        "forces a narrow opening",
+        "barely finds room",
+        "gets through by inches",
+        "scrapes through traffic",
+        "bulls through",
+        "muscles between rivals",
+        "powers through the gap"
     ];
 
     // ============================================================================
@@ -62,7 +83,13 @@ public static class CommentaryConfig
     [
         "takes the lead", "assumes command", "seizes control",
         "moves to the front", "takes over", "grabs the lead",
-        "takes command", "moves ahead"
+        "takes command", "moves ahead",
+        "takes a narrow lead",
+        "moves into a clear lead",
+        "edges in front",
+        "reclaims the lead",
+        "opens up in front",
+        "briefly takes command"
     ];
 
     /// <summary>
@@ -71,8 +98,23 @@ public static class CommentaryConfig
     /// </summary>
     public static readonly string[] FinishVerbs =
     [
-        "crosses the line", "finishes", "completes the race",
-        "hits the wire", "reaches the finish", "crosses"
+        "crosses the line in", 
+        "finishes in", 
+        "completes the race in",
+        "hits the wire in", 
+        "reaches the finish in", 
+        "crosses in",
+        "storms across the line in",
+        "runs it out in",
+        "comes home in",
+        "finishes powerfully in",
+        "gets there in",
+        "now in",
+        "for",
+        "to grab",
+        "up to",
+        "claiming",
+        "to claim"
     ];
 
     /// <summary>
@@ -82,7 +124,12 @@ public static class CommentaryConfig
     [
         "Into the final stretch!", "Entering the homestretch!",
         "Here comes the stretch run!", "Into the stretch!",
-        "Down the homestretch!"
+        "Down the homestretch!",
+        "They straighten away!",
+        "Now they turn for home!",
+        "Into the drive to the wire!",
+        "The stretch duel is on!",
+        "Here comes the run to the finish!"
     ];
 
     // ============================================================================
@@ -97,7 +144,9 @@ public static class CommentaryConfig
     [
         "{horse} {laneVerb} to lane {lane}",
         "{horse} {laneVerb} from lane {oldLane} to {newLane}",
-        "Lane change: {horse} to {lane}"
+        "{horse} switches to lane {lane}",
+        "{horse} moves lanes, now in lane {lane}",
+        "{horse} repositions into lane {lane}"
     ];
 
     /// <summary>
@@ -107,7 +156,6 @@ public static class CommentaryConfig
     public static readonly string[] RiskySqueezeTemplates =
     [
         "{horse} {squeezeVerb} into lane {lane}!",
-        "Risky move! {horse} {squeezeVerb}",
         "{horse} makes a daring squeeze to lane {lane}",
         "{horse} {squeezeVerb} to lane {lane}!"
     ];
@@ -129,7 +177,7 @@ public static class CommentaryConfig
     /// </summary>
     public static readonly string[] FinishTemplates =
     [
-        "{horse} {finishVerb} in {place} place",
+        "{horse} {finishVerb} {place} place",
         "{horse} {finishVerb} {place}",
         "{place} place: {horse}"
     ];
@@ -150,4 +198,12 @@ public static class CommentaryConfig
     /// Default: 10 ticks.
     /// </summary>
     public const short PositionChangeCooldown = 10;
+
+    /// <summary>
+    /// Cooldown window (in ticks) before a horse can have another lane change reported.
+    /// Prevents repetitive consecutive lane change commentary that creates narrative clusters.
+    /// Exception: Risky squeeze plays are always reported regardless of cooldown.
+    /// Default: 10 ticks.
+    /// </summary>
+    public const short LaneChangeCooldown = 10;
 }
