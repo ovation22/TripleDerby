@@ -1,5 +1,7 @@
 ﻿@page "/"
+@using Microsoft.FluentUI.AspNetCore.Components.Emojis.AnimalsNature.Color
 @using TripleDerby.Web.Components.Widgets
+@using TripleDerby.Web.Icons
 
 <PageTitle>Triple Derby - Admin</PageTitle>
 
@@ -8,7 +10,7 @@
         <FluentCard Height="100px;">
             <FluentNavLink Href="horses">
                 <FluentLabel Typo="Typography.H2">
-                    <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())" />
+                    <FluentEmoji Value="@(new Default.Horse())" />
                 </FluentLabel>
                 <FluentLabel Typo="Typography.H4">Horses</FluentLabel>
             </FluentNavLink>
@@ -54,12 +56,33 @@
         </FluentCard>
     </FluentGridItem>
     <FluentGridItem xs="12" sm="6" md="4">
-        <FluentCard Style="height: 150px;"></FluentCard>
+        <FluentCard Style="height: 150px;">
+            <FluentNavLink Href="tracks">
+                <FluentLabel Typo="Typography.H2">
+                    <FluentIcon Value="@(new RaceTrackIcon())" />
+                </FluentLabel>
+                <FluentLabel Typo="Typography.H4">Tracks</FluentLabel>
+            </FluentNavLink>
+        </FluentCard>
     </FluentGridItem>
     <FluentGridItem xs="12" sm="6" md="4">
-        <FluentCard Style="height: 150px;"></FluentCard>
+        <FluentCard Style="height: 150px;">
+            <FluentNavLink Href="trainings">
+                <FluentLabel Typo="Typography.H2">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.Timer10())" />
+                </FluentLabel>
+                <FluentLabel Typo="Typography.H4">Trainings</FluentLabel>
+            </FluentNavLink>
+        </FluentCard>
     </FluentGridItem>
     <FluentGridItem xs="12" sm="12" md="4">
-        <FluentCard Style="height: 150px;"></FluentCard>
+        <FluentCard Style="height: 150px;">
+            <FluentNavLink Href="races">
+                <FluentLabel Typo="Typography.H2">
+                    <FluentIcon Value="@(new HorseAndRider())" />
+                </FluentLabel>
+                <FluentLabel Typo="Typography.H4">Races</FluentLabel>
+            </FluentNavLink>
+        </FluentCard>
     </FluentGridItem>
 </FluentGrid>
