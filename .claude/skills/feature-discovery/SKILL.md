@@ -165,3 +165,35 @@ When implementing features:
 - ✅ ASK: "Would you like me to commit these changes?"
 - ✅ WAIT for explicit approval
 - ✅ ONLY THEN run git commands
+
+## COMMIT AND PR MESSAGE RULES
+
+**NEVER include Claude Code attribution or self-reference in commits or PRs.**
+
+When creating commits or pull requests:
+- ❌ NEVER add "🤖 Generated with [Claude Code]" footer
+- ❌ NEVER add "Co-Authored-By: Claude Sonnet" tag
+- ❌ NEVER mention Claude, AI, or automated generation
+- ✅ Write commit messages as if written by the developer
+- ✅ Focus on what changed and why
+- ✅ Use professional, technical language only
+
+**Examples:**
+
+**BAD - DO NOT DO THIS:**
+```
+Feature implementation complete
+
+This adds the new commentary system.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
+
+**GOOD - DO THIS:**
+```
+Feature implementation complete
+
+This adds the new commentary system with event detection
+and natural language variation.
+```
