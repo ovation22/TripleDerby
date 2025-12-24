@@ -13,9 +13,9 @@
   <ItemGroup>
     <ProjectReference Include="..\TripleDerby.ServiceDefaults\TripleDerby.ServiceDefaults.csproj" />
     <ProjectReference Include="..\TripleDerby.SharedKernel\TripleDerby.SharedKernel.csproj" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.13.1" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Emoji" Version="4.13.1" />
-    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.13.1" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components" Version="4.13.2" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Emoji" Version="4.13.2" />
+    <PackageReference Include="Microsoft.FluentUI.AspNetCore.Components.Icons" Version="4.13.2" />
   </ItemGroup>
 
   <ItemGroup>
