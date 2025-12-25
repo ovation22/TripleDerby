@@ -915,9 +915,12 @@ public class RaceService(
                 // Check if the 2nd place horse just finished this tick
                 if (top2[1].Time >= tick - 1 && top2[1].Time < tick)
                 {
+                    // Order by Place (not Time) for photo finish announcement
+                    // Horse1 = 1st place, Horse2 = 2nd place
+                    var byPlace = top2.OrderBy(h => h.Place).ToList();
                     events.PhotoFinish = new PhotoFinish(
-                        top2[0].Horse.Name,
-                        top2[1].Horse.Name,
+                        byPlace[0].Horse.Name,  // 1st place
+                        byPlace[1].Horse.Name,  // 2nd place
                         margin);
                 }
             }
