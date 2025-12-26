@@ -62,6 +62,7 @@ public class RaceService(
         {
             RaceId = raceId,
             Race = race,
+            Purse = race.Purse,
             ConditionId = GenerateRandomConditionId(),
             Horses = new List<RaceRunHorse>(),
             RaceRunTicks = new List<RaceRunTick>()
@@ -179,6 +180,7 @@ public class RaceService(
         {
             var payout = payouts[raceRunHorse.Place];
             raceRunHorse.Horse.Earnings += payout;
+            raceRunHorse.Payout = payout;
         }
 
         await repository.CreateAsync(raceRun, cancellationToken);

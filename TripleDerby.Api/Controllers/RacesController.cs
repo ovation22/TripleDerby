@@ -43,23 +43,4 @@ public class RacesController(IRaceService raceService) : ControllerBase
 
         return Ok(result);
     }
-
-    /// <summary>
-    /// Runs a race for a given horse and returns the result.
-    /// </summary>
-    /// <param name="raceId">Identifier of the race to run.</param>
-    /// <param name="horseId">Identifier of the horse participating in the race.</param>
-    /// <returns>200 with <see cref="RaceRunResult"/>; 400 on failure.</returns>
-    /// <response code="200">Returns race run result.</response>
-    /// <response code="400">Unable to run race.</response>
-    [HttpPost("{raceId}/run")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesDefaultResponseType]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<RaceRunResult>> Race([FromRoute] byte raceId, [FromQuery] Guid horseId)
-    {
-        var result = await raceService.Race(raceId, horseId);
-
-        return Ok(result);
-    }
 }

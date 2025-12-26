@@ -76,6 +76,7 @@ public class Program
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();
+            builder.Services.AddScoped<IRaceRunService, RaceRunService>(); // Feature 010
             builder.Services.AddScoped<IHorseService, HorseService>();
             builder.Services.AddScoped<IStatsService, StatsService>();
             builder.Services.AddScoped<IFeedingService, FeedingService>();
