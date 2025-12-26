@@ -21,4 +21,14 @@ public class Race
     public SurfaceId SurfaceId { get; set; }
 
     public virtual Surface Surface { get; set; } = null!;
+
+    public RaceClassId RaceClassId { get; set; }
+
+    public virtual RaceClass RaceClass { get; set; } = null!;
+
+    public byte MinFieldSize { get; set; } = 8;
+
+    public byte MaxFieldSize { get; set; } = 12;
+
+    public int Purse { get; set; }
 }

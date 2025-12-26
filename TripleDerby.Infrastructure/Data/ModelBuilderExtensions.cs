@@ -93,7 +93,12 @@ public static class ModelBuilderExtensions
         modelBuilder.Entity<Track>().HasData(
             new Track { Id = TrackId.TripleSpires, Name = "Triple Spires" },
             new Track { Id = TrackId.BellMeade, Name = "Belle Meade Park" },
-            new Track { Id = TrackId.Pimento, Name = "Pimento Race Course" }
+            new Track { Id = TrackId.Pimento, Name = "Pimento Race Course" },
+            new Track { Id = (TrackId)4, Name = "Emerald Downs" },
+            new Track { Id = (TrackId)5, Name = "Golden Gate Fields" },
+            new Track { Id = (TrackId)6, Name = "Fair Grounds" },
+            new Track { Id = (TrackId)7, Name = "Oaklawn Park" },
+            new Track { Id = (TrackId)8, Name = "Gulfstream Park" }
         );
 
         modelBuilder.Entity<LegType>().HasData(
@@ -104,10 +109,80 @@ public static class ModelBuilderExtensions
             new LegType { Id = LegTypeId.RailRunner, Name = "Rail-runner", Description = "Gets 3% speed boost when in lane 1 with clear path ahead." }
         );
 
+        modelBuilder.Entity<RaceClass>().HasData(
+            new RaceClass { Id = RaceClassId.Maiden, Name = "Maiden", Description = "Horses that have never won a race" },
+            new RaceClass { Id = RaceClassId.MaidenClaiming, Name = "Maiden Claiming", Description = "Maiden horses eligible to be claimed" },
+            new RaceClass { Id = RaceClassId.Claiming, Name = "Claiming", Description = "Horses eligible to be claimed at a set price" },
+            new RaceClass { Id = RaceClassId.Allowance, Name = "Allowance", Description = "Restricted to horses meeting certain conditions" },
+            new RaceClass { Id = RaceClassId.AllowanceOptional, Name = "Allowance Optional", Description = "Allowance races with optional claiming" },
+            new RaceClass { Id = RaceClassId.Stakes, Name = "Stakes", Description = "Higher quality races with larger purses" },
+            new RaceClass { Id = RaceClassId.GradeIII, Name = "Grade III", Description = "Third highest graded stakes races" },
+            new RaceClass { Id = RaceClassId.GradeII, Name = "Grade II", Description = "Second highest graded stakes races" },
+            new RaceClass { Id = RaceClassId.GradeI, Name = "Grade I", Description = "Highest graded championship races" }
+        );
+
         modelBuilder.Entity<Race>().HasData(
-            new Race { Id = 1, Name = "Triple Derby", Description = "Run for the Spires", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 10 },
-            new Race { Id = 2, Name = "Belle Meade Stakes", Description = "Race of Winners", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 12 },
-            new Race { Id = 3, Name = "Freaky Stakes", Description = "Run for the Sunflowers", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 9.5m }
+            // ============================================================================
+            // Championship Races (Grade I equivalent) - 10-12.5f, various surfaces
+            // ============================================================================
+            new Race { Id = 1, Name = "Triple Derby", Description = "Run for the Spires - Championship race", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 10, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
+            new Race { Id = 2, Name = "Belle Meade Stakes", Description = "Race of Winners - Championship marathon", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 12, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1100000 },
+            new Race { Id = 3, Name = "Emerald Classic", Description = "Championship on turf", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)4, Furlongs = 10, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
+
+            // ============================================================================
+            // Elite Stakes (Grade II/III equivalent) - 8-12f
+            // ============================================================================
+            new Race { Id = 4, Name = "Freaky Stakes", Description = "Run for the Sunflowers - Elite stakes", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 9.5m, RaceClassId = RaceClassId.GradeII, MinFieldSize = 8, MaxFieldSize = 16, Purse = 500000 },
+            new Race { Id = 5, Name = "Golden Gate Handicap", Description = "Elite sprint handicap", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 8, RaceClassId = RaceClassId.GradeIII, MinFieldSize = 8, MaxFieldSize = 14, Purse = 200000 },
+            new Race { Id = 6, Name = "Fair Grounds Derby", Description = "Elite prep race", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)6, Furlongs = 9, RaceClassId = RaceClassId.GradeII, MinFieldSize = 8, MaxFieldSize = 16, Purse = 500000 },
+            new Race { Id = 7, Name = "Oaklawn Mile", Description = "Elite turf mile", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)7, Furlongs = 8, RaceClassId = RaceClassId.GradeIII, MinFieldSize = 8, MaxFieldSize = 14, Purse = 200000 },
+
+            // ============================================================================
+            // Stakes Races - 6-10f
+            // ============================================================================
+            new Race { Id = 8, Name = "Gulfstream Stakes", Description = "Quality stakes race", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)8, Furlongs = 9, RaceClassId = RaceClassId.Stakes, MinFieldSize = 8, MaxFieldSize = 14, Purse = 100000 },
+            new Race { Id = 9, Name = "Spires Sprint", Description = "Sprint stakes", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 6, RaceClassId = RaceClassId.Stakes, MinFieldSize = 8, MaxFieldSize = 14, Purse = 100000 },
+            new Race { Id = 10, Name = "Pimento Mile", Description = "Mile stakes on turf", SurfaceId = SurfaceId.Turf, TrackId = TrackId.Pimento, Furlongs = 8, RaceClassId = RaceClassId.Stakes, MinFieldSize = 8, MaxFieldSize = 14, Purse = 100000 },
+
+            // ============================================================================
+            // Allowance Races - 6-10f
+            // ============================================================================
+            new Race { Id = 11, Name = "Belle Meade Allowance", Description = "Mid-tier allowance", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 8.5m, RaceClassId = RaceClassId.Allowance, MinFieldSize = 8, MaxFieldSize = 12, Purse = 40000 },
+            new Race { Id = 12, Name = "Emerald Allowance", Description = "Turf allowance", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)4, Furlongs = 8, RaceClassId = RaceClassId.Allowance, MinFieldSize = 8, MaxFieldSize = 12, Purse = 40000 },
+            new Race { Id = 13, Name = "Fair Grounds Allowance", Description = "Distance allowance", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)6, Furlongs = 10, RaceClassId = RaceClassId.AllowanceOptional, MinFieldSize = 8, MaxFieldSize = 12, Purse = 50000 },
+
+            // ============================================================================
+            // Claiming Races - 5-8.5f
+            // ============================================================================
+            new Race { Id = 14, Name = "Golden Gate Claiming", Description = "Mid-level claiming", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 6.5m, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
+            new Race { Id = 15, Name = "Oaklawn Claiming", Description = "Sprint claiming", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)7, Furlongs = 6, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
+            new Race { Id = 16, Name = "Gulfstream Claiming", Description = "Distance claiming", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)8, Furlongs = 8.5m, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
+            new Race { Id = 17, Name = "Spires Turf Claiming", Description = "Claiming on turf", SurfaceId = SurfaceId.Turf, TrackId = TrackId.TripleSpires, Furlongs = 7.5m, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
+
+            // ============================================================================
+            // Maiden Races - 5-8f
+            // ============================================================================
+            new Race { Id = 18, Name = "Emerald Maiden", Description = "First-time starters", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)4, Furlongs = 6, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
+            new Race { Id = 19, Name = "Belle Meade Maiden", Description = "Maiden special weight", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 7, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
+            new Race { Id = 20, Name = "Pimento Maiden", Description = "Maiden sprint", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 5, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
+            new Race { Id = 21, Name = "Fair Grounds Maiden", Description = "Maiden mile", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)6, Furlongs = 8, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
+
+            // ============================================================================
+            // Maiden Claiming Races - 5-6.5f
+            // ============================================================================
+            new Race { Id = 22, Name = "Golden Gate Maiden Claiming", Description = "Entry-level maiden claiming", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 5, RaceClassId = RaceClassId.MaidenClaiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 18000 },
+            new Race { Id = 23, Name = "Oaklawn Maiden Claiming", Description = "Maiden claiming sprint", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)7, Furlongs = 5.5m, RaceClassId = RaceClassId.MaidenClaiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 18000 },
+            new Race { Id = 24, Name = "Gulfstream Maiden Claiming", Description = "Maiden claiming special", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)8, Furlongs = 6.5m, RaceClassId = RaceClassId.MaidenClaiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 18000 },
+
+            // ============================================================================
+            // Special/Festival Races - Various
+            // ============================================================================
+            new Race { Id = 25, Name = "Spires Juvenile", Description = "Two-year-old championship", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 8.5m, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
+            new Race { Id = 26, Name = "Belle Meade Marathon", Description = "Ultra-distance test", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 14, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1200000 },
+            new Race { Id = 27, Name = "Pimento Sprint Championship", Description = "Elite sprint crown", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 6, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
+            new Race { Id = 28, Name = "Emerald Turf Classic", Description = "Turf championship", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)4, Furlongs = 12, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1100000 },
+            new Race { Id = 29, Name = "Golden Gate Derby", Description = "Three-year-old classic", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 10, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
+            new Race { Id = 30, Name = "Fair Grounds Oaks", Description = "Fillies championship", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)6, Furlongs = 9, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 }
         );
 
         // Sires
