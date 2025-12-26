@@ -37,7 +37,10 @@ public class RaceServiceTests
         // Feature 008: Commentary generator
         var commentaryGenerator = new RaceCommentaryGenerator(_randomGeneratorMock.Object);
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator);
+        // Feature 009: Purse calculator
+        var purseCalculator = new PurseCalculator();
+
+        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator);
     }
 
     [Fact]
