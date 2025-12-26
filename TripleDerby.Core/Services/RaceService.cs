@@ -16,7 +16,8 @@ public class RaceService(
     IRandomGenerator randomGenerator,
     ISpeedModifierCalculator speedModifierCalculator,
     IStaminaCalculator staminaCalculator,
-    IRaceCommentaryGenerator commentaryGenerator) : IRaceService
+    IRaceCommentaryGenerator commentaryGenerator,
+    IPurseCalculator purseCalculator) : IRaceService
 {
     // Configuration constants
     private const double BaseSpeedMph = 38.0; // Average horse speed in mph
@@ -61,10 +62,12 @@ public class RaceService(
         }
 
         // Fetch CPU horses with similar race experience (owned by Racers)
+        // Feature 009: Use race's configured field size limits
+        var fieldSize = randomGenerator.Next(race.MinFieldSize, race.MaxFieldSize + 1);
         var cpuHorseSpec = new SimilarRaceStartsSpecification(
             targetRaceStarts: myHorse.RaceStarts,
             tolerance: 8,
-            limit: randomGenerator.Next(7,12));
+            limit: fieldSize - 1); // -1 for player's horse
         var cpuHorses = await repository.ListAsync(cpuHorseSpec, cancellationToken);
 
         // Combine player's horse with CPU horses
@@ -183,6 +186,17 @@ public class RaceService(
         // Determine winners and rewards
         DetermineRaceResults(raceRun);
 
+        // Feature 009: Calculate purse and distribute earnings
+        var totalPurse = purseCalculator.CalculateTotalPurse(race.RaceClassId, race.Furlongs);
+        var payouts = purseCalculator.CalculateAllPayouts(race.RaceClassId, totalPurse);
+
+        // Update horse earnings for money winners
+        foreach (var raceRunHorse in raceRun.Horses.Where(h => payouts.ContainsKey(h.Place)))
+        {
+            var payout = payouts[raceRunHorse.Place];
+            raceRunHorse.Horse.Earnings += payout;
+        }
+
         await repository.CreateAsync(raceRun, cancellationToken);
 
         return new RaceRunResult
@@ -208,7 +222,7 @@ public class RaceService(
                     HorseId = h.Horse.Id,
                     HorseName = h.Horse.Name,
                     Place = h.Place,
-                    Payout = 0, // Payout is handled by Purse Distribution (sub-feature 2)
+                    Payout = payouts.GetValueOrDefault(h.Place, 0),
                     Time = h.Time
                 })
                 .ToList()

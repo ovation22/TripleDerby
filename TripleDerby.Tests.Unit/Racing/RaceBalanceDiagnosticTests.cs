@@ -192,8 +192,11 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         // Feature 008: Commentary generator
         var commentaryGenerator = new RaceCommentaryGenerator(mockRandom.Object);
 
+        // Feature 009: Purse calculator
+        var purseCalculator = new PurseCalculator();
+
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator);
 
         // We need to set the condition BEFORE the race runs
         // The issue is that RaceService.Race() calls GenerateRandomConditionId()

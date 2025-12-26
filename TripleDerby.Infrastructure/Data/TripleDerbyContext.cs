@@ -14,6 +14,7 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
     public virtual DbSet<HorseStatistic> HorseStatistics { get; set; } = null!;
     public virtual DbSet<LegType> LegTypes { get; set; } = null!;
     public virtual DbSet<Race> Races { get; set; } = null!;
+    public virtual DbSet<RaceClass> RaceClasses { get; set; } = null!;
     public virtual DbSet<RaceRun> RaceRuns { get; set; } = null!;
     public virtual DbSet<RaceRunHorse> RaceRunHorses { get; set; } = null!;
     public virtual DbSet<RaceRunTick> RaceRunTicks { get; set; } = null!;
@@ -88,6 +89,14 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
 
         modelBuilder.Entity<Race>()
             .Property(c => c.SurfaceId)
+            .HasConversion<byte>();
+
+        modelBuilder.Entity<Race>()
+            .Property(c => c.RaceClassId)
+            .HasConversion<byte>();
+
+        modelBuilder.Entity<RaceClass>()
+            .Property(c => c.Id)
             .HasConversion<byte>();
 
         modelBuilder.Entity<FeedingSession>()

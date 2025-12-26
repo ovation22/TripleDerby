@@ -40,15 +40,17 @@
 
 | # | Sub-Feature | Description | Depends On | Status |
 |---|-------------|-------------|------------|--------|
-| 1 | Core Race Simulation | Field assembly, lane/condition assignment, tick-based movement with stamina, finish order determination | - | Implemented |
-| 2 | Purse Distribution | Calculate and distribute prize money to top finishers, update player balance | 1 | Pending |
-| 3 | Play-by-Play Commentary | Generate narrative notes for each tick describing race events | 1 | Pending |
-| 4 | Career Tracking | Increment race counts, enforce yearly and career limits | 1 | Pending |
-| 5 | Post-Race Injury | Evaluate and apply injury chance based on durability and race stress | 1 | Pending |
+| 1 | Core Race Simulation | Field assembly, lane/condition assignment, tick-based movement with stamina, finish order determination | - | ✅ **Implemented** |
+| 2 | Purse Distribution | Calculate and distribute prize money to top finishers, update player balance | 1 | 🔵 **Proposed** (See Feature 009) |
+| 3 | Play-by-Play Commentary | Generate narrative notes for each tick describing race events | 1 | ✅ **Implemented** |
+| 4 | Career Tracking | Increment race counts, enforce yearly and career limits | 1 | 🟡 **Partially Implemented** (counts tracked, limits not enforced) |
+| 5 | Post-Race Injury | Evaluate and apply injury chance based on durability and race stress | 1 | ❌ **Pending** |
 
 ## Sub-Feature Documents
 
-- [002-core-race-simulation](002-core-race-simulation.md) - Implemented
+- [002-core-race-simulation](002-core-race-simulation.md) - ✅ Implemented
+- [008-play-by-play-commentary](008-play-by-play-commentary.md) - ✅ Implemented
+- [009-purse-distribution](009-purse-distribution.md) - 🔵 Proposed
 
 ## Related Decisions
 
