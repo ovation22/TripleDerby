@@ -62,10 +62,12 @@ public class RaceService(
         }
 
         // Fetch CPU horses with similar race experience (owned by Racers)
+        // Feature 009: Use race's configured field size limits
+        var fieldSize = randomGenerator.Next(race.MinFieldSize, race.MaxFieldSize + 1);
         var cpuHorseSpec = new SimilarRaceStartsSpecification(
             targetRaceStarts: myHorse.RaceStarts,
             tolerance: 8,
-            limit: randomGenerator.Next(7,12));
+            limit: fieldSize - 1); // -1 for player's horse
         var cpuHorses = await repository.ListAsync(cpuHorseSpec, cancellationToken);
 
         // Combine player's horse with CPU horses

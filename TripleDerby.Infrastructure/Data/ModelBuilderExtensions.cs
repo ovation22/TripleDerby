@@ -125,7 +125,7 @@ public static class ModelBuilderExtensions
             // ============================================================================
             // Championship Races (Grade I equivalent) - 10-12.5f, various surfaces
             // ============================================================================
-            new Race { Id = 1, Name = "Triple Derby", Description = "Run for the Spires - Championship race", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 10, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
+            new Race { Id = 1, Name = "Triple Derby", Description = "Run for the Spires - Championship race", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 10, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1500000 },
             new Race { Id = 2, Name = "Belle Meade Stakes", Description = "Race of Winners - Championship marathon", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 12, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1100000 },
             new Race { Id = 3, Name = "Emerald Classic", Description = "Championship on turf", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)4, Furlongs = 10, RaceClassId = RaceClassId.GradeI, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
 
