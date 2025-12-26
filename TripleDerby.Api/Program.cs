@@ -70,6 +70,7 @@ public class Program
             builder.Services.AddScoped<ISpeedModifierCalculator, SpeedModifierCalculator>();
             builder.Services.AddScoped<IStaminaCalculator, StaminaCalculator>();
             builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>(); // Feature 008
+            builder.Services.AddScoped<IPurseCalculator, PurseCalculator>(); // Feature 009
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();
