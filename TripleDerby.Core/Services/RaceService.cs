@@ -19,23 +19,6 @@ public class RaceService(
     IRaceCommentaryGenerator commentaryGenerator,
     IPurseCalculator purseCalculator) : IRaceService
 {
-    // Configuration constants
-    private const double BaseSpeedMph = 38.0; // Average horse speed in mph
-    private const double MilesPerFurlong = 0.125; // 1 furlong = 1/8 mile
-    private const double SecondsPerHour = 3600.0;
-
-    // Derived: furlongs per second at base speed
-    private const double FurlongsPerSecond = BaseSpeedMph * MilesPerFurlong / SecondsPerHour; // ≈ 0.001056
-
-    // Simulation speed (adjust this to control race duration)
-    private const double TicksPerSecond = 10.0; // 10 TPS = ~16 seconds for 10f, 2 TPS = ~2 minutes for 10f
-
-    // Target race duration configuration
-    private const double TargetTicksFor10Furlongs = 237.0; // How many ticks for a standard 10-furlong race
-
-    // Derived base speed (furlongs per tick)
-    private const double AverageBaseSpeed = 10.0 / TargetTicksFor10Furlongs; // ≈ 0.0422
-
     public Task<RaceResult> Get(byte id, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
@@ -62,7 +45,6 @@ public class RaceService(
         }
 
         // Fetch CPU horses with similar race experience (owned by Racers)
-        // Feature 009: Use race's configured field size limits
         var fieldSize = randomGenerator.Next(race.MinFieldSize, race.MaxFieldSize + 1);
         var cpuHorseSpec = new SimilarRaceStartsSpecification(
             targetRaceStarts: myHorse.RaceStarts,
@@ -90,7 +72,7 @@ public class RaceService(
         var allHorsesFinished = false;
         short tick = 0;
 
-        // Feature 008: Track previous state for event detection
+        // Track previous state for event detection
         var previousPositions = new Dictionary<Guid, int>();
         var previousLanes = new Dictionary<Guid, byte>();
         Guid? previousLeader = null;
@@ -129,7 +111,7 @@ public class RaceService(
                             horse.Time = tick;
                         }
 
-                        // Assign place based on finish order (Feature 008)
+                        // Assign place based on finish order
                         var finishedCount = raceRun.Horses.Count(h => h.Distance >= race.Furlongs);
                         horse.Place = (byte)finishedCount;
 
@@ -137,13 +119,13 @@ public class RaceService(
                         horse.Distance = race.Furlongs;
                     }
 
-                    // Feature 007: Handle overtaking and lane changes
+                    // Handle overtaking and lane changes
                     HandleOvertaking(horse, raceRun, tick, totalTicks);
                 }
                 //ApplyRandomEvents(horse, tick);
             }
 
-            // Feature 008: Detect events and generate commentary
+            // Detect events and generate commentary
             var events = DetectEvents(tick, totalTicks, raceRun, previousPositions, previousLanes, previousLeader, recentPositionChanges, recentLaneChanges);
             var commentary = commentaryGenerator.GenerateCommentary(events, tick, raceRun);
 
@@ -170,7 +152,7 @@ public class RaceService(
 
             raceRun.RaceRunTicks.Add(raceRunTick);
 
-            // Feature 008: Update previous state for next tick
+            // Update previous state for next tick
             UpdatePreviousState(raceRun, previousPositions, previousLanes, ref previousLeader);
 
             // Check if all horses have finished
@@ -186,7 +168,7 @@ public class RaceService(
         // Determine winners and rewards
         DetermineRaceResults(raceRun);
 
-        // Feature 009: Calculate purse and distribute earnings
+        // Calculate purse and distribute earnings
         var totalPurse = purseCalculator.CalculateTotalPurse(race.RaceClassId, race.Furlongs);
         var payouts = purseCalculator.CalculateAllPayouts(race.RaceClassId, totalPurse);
 
@@ -234,8 +216,7 @@ public class RaceService(
         var horseList = horses.ToList();
         var fieldSize = horseList.Count;
 
-        // Feature 007: Random lane assignment for fairness
-        // Creates shuffled lane numbers: [1, 2, 3, ..., fieldSize] in random order
+        // Random lane assignment for fairness - creates shuffled lane numbers: [1, 2, 3, ..., fieldSize] in random order
         var shuffledLanes = Enumerable.Range(1, fieldSize)
             .OrderBy(_ => randomGenerator.Next())
             .ToArray();
@@ -256,7 +237,7 @@ public class RaceService(
 
     private void UpdateHorsePosition(RaceRunHorse raceRunHorse, short tick, short totalTicks, RaceRun raceRun)
     {
-        var baseSpeed = AverageBaseSpeed;
+        var baseSpeed = RaceModifierConfig.AverageBaseSpeed;
         var raceProgress = (double)tick / totalTicks;
 
         var context = new ModifierContext(
@@ -281,18 +262,18 @@ public class RaceService(
         var phaseModifier = speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
         baseSpeed *= phaseModifier;
 
-        // Feature 004: Apply stamina modifier (speed penalty when stamina low)
+        // Apply stamina modifier (speed penalty when stamina low)
         var staminaModifier = speedModifierCalculator.CalculateStaminaModifier(raceRunHorse);
         baseSpeed *= staminaModifier;
 
-        // Feature 007: Apply risky lane change penalty (if active)
+        // Apply risky lane change penalty (if active)
         if (raceRunHorse.SpeedPenaltyTicksRemaining > 0)
         {
             baseSpeed *= RaceModifierConfig.RiskyLaneChangeSpeedPenalty;
             raceRunHorse.SpeedPenaltyTicksRemaining--;
         }
 
-        // Feature 007: Apply traffic response effects (speed capping / frustration)
+        // Apply traffic response effects (speed capping / frustration)
         ApplyTrafficEffects(raceRunHorse, raceRun, ref baseSpeed);
 
         // Apply random variance (±1% per tick)
@@ -316,12 +297,12 @@ public class RaceService(
         // Update horse position
         raceRunHorse.Distance += (decimal)currentSpeed;
 
-        // Feature 004: Deplete stamina based on effort
+        // Deplete stamina based on effort
         var depletionAmount = staminaCalculator.CalculateDepletionAmount(
             raceRunHorse.Horse,
             raceRun.Race.Furlongs,
             currentSpeed,
-            AverageBaseSpeed,
+            RaceModifierConfig.AverageBaseSpeed,
             raceProgress);
 
         raceRunHorse.CurrentStamina = Math.Max(0, raceRunHorse.CurrentStamina - depletionAmount);
@@ -363,7 +344,7 @@ public class RaceService(
     {
         // At 0.0422 furlongs/tick (derived from ~38 mph), calculate required ticks
         // This ensures horses can actually complete the race distance
-        return (short)Math.Ceiling((double)furlongs / AverageBaseSpeed);
+        return (short)Math.Ceiling((double)furlongs / RaceModifierConfig.AverageBaseSpeed);
     }
 
     private ConditionId GenerateRandomConditionId()
@@ -373,7 +354,7 @@ public class RaceService(
     }
 
     // ============================================================================
-    // Overtaking & Lane Change System (Feature 007 - Phase 1)
+    // Overtaking & Lane Change System
     // ============================================================================
 
     /// <summary>
@@ -426,7 +407,7 @@ public class RaceService(
 
     /// <summary>
     /// Determines the desired lane for a horse based on leg type strategy.
-    /// Phase 2: All leg types implemented with distinct personalities.
+    /// All leg types implemented with distinct personalities.
     /// </summary>
     /// <param name="horse">The race run horse</param>
     /// <param name="raceRun">Current race state</param>
@@ -543,7 +524,7 @@ public class RaceService(
 
     /// <summary>
     /// Attempts to change lanes toward the desired lane.
-    /// Phase 2: Includes risky squeeze plays when clean change not possible.
+    /// Includes risky squeeze plays when clean change not possible.
     /// </summary>
     /// <param name="horse">The horse attempting lane change</param>
     /// <param name="raceRun">Current race state</param>
@@ -578,7 +559,6 @@ public class RaceService(
     /// <summary>
     /// Handles overtaking detection and lane change logic for a horse.
     /// Called once per tick per horse during race simulation.
-    /// Phase 1: Basic overtaking detection + RailRunner positioning.
     /// </summary>
     /// <param name="horse">The horse being updated</param>
     /// <param name="raceRun">Current race state</param>
@@ -649,7 +629,7 @@ public class RaceService(
     }
 
     // ============================================================================
-    // Traffic Response System (Feature 007 - Phase 2)
+    // Traffic Response System
     // ============================================================================
 
     /// <summary>
@@ -753,20 +733,21 @@ public class RaceService(
     }
 
     /// <summary>
-    /// Estimates the current speed of another horse based on current distance delta.
-    /// Used for traffic speed capping calculations.
+    /// Estimates the current speed of another horse for traffic response calculations.
+    /// TODO: Future enhancement - use actual horse speed based on Speed stat and modifiers
+    /// instead of average base speed for more realistic traffic dynamics.
     /// </summary>
     /// <param name="horse">The horse to estimate speed for</param>
     /// <returns>Estimated speed in furlongs per tick</returns>
     private static double CalculateHorseSpeed(RaceRunHorse horse)
     {
-        // Approximate speed based on average base speed
-        // In reality this would track per-tick movement, but this is sufficient for traffic response
-        return AverageBaseSpeed;
+        // Current implementation uses average base speed as conservative approximation
+        // This ensures consistent traffic behavior regardless of individual horse stats
+        return RaceModifierConfig.AverageBaseSpeed;
     }
 
     // ============================================================================
-    // Play-by-Play Commentary System (Feature 008)
+    // Play-by-Play Commentary System
     // ============================================================================
 
     /// <summary>
