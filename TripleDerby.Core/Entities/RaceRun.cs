@@ -26,8 +26,6 @@ public class RaceRun
 
     public virtual Horse ShowHorse { get; set; } = null!;
 
-    public int Purse { get; set; }
-
     public virtual ICollection<RaceRunHorse> Horses { get; set; } = null!;
 
     public virtual ICollection<RaceRunTick> RaceRunTicks { get; set; } = null!;
