@@ -480,16 +480,14 @@ public class RacesController : ControllerBase
 
     /// <summary>
     /// Runs a race for a given horse (delegates to microservice).
+    /// Returns Richardson Maturity Model Level 3 (HATEOAS) response with links.
     /// </summary>
     [HttpPost("{raceId}/run")]
-    public async Task<ActionResult<RaceRunResult>> Race(
+    public async Task<ActionResult<Resource<RaceRequested>>> Race(
         [FromRoute] byte raceId,
         [FromQuery] Guid horseId)
     {
-        // Option A: Synchronous - publish message and wait for response
-        // (Requires request/response pattern with correlation ID)
-
-        // Option B: Asynchronous - publish message, return 202 Accepted
+        // Asynchronous - publish message, return 202 Accepted
         var request = new RaceRequested
         {
             RaceId = raceId,
@@ -505,15 +503,47 @@ public class RacesController : ControllerBase
             "Race request published: RaceId={RaceId}, HorseId={HorseId}, CorrelationId={CorrelationId}",
             raceId, horseId, request.CorrelationId);
 
-        // Return 202 Accepted with correlation ID for tracking
-        return Accepted(new
+        // HATEOAS links (Richardson Maturity Model Level 3)
+        var links = new List<Link>
         {
-            correlationId = request.CorrelationId,
-            status = "processing",
-            message = "Race simulation started"
-        });
+            new("self", Url.Action(nameof(GetRaceRequest), new { id = request.CorrelationId }, Request.Scheme)!, "GET"),
+            new("status", Url.Action(nameof(GetRaceRequest), new { id = request.CorrelationId }, Request.Scheme)!, "GET"),
+            new("race-details", Url.Action("Get", new { id = raceId }, Request.Scheme)!, "GET")
+        };
 
-        // TODO: Implement WebSocket/SignalR for real-time result notification
+        // Return 202 Accepted with strongly-typed RaceRequested and links
+        return Accepted(new Resource<RaceRequested>(request, links));
+    }
+
+    /// <summary>
+    /// Gets race request status by correlation ID.
+    /// Returns Richardson Maturity Model Level 3 (HATEOAS) response with links.
+    /// </summary>
+    [HttpGet("requests/{id}")]
+    public async Task<ActionResult<Resource<RaceRequestStatusResult>>> GetRaceRequest([FromRoute] Guid id)
+    {
+        var status = await _raceService.GetRaceRequestStatusAsync(id);
+
+        if (status == null)
+            return NotFound();
+
+        // HATEOAS links - conditional based on status
+        var links = new List<Link>
+        {
+            new("self", Url.Action(nameof(GetRaceRequest), new { id }, Request.Scheme)!, "GET")
+        };
+
+        if (status.Status == RaceRequestStatus.Completed && status.RaceRunId.HasValue)
+        {
+            links.Add(new Link("race-result", Url.Action("GetById", "RaceRuns", new { id = status.RaceRunId.Value }, Request.Scheme)!, "GET"));
+        }
+
+        if (status.Status == RaceRequestStatus.Failed)
+        {
+            links.Add(new Link("retry", Url.Action(nameof(Race), new { raceId = status.RaceId, horseId = status.HorseId }, Request.Scheme)!, "POST"));
+        }
+
+        return Ok(new Resource<RaceRequestStatusResult>(status, links));
     }
 
     private Guid GetCurrentUserId()
@@ -523,6 +553,14 @@ public class RacesController : ControllerBase
     }
 }
 ```
+
+**Richardson Maturity Model (RMM) Implementation:**
+- Follows same pattern as BreedingController (see TripleDerby.Api/Controllers/BreedingController.cs)
+- Level 3: HATEOAS (Hypermedia As The Engine Of Application State)
+- Provides navigable links in responses
+- Conditional links based on resource state (e.g., "retry" only if failed)
+- Uses `Resource<T>` wrapper and `Link` records
+- Enables API discoverability and self-documentation
 
 ### Phase 6: Race Service Consumer
 

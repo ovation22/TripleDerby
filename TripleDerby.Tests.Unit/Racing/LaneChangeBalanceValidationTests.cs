@@ -433,8 +433,12 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         // Feature 009: Purse calculator
         var purseCalculator = new PurseCalculator();
 
+        // Feature 010: Overtaking and event detection
+        var overtakingManager = new OvertakingManager(mockRandom.Object);
+        var eventDetector = new EventDetector();
+
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector);
         var result = await raceService.Race(1, testHorse.Id, CancellationToken.None);
 
         // Extract lane change metrics from captured RaceRun

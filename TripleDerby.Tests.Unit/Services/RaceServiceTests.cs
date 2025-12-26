@@ -40,7 +40,11 @@ public class RaceServiceTests
         // Feature 009: Purse calculator
         var purseCalculator = new PurseCalculator();
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator);
+        // Feature 010: Overtaking and event detection
+        var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object);
+        var eventDetector = new EventDetector();
+
+        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector);
     }
 
     [Fact]

@@ -14,11 +14,13 @@
   <ItemGroup>
     <ProjectReference Include="..\TripleDerby.Api\TripleDerby.Api.csproj" />
     <ProjectReference Include="..\TripleDerby.Services.Breeding\TripleDerby.Services.Breeding.csproj" />
+    <ProjectReference Include="..\TripleDerby.Services.Racing\TripleDerby.Services.Racing.csproj" />
     <ProjectReference Include="..\TripleDerby.Web\TripleDerby.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+    <PackageReference Include="Aspire.Hosting.Azure.ServiceBus" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />

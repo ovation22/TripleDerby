@@ -54,6 +54,7 @@ public class Program
             builder.AddSqlServerClient(connectionName: "sql");
             builder.AddRedisDistributedCache(connectionName: "cache");
             builder.AddRabbitMQClient(connectionName: "messaging");
+            builder.AddAzureServiceBusClient(connectionName: "servicebus");
 
             builder.Services.AddCorsConfig();
             builder.Services.AddControllersConfig();
@@ -71,16 +72,22 @@ public class Program
             builder.Services.AddScoped<IStaminaCalculator, StaminaCalculator>();
             builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>(); // Feature 008
             builder.Services.AddScoped<IPurseCalculator, PurseCalculator>(); // Feature 009
+            builder.Services.AddScoped<IOvertakingManager, OvertakingManager>(); // Feature 010
+            builder.Services.AddScoped<IEventDetector, EventDetector>(); // Feature 010
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();
+            builder.Services.AddScoped<IRaceRunService, RaceRunService>(); // Feature 010
             builder.Services.AddScoped<IHorseService, HorseService>();
             builder.Services.AddScoped<IStatsService, StatsService>();
             builder.Services.AddScoped<IFeedingService, FeedingService>();
             builder.Services.AddScoped<IBreedingService, BreedingService>();
             builder.Services.AddScoped<ITrainingService, TrainingService>();
-            
-            builder.Services.AddSingleton<IMessagePublisher, RabbitMqMessagePublisher>();
+
+            // Keyed DI for dual-broker support (Feature 011)
+            // Breeding uses RabbitMQ, Race uses Azure Service Bus
+            builder.Services.AddKeyedSingleton<IMessagePublisher, RabbitMqMessagePublisher>("rabbitmq");
+            builder.Services.AddKeyedSingleton<IMessagePublisher, AzureServiceBusPublisher>("servicebus");
 
             var app = builder.Build();
 

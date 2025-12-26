@@ -25,6 +25,7 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
     public virtual DbSet<Training> Trainings { get; set; } = null!;
     public virtual DbSet<TrainingSession> TrainingSessions { get; set; } = null!;
     public virtual DbSet<BreedingRequest> BreedingRequests { get; set; } = null!;
+    public virtual DbSet<RaceRequest> RaceRequests { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -118,11 +119,55 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
         modelBuilder.Entity<BreedingRequest>()
             .ToTable("BreedingRequests", schema: "brd")
             .Property(x => x.Status)
-            .HasConversion<byte>() 
+            .HasConversion<byte>()
             .HasDefaultValue(BreedingRequestStatus.Pending)
             .IsRequired();
 
         modelBuilder.Entity<BreedingRequest>()
             .Property(x => x.FailureReason).HasMaxLength(1024);
+
+        // RaceRequest configuration (Feature 011 - Race Microservice Migration)
+        // Uses 'rac' schema (mirroring Breeding's 'brd' schema)
+        modelBuilder.Entity<RaceRequest>()
+            .ToTable("RaceRequests", schema: "rac")
+            .HasKey(e => e.Id);
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.Status)
+            .HasConversion<byte>()
+            .HasDefaultValue(RaceRequestStatus.Pending)
+            .IsRequired();
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.FailureReason)
+            .HasMaxLength(1024);
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.RaceId).IsRequired();
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.HorseId).IsRequired();
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.OwnerId).IsRequired();
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.CreatedDate).IsRequired();
+
+        modelBuilder.Entity<RaceRequest>()
+            .Property(e => e.CreatedBy).IsRequired();
+
+        // Indexes for common queries
+        modelBuilder.Entity<RaceRequest>()
+            .HasIndex(e => e.Status);
+
+        modelBuilder.Entity<RaceRequest>()
+            .HasIndex(e => e.CreatedDate);
+
+        modelBuilder.Entity<RaceRequest>()
+            .HasIndex(e => e.HorseId);
+
+        modelBuilder.Entity<RaceRequest>()
+            .HasIndex(e => e.OwnerId);
     }
 }
