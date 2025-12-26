@@ -37,8 +37,10 @@ public class RaceCommentaryTests
         var staminaCalculator = new StaminaCalculator();
         var commentaryGenerator = new RaceCommentaryGenerator(_randomGeneratorMock.Object);
         var purseCalculator = new PurseCalculator();
+        var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object);
+        var eventDetector = new EventDetector();
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator);
+        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector);
     }
 
     [Fact]

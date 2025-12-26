@@ -28,6 +28,8 @@ public class RaceRunHorse
 
     public double Time { get; set; }
 
+    public int Payout { get; set; }
+
     /// <summary>
     /// Tracks ticks since last lane change for cooldown calculation.
     /// Reset to 0 when lane change attempted (success or failure).

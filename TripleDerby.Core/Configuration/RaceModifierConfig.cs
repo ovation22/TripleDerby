@@ -37,6 +37,45 @@ public static class RaceModifierConfig
     public const double TargetTicksFor10Furlongs = 237.0;
 
     // ============================================================================
+    // Race Simulation Configuration (consolidated from RaceService)
+    // ============================================================================
+
+    /// <summary>
+    /// Average horse speed in miles per hour.
+    /// Used as baseline for speed calculations.
+    /// </summary>
+    public const double BaseSpeedMph = 38.0;
+
+    /// <summary>
+    /// Conversion factor: 1 furlong = 1/8 mile.
+    /// </summary>
+    public const double MilesPerFurlong = 0.125;
+
+    /// <summary>
+    /// Conversion factor: 1 hour = 3600 seconds.
+    /// </summary>
+    public const double SecondsPerHour = 3600.0;
+
+    /// <summary>
+    /// Derived: furlongs per second at base speed.
+    /// Calculated as: BaseSpeedMph × MilesPerFurlong / SecondsPerHour ≈ 0.001056
+    /// </summary>
+    public const double FurlongsPerSecond = BaseSpeedMph * MilesPerFurlong / SecondsPerHour;
+
+    /// <summary>
+    /// Simulation speed control: ticks per second.
+    /// Higher value = faster simulation, shorter race duration.
+    /// Value of 10.0 TPS = ~16 seconds for 10f race.
+    /// </summary>
+    public const double TicksPerSecond = 10.0;
+
+    /// <summary>
+    /// Average base speed in furlongs per tick.
+    /// Calculated as: 10.0 / TargetTicksFor10Furlongs ≈ 0.0422
+    /// </summary>
+    public const double AverageBaseSpeed = 10.0 / TargetTicksFor10Furlongs;
+
+    // ============================================================================
     // Stat Modifier Configuration
     // ============================================================================
 
@@ -104,7 +143,7 @@ public static class RaceModifierConfig
     public const double RandomVarianceRange = 0.01;
 
     // ============================================================================
-    // Environmental Modifiers (populated in Phase 3)
+    // Environmental Modifiers
     // ============================================================================
 
     /// <summary>
@@ -147,14 +186,14 @@ public static class RaceModifierConfig
         };
 
     // ============================================================================
-    // Phase Modifiers (populated in Phase 4)
+    // Phase Modifiers
     // ============================================================================
 
     /// <summary>
     /// Phase-based modifiers for each leg type (running style).
     /// Defines when during the race each leg type gets a speed boost.
     /// StartDash and LastSpurt get highest bonus (1.04x), balanced strategies get moderate (1.03x).
-    /// Note: RailRunner uses conditional lane/traffic bonus instead of phase timing (Feature 005).
+    /// Note: RailRunner uses conditional lane/traffic bonus instead of phase timing.
     /// </summary>
     public static readonly IReadOnlyDictionary<LegTypeId, PhaseModifier> LegTypePhaseModifiers =
         new Dictionary<LegTypeId, PhaseModifier>
@@ -167,7 +206,7 @@ public static class RaceModifierConfig
         };
 
     // ============================================================================
-    // Rail Runner Configuration (Feature 005)
+    // Rail Runner Configuration
     // ============================================================================
 
     /// <summary>
@@ -185,7 +224,7 @@ public static class RaceModifierConfig
     public const decimal RailRunnerClearPathDistance = 0.5m;
 
     // ============================================================================
-    // Stamina Configuration (Feature 004)
+    // Stamina Configuration
     // ============================================================================
 
     /// <summary>
@@ -222,7 +261,7 @@ public static class RaceModifierConfig
     public const double MaxStaminaSpeedPenalty = 0.10;  // 10% max penalty (mild)
 
     // ============================================================================
-    // Overtaking & Lane Change Configuration (Feature 007 - Phase 1)
+    // Overtaking & Lane Change Configuration
     // ============================================================================
 
     /// <summary>
@@ -253,7 +292,7 @@ public static class RaceModifierConfig
     /// <summary>
     /// Reduction in cooldown per point of agility.
     /// Range: Agility 0 = 10 tick cooldown, Agility 100 = 2 tick cooldown
-    /// Tuned: Reduced from 0.1 to 0.08 to decrease lane change frequency (Phase 3 balance tuning)
+    /// Tuned: Reduced from 0.1 to 0.08 to decrease lane change frequency.
     /// </summary>
     public const double AgilityCooldownReduction = 0.08;
 
@@ -271,7 +310,7 @@ public static class RaceModifierConfig
     public const decimal LaneChangeMinClearanceAhead = 0.2m;
 
     // ============================================================================
-    // Risky Lane Change Configuration (Feature 007 - Phase 2)
+    // Risky Lane Change Configuration
     // ============================================================================
 
     /// <summary>
@@ -296,12 +335,12 @@ public static class RaceModifierConfig
     /// Divisor for calculating risky squeeze play success probability from agility.
     /// Formula: successChance = Agility / RiskySqueezeAgilityDivisor
     /// Value of 250.0 yields: Agility 0 = 0%, Agility 50 = 20%, Agility 100 = 40%
-    /// Tuned: Increased from 200.0 to 250.0 to reduce risky attempt success rate (Phase 3 balance tuning)
+    /// Tuned: Increased from 200.0 to 250.0 to reduce risky attempt success rate.
     /// </summary>
     public const double RiskySqueezeAgilityDivisor = 250.0;
 
     // ============================================================================
-    // Traffic Response Configuration (Feature 007 - Phase 2)
+    // Traffic Response Configuration
     // ============================================================================
 
     /// <summary>
@@ -341,7 +380,7 @@ public static class RaceModifierConfig
     public const decimal TrafficBlockingDistance = 0.2m;
 
     // ============================================================================
-    // Lane Finding Configuration (Feature 007 - Phase 2)
+    // Lane Finding Configuration
     // ============================================================================
 
     /// <summary>

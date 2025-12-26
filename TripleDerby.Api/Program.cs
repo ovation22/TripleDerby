@@ -71,9 +71,12 @@ public class Program
             builder.Services.AddScoped<IStaminaCalculator, StaminaCalculator>();
             builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>(); // Feature 008
             builder.Services.AddScoped<IPurseCalculator, PurseCalculator>(); // Feature 009
+            builder.Services.AddScoped<IOvertakingManager, OvertakingManager>(); // Feature 010
+            builder.Services.AddScoped<IEventDetector, EventDetector>(); // Feature 010
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();
+            builder.Services.AddScoped<IRaceRunService, RaceRunService>(); // Feature 010
             builder.Services.AddScoped<IHorseService, HorseService>();
             builder.Services.AddScoped<IStatsService, StatsService>();
             builder.Services.AddScoped<IFeedingService, FeedingService>();
