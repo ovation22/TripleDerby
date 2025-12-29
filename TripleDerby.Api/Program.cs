@@ -67,13 +67,8 @@ public class Program
 
             builder.Services.AddCaching(builder.Configuration);
 
-            // Racing calculators (Feature 005: Phase 4 - DI Refactor)
-            builder.Services.AddScoped<ISpeedModifierCalculator, SpeedModifierCalculator>();
-            builder.Services.AddScoped<IStaminaCalculator, StaminaCalculator>();
-            builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>(); // Feature 008
-            builder.Services.AddScoped<IPurseCalculator, PurseCalculator>(); // Feature 009
-            builder.Services.AddScoped<IOvertakingManager, OvertakingManager>(); // Feature 010
-            builder.Services.AddScoped<IEventDetector, EventDetector>(); // Feature 010
+            // Note: Racing execution logic (calculators, commentary, purse) moved to Racing microservice in Feature 011
+            // API only handles race request orchestration now
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();

@@ -1,12 +1,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using TripleDerby.Core.Abstractions.Messaging;
 using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
-using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
+using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel.Enums;
 using Xunit.Abstractions;
 
@@ -201,15 +200,15 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         var overtakingManager = new OvertakingManager(mockRandom.Object);
         var eventDetector = new EventDetector();
 
-        // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object, new Mock<ITimeManager>().Object, NullLogger<RaceService>.Instance);
+        // Create race executor and run simulation
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);
 
         // We need to set the condition BEFORE the race runs
-        // The issue is that RaceService.Race() calls GenerateRandomConditionId()
+        // The issue is that RaceExecutor.Race() calls GenerateRandomConditionId()
         // Let's override the mock to return our desired condition
         mockRandom.Setup(r => r.Next(It.Is<int>(i => i > 10))).Returns((int)config.Condition - 1);
 
-        var result = await raceService.Race(1, horse.Id, CancellationToken.None);
+        var result = await raceExecutor.Race(1, horse.Id, CancellationToken.None);
 
         // Extract results
         var winnerResult = result.HorseResults.First();

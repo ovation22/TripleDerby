@@ -1,8 +1,7 @@
-using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Configuration;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Core.Services;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Calculates race purse amounts and distributions based on race class and distance.

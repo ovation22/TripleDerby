@@ -1,6 +1,6 @@
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Core.Abstractions.Services;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Service for calculating race purse amounts and distributions.

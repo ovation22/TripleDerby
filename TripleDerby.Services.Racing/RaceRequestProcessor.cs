@@ -1,5 +1,4 @@
 using TripleDerby.Core.Abstractions.Repositories;
-using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
@@ -8,20 +7,20 @@ using TripleDerby.SharedKernel.Messages;
 namespace TripleDerby.Services.Racing;
 
 /// <summary>
-/// Processes race requests by delegating to the RaceService.
+/// Processes race requests by delegating to the RaceExecutor.
 /// </summary>
 public class RaceRequestProcessor : IRaceRequestProcessor
 {
-    private readonly IRaceService _raceService;
+    private readonly IRaceExecutor _raceExecutor;
     private readonly ITripleDerbyRepository _repository;
     private readonly ILogger<RaceRequestProcessor> _logger;
 
     public RaceRequestProcessor(
-        IRaceService raceService,
+        IRaceExecutor raceExecutor,
         ITripleDerbyRepository repository,
         ILogger<RaceRequestProcessor> logger)
     {
-        _raceService = raceService;
+        _raceExecutor = raceExecutor;
         _repository = repository;
         _logger = logger;
     }
@@ -45,8 +44,8 @@ public class RaceRequestProcessor : IRaceRequestProcessor
 
         try
         {
-            // Delegate to existing RaceService.Race() method
-            var result = await _raceService.Race(
+            // Delegate to RaceExecutor
+            var result = await _raceExecutor.Race(
                 request.RaceId,
                 request.HorseId,
                 cancellationToken);

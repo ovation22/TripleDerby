@@ -1,7 +1,6 @@
 using TripleDerby.Core.Entities;
-using TripleDerby.Core.Services;
 
-namespace TripleDerby.Core.Abstractions.Services;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Generates natural language commentary for race events.

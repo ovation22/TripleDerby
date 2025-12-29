@@ -1,14 +1,12 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using TripleDerby.Core.Abstractions.Messaging;
 using Moq;
 using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
-using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
-using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
+using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 
@@ -21,7 +19,7 @@ public class RaceCommentaryTests
 {
     private readonly Mock<ITripleDerbyRepository> _repositoryMock;
     private readonly Mock<IRandomGenerator> _randomGeneratorMock;
-    private readonly RaceService _sut;
+    private readonly RaceExecutor _sut;
 
     public RaceCommentaryTests()
     {
@@ -42,7 +40,7 @@ public class RaceCommentaryTests
         var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object);
         var eventDetector = new EventDetector();
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object, new Mock<ITimeManager>().Object, NullLogger<RaceService>.Instance);
+        _sut = new RaceExecutor(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);
     }
 
     [Fact]

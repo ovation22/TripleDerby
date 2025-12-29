@@ -45,6 +45,7 @@ builder.Services.AddScoped<IOvertakingManager, OvertakingManager>();
 builder.Services.AddScoped<IEventDetector, EventDetector>();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
+builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
 
 // Messaging
 builder.Services.AddHostedService<Worker>();
