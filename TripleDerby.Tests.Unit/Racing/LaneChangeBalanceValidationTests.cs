@@ -435,7 +435,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         var purseCalculator = new PurseCalculator();
 
         // Feature 010: Overtaking and event detection
-        var overtakingManager = new OvertakingManager(mockRandom.Object);
+        var overtakingManager = new OvertakingManager(mockRandom.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
         // Create race executor and run simulation
