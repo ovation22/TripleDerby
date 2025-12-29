@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel;
-using TripleDerby.SharedKernel.Enums;
-using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Dtos;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -14,7 +11,7 @@ namespace TripleDerby.Api.Controllers;
 [Route("api/races/{raceId}/runs")]
 [ApiConventionType(typeof(DefaultApiConventions))]
 public class RaceRunsController(
-    [FromKeyedServices("servicebus")] IMessagePublisher messagePublisher,
+    IRaceService raceService,
     ITripleDerbyRepository repository,
     IRaceRunService raceRunService,
     ILogger<RaceRunsController> logger) : ControllerBase
@@ -37,48 +34,22 @@ public class RaceRunsController(
         [FromQuery] Guid horseId,
         CancellationToken cancellationToken = default)
     {
-        // Generate correlation ID for this request
-        var correlationId = Guid.NewGuid();
+        // TODO: Get owner ID from authenticated user context
+        var ownerId = Guid.Empty;
 
-        // Create RaceRequest entity for tracking
-        var raceRequest = new RaceRequest
-        {
-            Id = correlationId,
-            RaceId = raceId,
-            HorseId = horseId,
-            OwnerId = Guid.Empty, // TODO: Get from authenticated user context
-            Status = RaceRequestStatus.Pending,
-            CreatedDate = DateTimeOffset.UtcNow,
-            CreatedBy = Guid.Empty // TODO: Get from authenticated user context
-        };
-
-        await repository.CreateAsync(raceRequest, cancellationToken);
-
-        // Publish message to Service Bus
-        var message = new RaceRequested
-        {
-            CorrelationId = correlationId,
-            RaceId = raceId,
-            HorseId = horseId,
-            RequestedBy = Guid.Empty, // TODO: Get from authenticated user context
-            RequestedAt = DateTime.UtcNow
-        };
-
-        await messagePublisher.PublishAsync(
-            message,
-            new MessagePublishOptions { Destination = "race-requests" },
-            cancellationToken);
+        // Delegate to service layer
+        var result = await raceService.QueueRaceAsync(raceId, horseId, ownerId, cancellationToken);
 
         logger.LogInformation(
             "Race request created: CorrelationId={CorrelationId}, RaceId={RaceId}, HorseId={HorseId}",
-            correlationId, raceId, horseId);
+            result.Id, raceId, horseId);
 
         // Return 202 Accepted with request details
         var response = new RaceRequestResponse(
-            RequestId: correlationId,
-            Status: RaceRequestStatus.Pending,
+            RequestId: result.Id,
+            Status: result.Status,
             Message: "Race request accepted and queued for processing",
-            StatusUrl: Url.Action(nameof(GetRequestStatus), new { raceId, requestId = correlationId })
+            StatusUrl: Url.Action(nameof(GetRequestStatus), new { raceId, requestId = result.Id })
         );
 
         return Accepted(response);
@@ -174,28 +145,3 @@ public class RaceRunsController(
         return Ok(result);
     }
 }
-
-/// <summary>
-/// Response DTO for race request creation.
-/// </summary>
-public record RaceRequestResponse(
-    Guid RequestId,
-    RaceRequestStatus Status,
-    string Message,
-    string? StatusUrl = null
-);
-
-/// <summary>
-/// Response DTO for race request status queries.
-/// </summary>
-public record RaceRequestStatusResponse(
-    Guid RequestId,
-    byte RaceId,
-    Guid HorseId,
-    RaceRequestStatus Status,
-    Guid? RaceRunId,
-    DateTimeOffset CreatedDate,
-    DateTimeOffset? ProcessedDate,
-    string? FailureReason,
-    string? ResultUrl
-);

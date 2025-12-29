@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Messaging;
 using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -200,7 +201,7 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         var eventDetector = new EventDetector();
 
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object);
 
         // We need to set the condition BEFORE the race runs
         // The issue is that RaceService.Race() calls GenerateRandomConditionId()

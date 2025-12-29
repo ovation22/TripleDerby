@@ -1,4 +1,6 @@
-﻿using TripleDerby.Core.Abstractions.Racing;
+﻿using Microsoft.Extensions.DependencyInjection;
+using TripleDerby.Core.Abstractions.Messaging;
+using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -7,7 +9,9 @@ using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Dtos;
 using TripleDerby.SharedKernel.Enums;
+using TripleDerby.SharedKernel.Messages;
 
 namespace TripleDerby.Core.Services;
 
@@ -19,7 +23,8 @@ public class RaceService(
     IRaceCommentaryGenerator commentaryGenerator,
     IPurseCalculator purseCalculator,
     IOvertakingManager overtakingManager,
-    IEventDetector eventDetector) : IRaceService
+    IEventDetector eventDetector,
+    [FromKeyedServices("servicebus")] IMessagePublisher messagePublisher) : IRaceService
 {
     public Task<RaceResult> Get(byte id, CancellationToken cancellationToken = default)
     {
@@ -213,6 +218,54 @@ public class RaceService(
                 })
                 .ToList()
         };
+    }
+
+    public async Task<RaceRequestStatusResult> QueueRaceAsync(byte raceId, Guid horseId, Guid ownerId, CancellationToken cancellationToken = default)
+    {
+        // Generate correlation ID for this request
+        var correlationId = Guid.NewGuid();
+
+        // Create RaceRequest entity for tracking
+        var raceRequest = new RaceRequest
+        {
+            Id = correlationId,
+            RaceId = raceId,
+            HorseId = horseId,
+            OwnerId = ownerId,
+            Status = RaceRequestStatus.Pending,
+            CreatedDate = DateTimeOffset.UtcNow,
+            CreatedBy = ownerId
+        };
+
+        await repository.CreateAsync(raceRequest, cancellationToken);
+
+        // Publish message to Service Bus
+        var message = new RaceRequested
+        {
+            CorrelationId = correlationId,
+            RaceId = raceId,
+            HorseId = horseId,
+            RequestedBy = ownerId,
+            RequestedAt = DateTime.UtcNow
+        };
+
+        await messagePublisher.PublishAsync(
+            message,
+            new MessagePublishOptions { Destination = "race-requests" },
+            cancellationToken);
+
+        return new RaceRequestStatusResult(
+            Id: correlationId,
+            RaceId: raceId,
+            HorseId: horseId,
+            Status: RaceRequestStatus.Pending,
+            RaceRunId: null,
+            OwnerId: ownerId,
+            CreatedDate: raceRequest.CreatedDate,
+            ProcessedDate: null,
+            UpdatedDate: null,
+            FailureReason: null
+        );
     }
 
     private void InitializeHorses(RaceRun raceRun, IEnumerable<Horse> horses)

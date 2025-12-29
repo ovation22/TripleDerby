@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Messaging;
 using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -438,7 +439,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         var eventDetector = new EventDetector();
 
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object);
         var result = await raceService.Race(1, testHorse.Id, CancellationToken.None);
 
         // Extract lane change metrics from captured RaceRun
