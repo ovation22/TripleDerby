@@ -20,7 +20,8 @@ var serviceBus = builder.AddAzureServiceBus("servicebus")
     .RunAsEmulator(configureContainer => configureContainer
         .WithEnvironment("ACCEPT_EULA", "Y")
         .WithEnvironment("SQL_SERVER", $"{sqlServer.Resource.Name}:1433")
-        .WithEnvironment("MSSQL_SA_PASSWORD", "Password_01"));
+        .WithEnvironment("MSSQL_SA_PASSWORD", "Password_01"))
+    .WaitFor(sqlServer);
 
 serviceBus.AddServiceBusQueue("race-requests");
 serviceBus.AddServiceBusQueue("race-completions");
