@@ -49,7 +49,7 @@ builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 // Messaging
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<AzureServiceBusRaceConsumer>();
-builder.Services.AddSingleton<IMessagePublisher, AzureServiceBusPublisher>();
+builder.Services.AddKeyedSingleton<IMessagePublisher, AzureServiceBusPublisher>("servicebus");
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddAzureServiceBusClient(connectionName: "servicebus");
