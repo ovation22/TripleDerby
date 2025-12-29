@@ -43,7 +43,7 @@ public partial class BreedingService(
     }
 
     /// <inheritdoc />
-    public async Task<BreedingRequested> Breed(BreedRequest request, CancellationToken cancellationToken)
+    public async Task<BreedingRequested> QueueBreedingAsync(BreedRequest request, CancellationToken cancellationToken)
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));

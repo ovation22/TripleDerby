@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using System.Reflection;
 using TripleDerby.Core.Abstractions.Generators;
-using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
@@ -13,26 +12,24 @@ namespace TripleDerby.Tests.Unit.Breeding;
 
 public class GenerateHorseStatisticsTests
 {
-    private static BreedingRequestProcessor CreateProcessor(Mock<IRandomGenerator> rnd)
+    private static BreedingExecutor CreateExecutor(Mock<IRandomGenerator> rnd)
     {
-        Mock<ILogger<BreedingRequestProcessor>> logger = new();
+        Mock<ILogger<BreedingExecutor>> logger = new();
         ITripleDerbyRepository repo = Mock.Of<ITripleDerbyRepository>();
-        IMessagePublisher pub = Mock.Of<IMessagePublisher>();
         IHorseNameGenerator nameGen = Mock.Of<IHorseNameGenerator>();
         ITimeManager timeMgr = Mock.Of<ITimeManager>();
 
-        return new BreedingRequestProcessor(
-            logger.Object,
+        return new BreedingExecutor(
             rnd.Object,
             repo,
-            pub,
             nameGen,
-            timeMgr);
+            timeMgr,
+            logger.Object);
     }
 
     private static MethodInfo GetGenerateHorseStatisticsMethod()
     {
-        MethodInfo? mi = typeof(BreedingRequestProcessor).GetMethod(
+        MethodInfo? mi = typeof(BreedingExecutor).GetMethod(
             "GenerateHorseStatistics",
             BindingFlags.Instance | BindingFlags.NonPublic,
             null,
@@ -54,7 +51,7 @@ public class GenerateHorseStatisticsTests
         Mock<IRandomGenerator> rnd = new();
         rnd.Setup(r => r.Next(It.IsAny<int>(), It.IsAny<int>())).Returns((int min, int _) => min);
 
-        BreedingRequestProcessor processor = CreateProcessor(rnd);
+        BreedingExecutor executor = CreateExecutor(rnd);
         MethodInfo mi = GetGenerateHorseStatisticsMethod();
 
         ICollection<HorseStatistic> damStats = new List<HorseStatistic>
@@ -66,7 +63,7 @@ public class GenerateHorseStatisticsTests
         };
 
         // Act & Assert - reflection invocation wraps exceptions in TargetInvocationException
-        TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => mi.Invoke(processor, [null!, damStats
+        TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => mi.Invoke(executor, [null!, damStats
         ]));
         Assert.IsType<ArgumentNullException>(tie.InnerException);
     }
@@ -78,7 +75,7 @@ public class GenerateHorseStatisticsTests
         Mock<IRandomGenerator> rnd = new();
         rnd.Setup(r => r.Next(It.IsAny<int>(), It.IsAny<int>())).Returns((int min, int _) => min);
 
-        BreedingRequestProcessor processor = CreateProcessor(rnd);
+        BreedingExecutor executor = CreateExecutor(rnd);
         MethodInfo mi = GetGenerateHorseStatisticsMethod();
 
         ICollection<HorseStatistic> sireStats = new List<HorseStatistic>
@@ -90,7 +87,7 @@ public class GenerateHorseStatisticsTests
         };
 
         // Act & Assert - reflection invocation wraps exceptions in TargetInvocationException
-        TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => mi.Invoke(processor, [sireStats, null!
+        TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => mi.Invoke(executor, [sireStats, null!
         ]));
         Assert.IsType<ArgumentNullException>(tie.InnerException);
     }
@@ -102,7 +99,7 @@ public class GenerateHorseStatisticsTests
         Mock<IRandomGenerator> rnd = new();
         rnd.Setup(r => r.Next(It.IsAny<int>(), It.IsAny<int>())).Returns((int min, int _) => min);
 
-        BreedingRequestProcessor processor = CreateProcessor(rnd);
+        BreedingExecutor executor = CreateExecutor(rnd);
         MethodInfo mi = GetGenerateHorseStatisticsMethod();
 
         // Sire missing Durability
@@ -122,7 +119,7 @@ public class GenerateHorseStatisticsTests
         };
 
         // Act & Assert
-        TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => mi.Invoke(processor, [sireStats, damStats
+        TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => mi.Invoke(executor, [sireStats, damStats
         ]));
         Assert.IsType<InvalidOperationException>(tie.InnerException);
         Assert.Contains("Sire is missing statistic", tie.InnerException!.Message);
@@ -141,7 +138,7 @@ public class GenerateHorseStatisticsTests
         rnd.Setup(r => r.Next(It.IsAny<int>(), It.IsAny<int>()))
             .Returns((int min, int _) => min);
 
-        BreedingRequestProcessor processor = CreateProcessor(rnd);
+        BreedingExecutor executor = CreateExecutor(rnd);
         MethodInfo mi = GetGenerateHorseStatisticsMethod();
 
         ICollection<HorseStatistic> sireStats = new List<HorseStatistic>
@@ -161,7 +158,7 @@ public class GenerateHorseStatisticsTests
         };
 
         // Act
-        object? resultObj = mi.Invoke(processor, [sireStats, damStats]);
+        object? resultObj = mi.Invoke(executor, [sireStats, damStats]);
         List<HorseStatistic> result = Assert.IsType<List<HorseStatistic>>(resultObj);
 
         // Assert - happiness + 4 stats
