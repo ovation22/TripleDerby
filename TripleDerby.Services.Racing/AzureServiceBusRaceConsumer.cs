@@ -14,19 +14,16 @@ public class AzureServiceBusRaceConsumer : IAsyncDisposable
 {
     private readonly ServiceBusClient _client;
     private readonly ServiceBusProcessor _processor;
-    private readonly IRaceRequestProcessor _requestProcessor;
-    private readonly IMessagePublisher _publisher;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<AzureServiceBusRaceConsumer> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
 
     public AzureServiceBusRaceConsumer(
         IConfiguration configuration,
-        IRaceRequestProcessor requestProcessor,
-        IMessagePublisher publisher,
+        IServiceScopeFactory serviceScopeFactory,
         ILogger<AzureServiceBusRaceConsumer> logger)
     {
-        _requestProcessor = requestProcessor;
-        _publisher = publisher;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
 
         var connectionString = configuration.GetConnectionString("servicebus")
@@ -83,8 +80,13 @@ public class AzureServiceBusRaceConsumer : IAsyncDisposable
                 "Processing race request: RaceId={RaceId}, HorseId={HorseId}, CorrelationId={CorrelationId}",
                 request.RaceId, request.HorseId, request.CorrelationId);
 
+            // Create a scope for this message processing to resolve scoped dependencies
+            await using var scope = _serviceScopeFactory.CreateAsyncScope();
+            var requestProcessor = scope.ServiceProvider.GetRequiredService<IRaceRequestProcessor>();
+            var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
+
             // Process the race (delegates to RaceService)
-            var result = await _requestProcessor.ProcessAsync(request, args.CancellationToken);
+            var result = await requestProcessor.ProcessAsync(request, args.CancellationToken);
 
             // Publish completion message
             var completion = new RaceCompleted
@@ -100,7 +102,7 @@ public class AzureServiceBusRaceConsumer : IAsyncDisposable
                 Result = result
             };
 
-            await _publisher.PublishAsync(
+            await publisher.PublishAsync(
                 completion,
                 new MessagePublishOptions { Destination = "race-completions" },
                 args.CancellationToken);

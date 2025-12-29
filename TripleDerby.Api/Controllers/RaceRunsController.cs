@@ -16,7 +16,6 @@ namespace TripleDerby.Api.Controllers;
 public class RaceRunsController(
     [FromKeyedServices("servicebus")] IMessagePublisher messagePublisher,
     ITripleDerbyRepository repository,
-    IRaceService raceService,
     IRaceRunService raceRunService,
     ILogger<RaceRunsController> logger) : ControllerBase
 {

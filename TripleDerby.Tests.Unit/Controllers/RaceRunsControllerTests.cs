@@ -43,13 +43,11 @@ public class RaceRunsControllerTests
         // Arrange
         var mockPublisher = new Mock<IMessagePublisher>();
         var mockRepository = new Mock<ITripleDerbyRepository>();
-        var mockRaceService = new Mock<IRaceService>();
         var mockRaceRunService = new Mock<IRaceRunService>();
 
         var controller = new RaceRunsController(
             mockPublisher.Object,
             mockRepository.Object,
-            mockRaceService.Object,
             mockRaceRunService.Object,
             NullLogger<RaceRunsController>.Instance);
 
@@ -79,13 +77,11 @@ public class RaceRunsControllerTests
         // Arrange
         var mockPublisher = new Mock<IMessagePublisher>();
         var mockRepository = new Mock<ITripleDerbyRepository>();
-        var mockRaceService = new Mock<IRaceService>();
         var mockRaceRunService = new Mock<IRaceRunService>();
 
         var controller = new RaceRunsController(
             mockPublisher.Object,
             mockRepository.Object,
-            mockRaceService.Object,
             mockRaceRunService.Object,
             NullLogger<RaceRunsController>.Instance);
 
@@ -114,13 +110,11 @@ public class RaceRunsControllerTests
         // Arrange
         var mockPublisher = new Mock<IMessagePublisher>();
         var mockRepository = new Mock<ITripleDerbyRepository>();
-        var mockRaceService = new Mock<IRaceService>();
         var mockRaceRunService = new Mock<IRaceRunService>();
 
         var controller = new RaceRunsController(
             mockPublisher.Object,
             mockRepository.Object,
-            mockRaceService.Object,
             mockRaceRunService.Object,
             NullLogger<RaceRunsController>.Instance);
 
@@ -147,7 +141,6 @@ public class RaceRunsControllerTests
         // Arrange
         var mockPublisher = new Mock<IMessagePublisher>();
         var mockRepository = new Mock<ITripleDerbyRepository>();
-        var mockRaceService = new Mock<IRaceService>();
         var mockRaceRunService = new Mock<IRaceRunService>();
 
         RaceRequested? publishedMessage = null;
@@ -172,7 +165,6 @@ public class RaceRunsControllerTests
         var controller = new RaceRunsController(
             mockPublisher.Object,
             mockRepository.Object,
-            mockRaceService.Object,
             mockRaceRunService.Object,
             NullLogger<RaceRunsController>.Instance);
 
