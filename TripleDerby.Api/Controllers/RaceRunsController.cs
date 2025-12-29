@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
-using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Dtos;
+using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -12,7 +11,6 @@ namespace TripleDerby.Api.Controllers;
 [ApiConventionType(typeof(DefaultApiConventions))]
 public class RaceRunsController(
     IRaceService raceService,
-    ITripleDerbyRepository repository,
     IRaceRunService raceRunService,
     ILogger<RaceRunsController> logger) : ControllerBase
 {
@@ -29,7 +27,7 @@ public class RaceRunsController(
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<RaceRequestResponse>> CreateRun(
+    public async Task<ActionResult<Resource<RaceRequestStatusResult>>> CreateRun(
         [FromRoute] byte raceId,
         [FromQuery] Guid horseId,
         CancellationToken cancellationToken = default)
@@ -44,15 +42,20 @@ public class RaceRunsController(
             "Race request created: CorrelationId={CorrelationId}, RaceId={RaceId}, HorseId={HorseId}",
             result.Id, raceId, horseId);
 
-        // Return 202 Accepted with request details
-        var response = new RaceRequestResponse(
-            RequestId: result.Id,
-            Status: result.Status,
-            Message: "Race request accepted and queued for processing",
-            StatusUrl: Url.Action(nameof(GetRequestStatus), new { raceId, requestId = result.Id })
-        );
+        // Build canonical request URL for polling
+        var requestUrl = Url.Action(nameof(GetRequestStatus), "RaceRuns", new { raceId, requestId = result.Id }, Request.Scheme)
+                         ?? $"/api/races/{raceId}/runs/requests/{result.Id}";
 
-        return Accepted(response);
+        // HATEOAS links
+        var links = new List<Link>
+        {
+            new("self", requestUrl, "GET"),
+            new("replay", Url.Action(nameof(Replay), "RaceRuns", new { raceId, raceRequestId = result.Id }, Request.Scheme) ?? $"/api/races/{raceId}/runs/requests/{result.Id}/replay", "POST")
+        };
+
+        var resource = new Resource<RaceRequestStatusResult>(result, links);
+
+        return AcceptedAtAction(nameof(GetRequestStatus), new { raceId, requestId = result.Id }, resource);
     }
 
     /// <summary>
@@ -67,31 +70,80 @@ public class RaceRunsController(
     [HttpGet("requests/{requestId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<RaceRequestStatusResponse>> GetRequestStatus(
+    public async Task<ActionResult<Resource<RaceRequestStatusResult>>> GetRequestStatus(
         [FromRoute] byte raceId,
         [FromRoute] Guid requestId,
         CancellationToken cancellationToken = default)
     {
-        var request = await repository.FindAsync<RaceRequest>(requestId, cancellationToken);
+        var result = await raceService.GetRequestStatusAsync(raceId, requestId, cancellationToken);
 
-        if (request == null || request.RaceId != raceId)
+        if (result == null)
             return NotFound();
 
-        var response = new RaceRequestStatusResponse(
-            RequestId: request.Id,
-            RaceId: request.RaceId,
-            HorseId: request.HorseId,
-            Status: request.Status,
-            RaceRunId: request.RaceRunId,
-            CreatedDate: request.CreatedDate,
-            ProcessedDate: request.ProcessedDate,
-            FailureReason: request.FailureReason,
-            ResultUrl: request.RaceRunId.HasValue
-                ? Url.Action(nameof(GetRun), new { raceId, runId = request.RaceRunId })
-                : null
-        );
+        var links = new List<Link>
+        {
+            new("self", Url.Action(nameof(GetRequestStatus), "RaceRuns", new { raceId, requestId }, Request.Scheme) ?? $"/api/races/{raceId}/runs/requests/{requestId}", "GET")
+        };
 
-        return Ok(response);
+        if (result.Status == RaceRequestStatus.Failed)
+        {
+            links.Add(new Link("replay", Url.Action(nameof(Replay), "RaceRuns", new { raceId, raceRequestId = requestId }, Request.Scheme) ?? $"/api/races/{raceId}/runs/requests/{requestId}/replay", "POST"));
+        }
+
+        if (result.RaceRunId.HasValue)
+        {
+            var raceRunHref = Url.Action(nameof(GetRun), "RaceRuns", new { raceId, runId = result.RaceRunId.Value }, Request.Scheme) ?? $"/api/races/{raceId}/runs/{result.RaceRunId.Value}";
+            links.Add(new Link("result", raceRunHref, "GET"));
+        }
+
+        var resource = new Resource<RaceRequestStatusResult>(result, links);
+
+        return Ok(resource);
+    }
+
+    /// <summary>
+    /// Replay a race request by publishing the RaceRequested message again.
+    /// TODO: This is an operational/admin action; consider requiring authorization.
+    /// </summary>
+    /// <param name="raceId">Race identifier.</param>
+    /// <param name="raceRequestId">The Id of the race request to replay.</param>
+    /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+    /// <returns>
+    /// 202 Accepted when the request is accepted for processing; 404 if the request was not found.
+    /// </returns>
+    /// <response code="202">Replay accepted.</response>
+    /// <response code="404">Race request not found.</response>
+    [HttpPost("requests/{raceRequestId:guid}/replay")]
+    public async Task<IActionResult> Replay(
+        [FromRoute] byte raceId,
+        [FromRoute] Guid raceRequestId,
+        CancellationToken cancellationToken = default)
+    {
+        var published = await raceService.ReplayRaceRequest(raceRequestId, cancellationToken);
+
+        if (!published)
+            return NotFound();
+
+        return Accepted();
+    }
+
+    /// <summary>
+    /// Replay all non-complete race requests (Pending or Failed) by re-publishing their RaceRequested messages.
+    /// TODO: This is an admin/operational endpoint and should be protected in production.
+    /// </summary>
+    /// <param name="raceId">Race identifier.</param>
+    /// <param name="maxDegreeOfParallelism">Maximum concurrent publish tasks to use.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>202 Accepted with number of messages published.</returns>
+    [HttpPost("requests/replay")]
+    public async Task<IActionResult> ReplayAll(
+        [FromRoute] byte raceId,
+        [FromQuery] int maxDegreeOfParallelism = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var published = await raceService.ReplayAllNonComplete(maxDegreeOfParallelism, cancellationToken);
+
+        return Accepted(new { published });
     }
 
     /// <summary>

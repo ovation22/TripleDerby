@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using TripleDerby.Core.Abstractions.Messaging;
 using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
@@ -413,7 +414,7 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         var eventDetector = new EventDetector();
 
         // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object);
+        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object, new Mock<ITimeManager>().Object, NullLogger<RaceService>.Instance);
         var result = await raceService.Race(1, horse.Id, CancellationToken.None);
 
         // Extract results

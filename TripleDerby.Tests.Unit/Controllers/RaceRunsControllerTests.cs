@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TripleDerby.Api.Controllers;
-using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Dtos;
@@ -40,7 +39,6 @@ public class RaceRunsControllerTests
     {
         // Arrange
         var mockRaceService = new Mock<IRaceService>();
-        var mockRepository = new Mock<ITripleDerbyRepository>();
         var mockRaceRunService = new Mock<IRaceRunService>();
 
         byte raceId = 5;
@@ -64,7 +62,6 @@ public class RaceRunsControllerTests
 
         var controller = new RaceRunsController(
             mockRaceService.Object,
-            mockRepository.Object,
             mockRaceRunService.Object,
             NullLogger<RaceRunsController>.Instance);
 
@@ -84,7 +81,6 @@ public class RaceRunsControllerTests
     {
         // Arrange
         var mockRaceService = new Mock<IRaceService>();
-        var mockRepository = new Mock<ITripleDerbyRepository>();
         var mockRaceRunService = new Mock<IRaceRunService>();
 
         byte raceId = 5;
@@ -108,7 +104,6 @@ public class RaceRunsControllerTests
 
         var controller = new RaceRunsController(
             mockRaceService.Object,
-            mockRepository.Object,
             mockRaceRunService.Object,
             NullLogger<RaceRunsController>.Instance);
 
@@ -118,12 +113,15 @@ public class RaceRunsControllerTests
         var result = await controller.CreateRun(raceId, horseId);
 
         // Assert
-        var acceptedResult = Assert.IsType<AcceptedResult>(result.Result);
+        var acceptedResult = Assert.IsType<AcceptedAtActionResult>(result.Result);
         Assert.Equal(StatusCodes.Status202Accepted, acceptedResult.StatusCode);
 
-        var value = Assert.IsType<RaceRequestResponse>(acceptedResult.Value);
-        Assert.Equal(requestId, value.RequestId);
-        Assert.Equal(RaceRequestStatus.Pending, value.Status);
-        Assert.NotNull(value.StatusUrl);
+        var resource = Assert.IsType<Resource<RaceRequestStatusResult>>(acceptedResult.Value);
+        Assert.NotNull(resource.Data);
+        Assert.Equal(requestId, resource.Data.Id);
+        Assert.Equal(RaceRequestStatus.Pending, resource.Data.Status);
+        Assert.NotNull(resource.Links);
+        Assert.Contains(resource.Links, l => l.Rel == "self");
+        Assert.Contains(resource.Links, l => l.Rel == "replay");
     }
 }

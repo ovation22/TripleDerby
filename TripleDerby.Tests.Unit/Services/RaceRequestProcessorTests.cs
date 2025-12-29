@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
+using TripleDerby.Core.Entities;
 using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
@@ -26,6 +28,7 @@ public class RaceRequestProcessorTests
 
         var processor = new RaceRequestProcessor(
             mockRaceService.Object,
+            new Mock<ITripleDerbyRepository>().Object,
             NullLogger<RaceRequestProcessor>.Instance);
 
         var request = new RaceRequested
@@ -59,6 +62,7 @@ public class RaceRequestProcessorTests
 
         var processor = new RaceRequestProcessor(
             mockRaceService.Object,
+            new Mock<ITripleDerbyRepository>().Object,
             NullLogger<RaceRequestProcessor>.Instance);
 
         var request = new RaceRequested
@@ -89,6 +93,7 @@ public class RaceRequestProcessorTests
 
         var processor = new RaceRequestProcessor(
             mockRaceService.Object,
+            new Mock<ITripleDerbyRepository>().Object,
             NullLogger<RaceRequestProcessor>.Instance);
 
         var request = new RaceRequested
@@ -118,6 +123,7 @@ public class RaceRequestProcessorTests
 
         var processor = new RaceRequestProcessor(
             mockRaceService.Object,
+            new Mock<ITripleDerbyRepository>().Object,
             NullLogger<RaceRequestProcessor>.Instance);
 
         var request = new RaceRequested
@@ -131,6 +137,60 @@ public class RaceRequestProcessorTests
         // Act & Assert
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
             processor.ProcessAsync(request, cts.Token));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_SuccessfulRace_UpdatesRaceRequestWithResult()
+    {
+        // Arrange
+        var mockRaceService = new Mock<IRaceService>();
+        var mockRepository = new Mock<ITripleDerbyRepository>();
+        var expectedResult = CreateTestRaceRunResult();
+
+        var raceRequest = new RaceRequest
+        {
+            Id = Guid.NewGuid(),
+            RaceId = 5,
+            HorseId = Guid.NewGuid(),
+            Status = RaceRequestStatus.Pending
+        };
+
+        mockRaceService
+            .Setup(x => x.Race(It.IsAny<byte>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResult);
+
+        mockRepository
+            .Setup(x => x.FindAsync<RaceRequest>(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(raceRequest);
+
+        var processor = new RaceRequestProcessor(
+            mockRaceService.Object,
+            mockRepository.Object,
+            NullLogger<RaceRequestProcessor>.Instance);
+
+        var request = new RaceRequested
+        {
+            CorrelationId = raceRequest.Id,
+            RaceId = 5,
+            HorseId = Guid.NewGuid(),
+            RequestedBy = Guid.NewGuid()
+        };
+
+        // Act
+        await processor.ProcessAsync(request, CancellationToken.None);
+
+        // Assert - verify UpdateAsync was called exactly twice
+        mockRepository.Verify(
+            x => x.UpdateAsync(
+                It.IsAny<RaceRequest>(),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+
+        // Verify the final state of the RaceRequest entity
+        Assert.Equal(RaceRequestStatus.Completed, raceRequest.Status);
+        Assert.Equal(expectedResult.RaceRunId, raceRequest.RaceRunId);
+        Assert.NotNull(raceRequest.ProcessedDate);
+        Assert.NotNull(raceRequest.UpdatedDate);
     }
 
     private static RaceRunResult CreateTestRaceRunResult()

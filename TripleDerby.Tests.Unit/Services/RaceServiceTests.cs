@@ -1,4 +1,5 @@
 using TripleDerby.Core.Abstractions.Messaging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
@@ -45,7 +46,7 @@ public class RaceServiceTests
         var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object);
         var eventDetector = new EventDetector();
 
-        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object);
+        _sut = new RaceService(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, new Mock<IMessagePublisher>().Object, new Mock<ITimeManager>().Object, NullLogger<RaceService>.Instance);
     }
 
     [Fact]
