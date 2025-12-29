@@ -1,4 +1,4 @@
-namespace TripleDerby.Core.Services;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Collection of events detected during a single race tick.

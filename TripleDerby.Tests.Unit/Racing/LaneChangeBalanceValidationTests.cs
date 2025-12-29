@@ -1,10 +1,11 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
-using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
+using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel.Enums;
 using Xunit.Abstractions;
 
@@ -437,9 +438,9 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         var overtakingManager = new OvertakingManager(mockRandom.Object);
         var eventDetector = new EventDetector();
 
-        // Create race service and run simulation
-        var raceService = new RaceService(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector);
-        var result = await raceService.Race(1, testHorse.Id, CancellationToken.None);
+        // Create race executor and run simulation
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);
+        var result = await raceExecutor.Race(1, testHorse.Id, CancellationToken.None);
 
         // Extract lane change metrics from captured RaceRun
         var laneChangeMetrics = capturedRaceRun != null
