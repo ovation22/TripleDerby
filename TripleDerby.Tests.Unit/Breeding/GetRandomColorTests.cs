@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Reflection;
+using TripleDerby.Core.Abstractions.Generators;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
@@ -10,28 +11,25 @@ namespace TripleDerby.Tests.Unit.Breeding;
 
 public class GetRandomColorTests
 {
-    private static BreedingRequestProcessor CreateProcessor(
+    private static BreedingExecutor CreateExecutor(
         Mock<IRandomGenerator> rnd,
         Mock<ITripleDerbyRepository> repo)
     {
-        var logger = new Mock<ILogger<BreedingRequestProcessor>>();
-
-        var msgPub = Mock.Of<Core.Abstractions.Messaging.IMessagePublisher>();
-        var horseNameGen = Mock.Of<Core.Abstractions.Generators.IHorseNameGenerator>();
+        var logger = new Mock<ILogger<BreedingExecutor>>();
+        var horseNameGen = Mock.Of<IHorseNameGenerator>();
         var timeManager = Mock.Of<ITimeManager>();
 
-        return new BreedingRequestProcessor(
-            logger.Object,
+        return new BreedingExecutor(
             rnd.Object,
             repo.Object,
-            msgPub,
             horseNameGen,
-            timeManager);
+            timeManager,
+            logger.Object);
     }
 
     private static MethodInfo GetGetRandomColorMethod()
     {
-        var mi = typeof(BreedingRequestProcessor).GetMethod(
+        var mi = typeof(BreedingExecutor).GetMethod(
             "GetRandomColor",
             BindingFlags.Instance | BindingFlags.NonPublic,
             null,
@@ -60,11 +58,11 @@ public class GetRandomColorTests
         repo.Setup(r => r.GetAllAsync<Color>(It.IsAny<CancellationToken>()))
             .ReturnsAsync(colors);
 
-        var processor = CreateProcessor(rnd, repo);
+        var executor = CreateExecutor(rnd, repo);
         var mi = GetGetRandomColorMethod();
 
         // Act
-        var task = (Task<Color>)mi.Invoke(processor, [false, false, false, CancellationToken.None])!;
+        var task = (Task<Color>)mi.Invoke(executor, [false, false, false, CancellationToken.None])!;
         var selected = await task;
 
         // Assert - special color should not be chosen; because rnd returns 0 we expect first non-special candidate (CommonA)
@@ -92,11 +90,11 @@ public class GetRandomColorTests
         repo.Setup(r => r.GetAllAsync<Color>(It.IsAny<CancellationToken>()))
             .ReturnsAsync(colors);
 
-        var processor = CreateProcessor(rnd, repo);
+        var executor = CreateExecutor(rnd, repo);
         var mi = GetGetRandomColorMethod();
 
         // Act
-        var task = (Task<Color>)mi.Invoke(processor, [false, false, true, CancellationToken.None])!;
+        var task = (Task<Color>)mi.Invoke(executor, [false, false, true, CancellationToken.None])!;
         var selected = await task;
 
         // Assert - with n == 0 we should pick the first candidate
@@ -122,11 +120,11 @@ public class GetRandomColorTests
         repo.Setup(r => r.GetAllAsync<Color>(It.IsAny<CancellationToken>()))
             .ReturnsAsync(colors);
 
-        var processor = CreateProcessor(rnd, repo);
+        var executor = CreateExecutor(rnd, repo);
         var mi = GetGetRandomColorMethod();
 
         // Act
-        var task = (Task<Color>)mi.Invoke(processor, [false, false, true, CancellationToken.None])!;
+        var task = (Task<Color>)mi.Invoke(executor, [false, false, true, CancellationToken.None])!;
         var selected = await task;
 
         // Assert - when r is effectively totalWeight we expect the fallback to return the last candidate
@@ -148,11 +146,11 @@ public class GetRandomColorTests
         repo.Setup(r => r.GetAllAsync<Color>(It.IsAny<CancellationToken>()))
             .ReturnsAsync(colors);
 
-        var processor = CreateProcessor(rnd, repo);
+        var executor = CreateExecutor(rnd, repo);
         var mi = GetGetRandomColorMethod();
 
         // Act & Assert - when includeSpecialColors == false and all colors are special we should get InvalidOperationException
-        var exTask = (Task)mi.Invoke(processor, [false, false, false, CancellationToken.None])!;
+        var exTask = (Task)mi.Invoke(executor, [false, false, false, CancellationToken.None])!;
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await exTask);
     }
 }

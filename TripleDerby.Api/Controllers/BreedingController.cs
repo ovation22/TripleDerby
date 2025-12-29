@@ -24,7 +24,7 @@ public class BreedingController(IBreedingService breedingService) : ControllerBa
     /// </returns>
     /// <response code="200">Returns the list of dams.</response>
     /// <response code="400">Unable to return dams.</response>
-    [HttpGet("Dams")]
+    [HttpGet("dams")]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -43,7 +43,7 @@ public class BreedingController(IBreedingService breedingService) : ControllerBa
     /// </returns>
     /// <response code="200">Returns the list of sires.</response>
     /// <response code="400">Unable to return sires.</response>
-    [HttpGet("Sires")]
+    [HttpGet("sires")]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -70,7 +70,7 @@ public class BreedingController(IBreedingService breedingService) : ControllerBa
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Resource<BreedingRequested>>> CreateRequest([FromBody] BreedRequest request, CancellationToken cancellationToken)
     {
-        var result = await breedingService.Breed(request, cancellationToken);
+        var result = await breedingService.QueueBreedingAsync(request, cancellationToken);
 
         // Build canonical request URL for polling
         var requestUrl = Url.Action(nameof(GetRequest), "Breeding", new { id = result.RequestId }, Request.Scheme)

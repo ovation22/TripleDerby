@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using TripleDerby.Core.Abstractions.Generators;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -19,19 +18,17 @@ public class BreedingRequestProcessorTests
     public async Task ProcessAsync_NullRequest_ThrowsArgumentNullException()
     {
         // Arrange
+        var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
-        var rnd = new Mock<IRandomGenerator>();
         var repo = new Mock<ITripleDerbyRepository>();
         var publisher = new Mock<IMessagePublisher>();
-        var nameGen = new Mock<IHorseNameGenerator>();
         var timeMgr = new Mock<ITimeManager>();
 
         var processor = new BreedingRequestProcessor(
+            breedingExecutor.Object,
             logger.Object,
-            rnd.Object,
             repo.Object,
             publisher.Object,
-            nameGen.Object,
             timeMgr.Object);
 
         // Act & Assert
@@ -42,11 +39,10 @@ public class BreedingRequestProcessorTests
     public async Task ProcessAsync_StoredRequestNotFound_LogsWarning_AndReturns()
     {
         // Arrange
+        var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
-        var rnd = new Mock<IRandomGenerator>();
         var repo = new Mock<ITripleDerbyRepository>();
         var publisher = new Mock<IMessagePublisher>();
-        var nameGen = new Mock<IHorseNameGenerator>();
         var timeMgr = new Mock<ITimeManager>();
 
         var requestId = Guid.NewGuid();
@@ -56,11 +52,10 @@ public class BreedingRequestProcessorTests
             .ReturnsAsync((BreedingRequest?)null);
 
         var processor = new BreedingRequestProcessor(
+            breedingExecutor.Object,
             logger.Object,
-            rnd.Object,
             repo.Object,
             publisher.Object,
-            nameGen.Object,
             timeMgr.Object);
 
         // Act
@@ -76,11 +71,10 @@ public class BreedingRequestProcessorTests
     public async Task ProcessAsync_StoredRequestAlreadyCompleted_LogsAndReturns()
     {
         // Arrange
+        var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
-        var rnd = new Mock<IRandomGenerator>();
         var repo = new Mock<ITripleDerbyRepository>();
         var publisher = new Mock<IMessagePublisher>();
-        var nameGen = new Mock<IHorseNameGenerator>();
         var timeMgr = new Mock<ITimeManager>();
 
         var requestId = Guid.NewGuid();
@@ -96,11 +90,10 @@ public class BreedingRequestProcessorTests
             .ReturnsAsync(stored);
 
         var processor = new BreedingRequestProcessor(
+            breedingExecutor.Object,
             logger.Object,
-            rnd.Object,
             repo.Object,
             publisher.Object,
-            nameGen.Object,
             timeMgr.Object);
 
         // Act
@@ -115,11 +108,10 @@ public class BreedingRequestProcessorTests
     public async Task ProcessAsync_ClaimingThrows_ReloadShowsNotInProgress_LogsAndReturns()
     {
         // Arrange
+        var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
-        var rnd = new Mock<IRandomGenerator>();
         var repo = new Mock<ITripleDerbyRepository>();
         var publisher = new Mock<IMessagePublisher>();
-        var nameGen = new Mock<IHorseNameGenerator>();
         var timeMgr = new Mock<ITimeManager>();
 
         var requestId = Guid.NewGuid();
@@ -145,11 +137,10 @@ public class BreedingRequestProcessorTests
             .ThrowsAsync(new Exception("concurrency"));
 
         var processor = new BreedingRequestProcessor(
+            breedingExecutor.Object,
             logger.Object,
-            rnd.Object,
             repo.Object,
             publisher.Object,
-            nameGen.Object,
             timeMgr.Object);
 
         // Act

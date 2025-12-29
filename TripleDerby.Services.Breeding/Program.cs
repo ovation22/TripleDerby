@@ -30,6 +30,7 @@ builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
     options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
 builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
+builder.Services.AddScoped<IBreedingExecutor, BreedingExecutor>();
 builder.Services.AddScoped<IBreedingRequestProcessor, BreedingRequestProcessor>();
 
 builder.Services.AddHostedService<Worker>();

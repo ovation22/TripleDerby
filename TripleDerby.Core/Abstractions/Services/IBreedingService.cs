@@ -33,7 +33,7 @@ public interface IBreedingService
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="request"/> is <c>null</c>.</exception>
     /// <exception cref="OperationCanceledException">Thrown if the operation is cancelled via <paramref name="cancellationToken"/>.</exception>
     /// <exception cref="InvalidOperationException">Thrown when the specified sire or dam cannot be retrieved.</exception>
-    Task<BreedingRequested> Breed(BreedRequest request, CancellationToken cancellationToken);
+    Task<BreedingRequested> QueueBreedingAsync(BreedRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Replay a persisted BreedingRequest by id by re-publishing the <see cref="BreedingRequested"/> message.
