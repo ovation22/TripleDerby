@@ -83,7 +83,7 @@ public class AzureServiceBusRaceConsumer : IAsyncDisposable
             // Create a scope for this message processing to resolve scoped dependencies
             await using var scope = _serviceScopeFactory.CreateAsyncScope();
             var requestProcessor = scope.ServiceProvider.GetRequiredService<IRaceRequestProcessor>();
-            var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
+            var publisher = scope.ServiceProvider.GetRequiredKeyedService<IMessagePublisher>("servicebus");
 
             // Process the race (delegates to RaceService)
             var result = await requestProcessor.ProcessAsync(request, args.CancellationToken);
