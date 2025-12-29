@@ -20,9 +20,17 @@ public interface IOvertakingManager
     /// <summary>
     /// Applies leg-type-specific traffic response effects when horse is blocked.
     /// Modifies speed based on traffic ahead and horse's personality.
+    /// Uses actual horse speed calculation for realistic traffic dynamics.
     /// </summary>
     /// <param name="horse">The horse being affected</param>
     /// <param name="raceRun">Current race state</param>
+    /// <param name="currentTick">Current race tick</param>
+    /// <param name="totalTicks">Total ticks in race</param>
     /// <param name="currentSpeed">Current speed to modify (passed by reference)</param>
-    void ApplyTrafficEffects(RaceRunHorse horse, RaceRun raceRun, ref double currentSpeed);
+    void ApplyTrafficEffects(
+        RaceRunHorse horse,
+        RaceRun raceRun,
+        short currentTick,
+        short totalTicks,
+        ref double currentSpeed);
 }

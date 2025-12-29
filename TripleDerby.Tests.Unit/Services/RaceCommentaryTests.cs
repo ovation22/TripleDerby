@@ -37,7 +37,7 @@ public class RaceCommentaryTests
         var staminaCalculator = new StaminaCalculator();
         var commentaryGenerator = new RaceCommentaryGenerator(_randomGeneratorMock.Object);
         var purseCalculator = new PurseCalculator();
-        var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object);
+        var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
         _sut = new RaceExecutor(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);

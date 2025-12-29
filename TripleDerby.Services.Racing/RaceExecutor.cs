@@ -272,7 +272,7 @@ public class RaceExecutor(
         }
 
         // Apply traffic response effects (speed capping / frustration)
-        overtakingManager.ApplyTrafficEffects(raceRunHorse, raceRun, ref baseSpeed);
+        overtakingManager.ApplyTrafficEffects(raceRunHorse, raceRun, tick, totalTicks, ref baseSpeed);
 
         // Apply random variance (±1% per tick)
         var randomVariance = speedModifierCalculator.ApplyRandomVariance();

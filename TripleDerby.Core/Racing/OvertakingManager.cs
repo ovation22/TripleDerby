@@ -13,10 +13,14 @@ namespace TripleDerby.Core.Racing;
 public class OvertakingManager : IOvertakingManager
 {
     private readonly IRandomGenerator _randomGenerator;
+    private readonly ISpeedModifierCalculator _speedModifierCalculator;
 
-    public OvertakingManager(IRandomGenerator randomGenerator)
+    public OvertakingManager(
+        IRandomGenerator randomGenerator,
+        ISpeedModifierCalculator speedModifierCalculator)
     {
         _randomGenerator = randomGenerator;
+        _speedModifierCalculator = speedModifierCalculator;
     }
 
     /// <summary>
@@ -61,8 +65,14 @@ public class OvertakingManager : IOvertakingManager
     /// <summary>
     /// Applies leg-type-specific traffic response effects when horse is blocked.
     /// Modifies speed based on traffic ahead and horse's personality.
+    /// Uses actual horse speed calculation for realistic traffic dynamics.
     /// </summary>
-    public void ApplyTrafficEffects(RaceRunHorse horse, RaceRun raceRun, ref double currentSpeed)
+    public void ApplyTrafficEffects(
+        RaceRunHorse horse,
+        RaceRun raceRun,
+        short currentTick,
+        short totalTicks,
+        ref double currentSpeed)
     {
         // Find horse ahead in same lane within blocking distance
         var horseAhead = FindHorseAheadInLane(horse, raceRun);
@@ -83,7 +93,7 @@ public class OvertakingManager : IOvertakingManager
 
             case LegTypeId.StartDash:
                 // Speed cap: match leader minus penalty
-                var startDashCap = CalculateHorseSpeed(horseAhead) *
+                var startDashCap = CalculateHorseSpeed(horseAhead, currentTick, totalTicks, raceRun) *
                                   (1.0 - RaceModifierConfig.StartDashSpeedCapPenalty);
                 if (currentSpeed > startDashCap)
                     currentSpeed = startDashCap;
@@ -91,7 +101,7 @@ public class OvertakingManager : IOvertakingManager
 
             case LegTypeId.LastSpurt:
                 // Patient: minimal speed cap, no frustration
-                var lastSpurtCap = CalculateHorseSpeed(horseAhead) *
+                var lastSpurtCap = CalculateHorseSpeed(horseAhead, currentTick, totalTicks, raceRun) *
                                   (1.0 - RaceModifierConfig.LastSpurtSpeedCapPenalty);
                 if (currentSpeed > lastSpurtCap)
                     currentSpeed = lastSpurtCap;
@@ -99,7 +109,7 @@ public class OvertakingManager : IOvertakingManager
 
             case LegTypeId.StretchRunner:
                 // Speed cap: match leader minus penalty
-                var stretchCap = CalculateHorseSpeed(horseAhead) *
+                var stretchCap = CalculateHorseSpeed(horseAhead, currentTick, totalTicks, raceRun) *
                                 (1.0 - RaceModifierConfig.StretchRunnerSpeedCapPenalty);
                 if (currentSpeed > stretchCap)
                     currentSpeed = stretchCap;
@@ -107,7 +117,7 @@ public class OvertakingManager : IOvertakingManager
 
             case LegTypeId.RailRunner:
                 // Extra cautious on rail: higher speed cap penalty
-                var railCap = CalculateHorseSpeed(horseAhead) *
+                var railCap = CalculateHorseSpeed(horseAhead, currentTick, totalTicks, raceRun) *
                              (1.0 - RaceModifierConfig.RailRunnerSpeedCapPenalty);
                 if (currentSpeed > railCap)
                     currentSpeed = railCap;
@@ -353,14 +363,45 @@ public class OvertakingManager : IOvertakingManager
     }
 
     /// <summary>
-    /// Estimates the current speed of another horse for traffic response calculations.
-    /// TODO: Future enhancement - use actual horse speed based on Speed stat and modifiers
-    /// instead of average base speed for more realistic traffic dynamics.
+    /// Calculates the current speed of a horse using the full modifier pipeline.
+    /// Uses same calculation as UpdateHorsePosition for consistent traffic response.
+    /// Applies Stats → Environment → Phase → Stamina modifiers.
     /// </summary>
-    private static double CalculateHorseSpeed(RaceRunHorse horse)
+    /// <param name="horse">The horse to calculate speed for</param>
+    /// <param name="currentTick">Current race tick</param>
+    /// <param name="totalTicks">Total ticks in race</param>
+    /// <param name="raceRun">Current race state</param>
+    /// <returns>Calculated speed in furlongs per tick</returns>
+    private double CalculateHorseSpeed(
+        RaceRunHorse horse,
+        short currentTick,
+        short totalTicks,
+        RaceRun raceRun)
     {
-        // Current implementation uses average base speed as conservative approximation
-        // This ensures consistent traffic behavior regardless of individual horse stats
-        return RaceModifierConfig.AverageBaseSpeed;
+        var baseSpeed = RaceModifierConfig.AverageBaseSpeed;
+
+        // Build context for modifier calculations
+        var context = new ModifierContext(
+            CurrentTick: currentTick,
+            TotalTicks: totalTicks,
+            Horse: horse.Horse,
+            RaceCondition: raceRun.ConditionId,
+            RaceSurface: raceRun.Race.SurfaceId,
+            RaceFurlongs: raceRun.Race.Furlongs
+        );
+
+        // Apply modifier pipeline (same order as UpdateHorsePosition)
+        // Stats → Environment → Phase → Stamina
+        baseSpeed *= _speedModifierCalculator.CalculateStatModifiers(context);
+        baseSpeed *= _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
+        baseSpeed *= _speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
+        baseSpeed *= _speedModifierCalculator.CalculateStaminaModifier(horse);
+
+        // Note: We intentionally skip:
+        // - Risky lane change penalty (temporary state, not inherent speed)
+        // - Random variance (too volatile for traffic comparison)
+        // - Traffic effects (avoid circular dependency)
+
+        return baseSpeed;
     }
 }
