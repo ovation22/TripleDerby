@@ -5,22 +5,20 @@ using TripleDerby.Web.ApiClients.Extensions;
 
 namespace TripleDerby.Web.ApiClients;
 
-public class HorseApiClient : BaseApiClient, IHorseApiClient, IGenericApiClient
+public class HorseApiClient(HttpClient httpClient, ILogger<HorseApiClient> logger)
+    : BaseApiClient(httpClient, logger), IHorseApiClient, IGenericApiClient
 {
-    public HorseApiClient(HttpClient httpClient, ILogger<HorseApiClient> logger)
-        : base(httpClient, logger) { }
-
     /// <summary>
     /// Convenience strongly-typed search for HorseResult that delegates to the generic implementation.
     /// </summary>
-    public Task<PagedList<HorseResult>?> SearchAsync(PaginationRequest request, CancellationToken cancellationToken = default)
-        => SearchAsync<HorseResult>(request, cancellationToken);
+    public Task<PagedList<HorseResult>?> FilterAsync(PaginationRequest request, CancellationToken cancellationToken = default)
+        => FilterAsync<HorseResult>(request, cancellationToken);
 
     /// <summary>
     /// Generic search implementation required by IGenericApiClient.
     /// Builds the query string from the <see cref="PaginationRequest"/> and uses the BaseApiClient helper.
     /// </summary>
-    public async Task<PagedList<T>?> SearchAsync<T>(PaginationRequest request, CancellationToken cancellationToken = default)
+    public async Task<PagedList<T>?> FilterAsync<T>(PaginationRequest request, CancellationToken cancellationToken = default)
     {
         var url = request.ToQueryString("/api/horses");
         var resp = await SearchAsync<PagedList<T>>(url, cancellationToken);

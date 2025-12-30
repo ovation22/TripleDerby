@@ -5,22 +5,20 @@ using TripleDerby.Web.ApiClients.Extensions;
 
 namespace TripleDerby.Web.ApiClients;
 
-public class UserApiClient : BaseApiClient, IUserApiClient, IGenericApiClient
+public class UserApiClient(HttpClient httpClient, ILogger<UserApiClient> logger)
+    : BaseApiClient(httpClient, logger), IUserApiClient, IGenericApiClient
 {
-    public UserApiClient(HttpClient httpClient, ILogger<UserApiClient> logger)
-        : base(httpClient, logger) { }
-
     /// <summary>
-    /// Convenience strongly-typed search for UserResult that delegates to the generic implementation.
+    /// Convenience strongly-typed filter for UserResult that delegates to the generic implementation.
     /// </summary>
-    public Task<PagedList<UserResult>?> SearchAsync(PaginationRequest request, CancellationToken cancellationToken = default)
-        => SearchAsync<UserResult>(request, cancellationToken);
+    public Task<PagedList<UserResult>?> FilterAsync(PaginationRequest request, CancellationToken cancellationToken = default)
+        => FilterAsync<UserResult>(request, cancellationToken);
 
     /// <summary>
-    /// Generic search implementation required by IGenericApiClient.
+    /// Generic filter implementation required by IGenericApiClient.
     /// Builds the query string from the <see cref="PaginationRequest"/> and uses the BaseApiClient helper.
     /// </summary>
-    public async Task<PagedList<T>?> SearchAsync<T>(PaginationRequest request, CancellationToken cancellationToken = default)
+    public async Task<PagedList<T>?> FilterAsync<T>(PaginationRequest request, CancellationToken cancellationToken = default)
     {
         var url = request.ToQueryString("/api/users");
         var resp = await SearchAsync<PagedList<T>>(url, cancellationToken);
@@ -28,7 +26,7 @@ public class UserApiClient : BaseApiClient, IUserApiClient, IGenericApiClient
         if (resp.Success)
             return resp.Data;
 
-        Logger.LogError("Unable to search users for type {Type}. Status: {Status} Error: {Error}", typeof(T).Name, resp.StatusCode, resp.Error);
+        Logger.LogError("Unable to filter users for type {Type}. Status: {Status} Error: {Error}", typeof(T).Name, resp.StatusCode, resp.Error);
         return null;
     }
 

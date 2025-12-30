@@ -1,7 +1,97 @@
 ﻿@page "/races"
 @rendermode InteractiveServer
 
+@using System.Linq
+@using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IRaceApiClient RaceApi
+@inject NavigationManager Navigation
+
 <PageTitle>Races</PageTitle>
 
 <h1>Races</h1>
 
+<div style="min-height: 490px;" tabindex="-1">
+    <FluentDataGrid @ref="dataGrid"
+                    Items="@races"
+                    RefreshItems="RefreshItemsAsync"
+                    DisplayMode="DataGridDisplayMode.Table"
+                    TGridItem="RacesResult"
+                    Pagination="pagination"
+                    HeaderCellAsButtonWithMenu=true
+                    UseMenuService=false
+                    Loading="loading">
+        <PropertyColumn Property="@(c => c.Name)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true />
+        <PropertyColumn Property="@(c => c.Description)" Sortable="true" />
+        <PropertyColumn Property="@(c => c.Furlongs)" Sortable="true" Align="Align.End" />
+        <PropertyColumn Property="@(c => c.Surface)" Sortable="true" />
+        <PropertyColumn Property="@(c => c.Track)" Sortable="true" />
+        <TemplateColumn Title="Field Size" Align="@Align.End">
+            <div>@($"{context.MinFieldSize}-{context.MaxFieldSize}")</div>
+        </TemplateColumn>
+        <TemplateColumn Title="Actions" Align="@Align.End">
+            <FluentButton aria-label="Start race"
+                          IconEnd="@(new Icons.Regular.Size16.Play())"
+                          @onclick="@(() => NavigateToRaceRun(context))" />
+        </TemplateColumn>
+    </FluentDataGrid>
+</div>
+
+<FluentPaginator State="@pagination" />
+
+@code {
+    // Grid state
+    bool loading = true;
+    IQueryable<RacesResult> races = Enumerable.Empty<RacesResult>().AsQueryable();
+    FluentDataGrid<RacesResult>? dataGrid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    protected async Task RefreshItemsAsync(GridItemsProviderRequest<RacesResult> req)
+    {
+        loading = true;
+
+        var start = req.StartIndex;
+        var count = (req.Count.HasValue && req.Count.Value > 0)
+            ? req.Count.Value
+            : pagination.ItemsPerPage;
+        if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 1;
+
+        var page = (start / count) + 1;
+
+        var sortBy = "Name";
+        var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
+
+        var s = req.GetSortByProperties().FirstOrDefault(x => !string.IsNullOrEmpty(x.PropertyName));
+        if (!string.IsNullOrEmpty(s.PropertyName))
+        {
+            sortBy = s.PropertyName;
+            sortDirection = s.Direction == FUISort.Ascending
+                ? SharedKernel.Pagination.SortDirection.Asc
+                : SharedKernel.Pagination.SortDirection.Desc;
+        }
+
+        var request = new PaginationRequest
+        {
+            Page = page,
+            Size = count,
+            SortBy = sortBy,
+            Direction = sortDirection
+        };
+
+        var response = await RaceApi.FilterAsync(request);
+
+        races = (response?.Data ?? Enumerable.Empty<RacesResult>()).AsQueryable();
+        await pagination.SetTotalItemCountAsync(response?.Total ?? 0);
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void NavigateToRaceRun(RacesResult race)
+    {
+        Navigation.NavigateTo($"/race-run/{race.Id}");
+    }
+}

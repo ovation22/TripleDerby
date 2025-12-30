@@ -102,7 +102,7 @@
             Direction = sortDirection
         };
         
-        var response = await UserApi.SearchAsync(request);
+        var response = await UserApi.FilterAsync(request);
 
         users = (response?.Data ?? Enumerable.Empty<UserResult>()).AsQueryable();
         await pagination.SetTotalItemCountAsync(response?.Total ?? 0);

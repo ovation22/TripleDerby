@@ -6,5 +6,5 @@ namespace TripleDerby.Web.ApiClients.Abstractions;
 public interface IUserApiClient
 {
     Task<UserResult?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<PagedList<UserResult>?> SearchAsync(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<PagedList<UserResult>?> FilterAsync(PaginationRequest request, CancellationToken cancellationToken = default);
 }

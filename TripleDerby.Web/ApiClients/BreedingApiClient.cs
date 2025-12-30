@@ -3,11 +3,9 @@ using TripleDerby.Web.ApiClients.Abstractions;
 
 namespace TripleDerby.Web.ApiClients;
 
-public class BreedingApiClient : BaseApiClient, IBreedingApiClient
+public class BreedingApiClient(HttpClient httpClient, ILogger<BreedingApiClient> logger)
+    : BaseApiClient(httpClient, logger), IBreedingApiClient
 {
-    public BreedingApiClient(HttpClient httpClient, ILogger<BreedingApiClient> logger)
-        : base(httpClient, logger) { }
-
     /// <summary>
     /// Fetch cached dams (server returns ~10 cached items).
     /// </summary>

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -10,18 +11,20 @@ namespace TripleDerby.Api.Controllers;
 public class RacesController(IRaceService raceService) : ControllerBase
 {
     /// <summary>
-    /// Returns a list of race definitions/results.
+    /// Returns a paginated and optionally filtered list of races.
     /// </summary>
-    /// <returns>200 with collection of <see cref="RacesResult"/>; 400 on failure.</returns>
-    /// <response code="200">Returns the races list.</response>
+    /// <param name="request">Pagination, sorting and filter parameters (from query string).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 with <see cref="PagedList{RacesResult}"/>; 400 on failure.</returns>
+    /// <response code="200">Returns the paged races result.</response>
     /// <response code="400">Unable to return races.</response>
     [HttpGet]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<RacesResult>>> GetAll()
+    public async Task<ActionResult<PagedList<RacesResult>>> Filter([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
     {
-        var result = await raceService.GetAll();
+        var result = await raceService.Filter(request, cancellationToken);
 
         return Ok(result);
     }
