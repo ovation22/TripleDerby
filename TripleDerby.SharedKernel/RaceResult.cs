@@ -20,4 +20,6 @@ public record RaceResult
     public TrackId TrackId { get; init; }
 
     public string Track { get; init; } = null!;
+
+    public int Purse { get; set; }
 }

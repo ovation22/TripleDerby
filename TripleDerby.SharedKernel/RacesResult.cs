@@ -24,4 +24,6 @@ public record RacesResult
     public byte MinFieldSize { get; init; }
 
     public byte MaxFieldSize { get; init; }
+
+    public int Purse { get; set; }
 }

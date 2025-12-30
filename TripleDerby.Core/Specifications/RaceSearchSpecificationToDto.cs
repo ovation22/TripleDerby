@@ -7,14 +7,14 @@ namespace TripleDerby.Core.Specifications;
 
 public sealed class RaceFilterSpecificationToDto : FilterSpecification<Race, RacesResult>
 {
-    private static readonly Dictionary<string, string> mappings = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> Mappings = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Surface", "Surface.Name" },
         { "Track", "Track.Name" }
     };
 
     public RaceFilterSpecificationToDto(PaginationRequest request)
-        : base(request, mappings, defaultSortBy: "Name", defaultSortDirection: SortDirection.Asc)
+        : base(request, Mappings, defaultSortBy: "Name", defaultSortDirection: SortDirection.Asc)
     {
         Query.Select(r => new RacesResult
         {
@@ -27,7 +27,8 @@ public sealed class RaceFilterSpecificationToDto : FilterSpecification<Race, Rac
             TrackId = r.TrackId,
             Track = r.Track.Name,
             MinFieldSize = r.MinFieldSize,
-            MaxFieldSize = r.MaxFieldSize
+            MaxFieldSize = r.MaxFieldSize,
+            Purse = r.Purse
         });
     }
 }

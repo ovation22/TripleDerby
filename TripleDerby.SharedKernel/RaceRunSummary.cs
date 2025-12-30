@@ -16,4 +16,5 @@ public record RaceRunSummary
     public string WinnerDisplayTime => TimeSpan.FromSeconds(WinnerTime * 0.50633).ToString(@"m\:ss\.ff");
     public int FieldSize { get; init; }
     public DateTimeOffset RunDate { get; set; }
+    public int Purse { get; init; }
 }

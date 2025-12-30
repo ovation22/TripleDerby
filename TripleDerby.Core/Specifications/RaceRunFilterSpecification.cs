@@ -33,7 +33,8 @@ public sealed class RaceRunFilterSpecification : FilterSpecification<RaceRun, Ra
             WinnerName = rr.WinHorse.Name,
             WinnerTime = rr.Horses.Where(h => h.Place == 1).Select(h => h.Time).FirstOrDefault(),
             FieldSize = rr.Horses.Count,
-            RunDate = rr.CreatedDate
+            RunDate = rr.CreatedDate,
+            Purse = rr.Purse
         });
     }
 }

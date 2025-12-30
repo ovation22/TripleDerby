@@ -29,6 +29,7 @@
         <PropertyColumn Property="@(c => c.Furlongs)" Sortable="true" Align="Align.End" />
         <PropertyColumn Property="@(c => c.Surface)" Sortable="true" />
         <PropertyColumn Property="@(c => c.Track)" Sortable="true" />
+        <PropertyColumn Property="@(c => c.Purse)" Format="C" Sortable="true" />
         <TemplateColumn Title="Field Size" Align="@Align.End">
             <div>@($"{context.MinFieldSize}-{context.MaxFieldSize}")</div>
         </TemplateColumn>

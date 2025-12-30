@@ -32,15 +32,9 @@ else
             <div><strong>Track:</strong> @_race.Track</div>
             <div><strong>Distance:</strong> @_race.Furlongs furlongs</div>
             <div><strong>Surface:</strong> @_race.Surface</div>
+            <div><strong>Purse:</strong> @_race.Purse.ToString("C")</div>
         </div>
     </div>
-
-    <FluentBreadcrumb>
-        <FluentBreadcrumbItem Href="/races">
-            Races
-        </FluentBreadcrumbItem>
-        <FluentBreadcrumbItem>@_race.Name</FluentBreadcrumbItem>
-    </FluentBreadcrumb>
 
     <div style="min-height: 490px;" tabindex="-1">
     <FluentDataGrid @ref="dataGrid"
@@ -56,7 +50,8 @@ else
         <PropertyColumn Property="@(c => c.WinnerDisplayTime)" Title="Winning Time" Align="Align.End" />
         <PropertyColumn Property="@(c => c.FieldSize)" Title="Field Size" Align="Align.End" />
         <PropertyColumn Property="@(c => c.ConditionName)" Title="Track Condition" Sortable="true" />
-        <TemplateColumn Title="RunDate" Sortable="true" SortBy="@_sortByCreated" Align="Align.End" InitialSortDirection=FUISort.Descending IsDefaultSortColumn=true>
+        <PropertyColumn Property="@(c => c.Purse)" Format="C" Sortable="true" />
+        <TemplateColumn Title="Run Date" Sortable="true" SortBy="@_sortByCreated" Align="Align.End" InitialSortDirection=FUISort.Descending IsDefaultSortColumn=true>
             <div>@context.RunDate.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss")</div>
         </TemplateColumn>
         <TemplateColumn Title="Actions" Align="@Align.End">
