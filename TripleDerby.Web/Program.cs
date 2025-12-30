@@ -31,6 +31,14 @@ builder.Services.AddHttpClient<IStatsApiClient, StatsApiClient>(client =>
 builder.Services.AddHttpClient<IUserApiClient, UserApiClient>(client =>
 {
     client.BaseAddress = new("https+http://api");
+});
+builder.Services.AddHttpClient<IRaceApiClient, RaceApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://api");
+});
+builder.Services.AddHttpClient<IRaceRunApiClient, RaceRunApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://api");
 }); 
 
 var app = builder.Build();

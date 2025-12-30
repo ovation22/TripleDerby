@@ -4,5 +4,5 @@ namespace TripleDerby.Web.ApiClients.Abstractions;
 
 public interface IGenericApiClient
 {
-    Task<PagedList<T>?> SearchAsync<T>(PaginationRequest request, CancellationToken cancellationToken = default);
+    Task<PagedList<T>?> FilterAsync<T>(PaginationRequest request, CancellationToken cancellationToken = default);
 }

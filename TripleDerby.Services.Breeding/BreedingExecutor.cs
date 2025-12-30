@@ -30,6 +30,8 @@ public class BreedingExecutor(
         if (sire is null)
             throw new InvalidOperationException($"Unable to retrieve Sire ({sireId})");
 
+        logger.LogInformation("Starting Breeding for {SireId} and {DamId}", sireId, damId);
+
         var isMale = GetRandomGender();
         var legTypeId = GetRandomLegType();
         var color = await GetRandomColor(sire.Color.IsSpecial, dam.Color.IsSpecial, true, cancellationToken);

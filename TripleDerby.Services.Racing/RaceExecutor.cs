@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -75,6 +74,8 @@ public class RaceExecutor(
         Guid? previousLeader = null;
         var recentPositionChanges = new Dictionary<Guid, short>(); // Track last tick each horse had a position change
         var recentLaneChanges = new Dictionary<Guid, short>(); // Track last tick each horse had a lane change
+
+        logger.LogInformation("Starting race simulation for race {RaceId} with {HorseCount} horses.", raceId, horses.Count);
 
         // Run the simulation until all horses finish
         while (!allHorsesFinished)

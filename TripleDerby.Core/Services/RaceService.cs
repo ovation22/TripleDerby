@@ -5,10 +5,12 @@ using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Dtos;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Services;
 
@@ -23,9 +25,11 @@ public class RaceService(
         throw new NotImplementedException();
     }
 
-    public Task<IEnumerable<RacesResult>> GetAll(CancellationToken cancellationToken = default)
+    public async Task<PagedList<RacesResult>> Filter(PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var spec = new RaceSearchSpecificationToDto(request);
+
+        return await repository.ListAsync(spec, cancellationToken);
     }
 
     public async Task<RaceRequestStatusResult> QueueRaceAsync(byte raceId, Guid horseId, Guid ownerId, CancellationToken cancellationToken = default)

@@ -3,14 +3,9 @@ using TripleDerby.Web.ApiClients.Abstractions;
 
 namespace TripleDerby.Web.ApiClients;
 
-public class StatsApiClient : IStatsApiClient
+public class StatsApiClient(HttpClient http) : IStatsApiClient
 {
-    private readonly HttpClient _http;
-
-    public StatsApiClient(HttpClient http)
-    {
-        _http = http ?? throw new ArgumentNullException(nameof(http));
-    }
+    private readonly HttpClient _http = http ?? throw new ArgumentNullException(nameof(http));
 
     public async Task<IEnumerable<HorseColorStats>> GetHorseColorStatsAsync(CancellationToken cancellationToken = default)
     {

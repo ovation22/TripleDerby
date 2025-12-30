@@ -358,7 +358,7 @@
             request = request with { Filters = filters };
         }
 
-        var response = await HorseApi.SearchAsync(request);
+        var response = await HorseApi.FilterAsync(request);
 
         horses = (response?.Data ?? Enumerable.Empty<HorseResult>()).AsQueryable();
         await pagination.SetTotalItemCountAsync(response?.Total ?? 0);
