@@ -3,6 +3,7 @@ using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Dtos;
 using TripleDerby.SharedKernel.Enums;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -147,31 +148,30 @@ public class RaceRunsController(
     }
 
     /// <summary>
-    /// Gets a paginated list of race runs for a specific race.
+    /// Gets a paginated, sortable list of race runs for a specific race.
     /// </summary>
     /// <param name="raceId">Race identifier.</param>
-    /// <param name="page">Page number (default: 1).</param>
-    /// <param name="pageSize">Page size (default: 10, max: 100).</param>
+    /// <param name="request">Pagination request with page, size, and sort parameters.</param>
     /// <returns>200 with paginated race run summaries; 404 if race not found.</returns>
     /// <response code="200">Returns paginated race run list.</response>
     /// <response code="404">Race not found.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PagedResult<RaceRunSummary>>> GetRuns(
+    public async Task<ActionResult<PagedList<RaceRunSummary>>> GetRuns(
         [FromRoute] byte raceId,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] PaginationRequest request)
     {
-        if (pageSize > 100)
-            pageSize = 100;
+        // Enforce max page size
+        if (request.Size > 100)
+            request = request with { Size = 100 };
 
-        var result = await raceRunService.GetRaceRuns(raceId, page, pageSize);
+        var pagedList = await raceRunService.GetRaceRuns(raceId, request);
 
-        if (result == null)
+        if (pagedList == null)
             return NotFound();
 
-        return Ok(result);
+        return Ok(pagedList);
     }
 
     /// <summary>
