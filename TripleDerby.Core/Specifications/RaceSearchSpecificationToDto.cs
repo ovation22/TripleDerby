@@ -10,7 +10,8 @@ public sealed class RaceFilterSpecificationToDto : FilterSpecification<Race, Rac
     private static readonly Dictionary<string, string> Mappings = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Surface", "Surface.Name" },
-        { "Track", "Track.Name" }
+        { "Track", "Track.Name" },
+        { "RaceClass", "RaceClass.Name" }
     };
 
     public RaceFilterSpecificationToDto(PaginationRequest request)
@@ -26,6 +27,8 @@ public sealed class RaceFilterSpecificationToDto : FilterSpecification<Race, Rac
             Surface = r.Surface.Name,
             TrackId = r.TrackId,
             Track = r.Track.Name,
+            RaceClassId = r.RaceClassId,
+            RaceClass = r.RaceClass.Name,
             MinFieldSize = r.MinFieldSize,
             MaxFieldSize = r.MaxFieldSize,
             Purse = r.Purse

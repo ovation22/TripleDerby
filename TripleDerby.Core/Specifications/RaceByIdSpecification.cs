@@ -23,6 +23,8 @@ public sealed class RaceByIdSpecification : Specification<Race, RaceResult>, ISi
             Surface = r.Surface.Name,
             TrackId = r.TrackId,
             Track = r.Track.Name,
+            RaceClassId = r.RaceClassId,
+            RaceClass = r.RaceClass.Name,
             Purse = r.Purse
         });
     }

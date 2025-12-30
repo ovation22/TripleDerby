@@ -21,5 +21,9 @@ public record RaceResult
 
     public string Track { get; init; } = null!;
 
+    public RaceClassId RaceClassId { get; init; }
+
+    public string RaceClass { get; init; } = null!;
+
     public int Purse { get; set; }
 }

@@ -30,6 +30,8 @@ public sealed class RaceRunFilterSpecification : FilterSpecification<RaceRun, Ra
             RaceRunId = rr.Id,
             ConditionId = rr.ConditionId,
             ConditionName = rr.ConditionId.ToString(),
+            RaceClassId = rr.Race.RaceClassId,
+            RaceClass = rr.Race.RaceClass.Name,
             WinnerName = rr.WinHorse.Name,
             WinnerTime = rr.Horses.Where(h => h.Place == 1).Select(h => h.Time).FirstOrDefault(),
             FieldSize = rr.Horses.Count,

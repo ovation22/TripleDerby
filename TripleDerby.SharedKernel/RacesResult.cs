@@ -21,6 +21,10 @@ public record RacesResult
 
     public string Track { get; init; } = null!;
 
+    public RaceClassId RaceClassId { get; init; }
+
+    public string RaceClass { get; init; } = null!;
+
     public byte MinFieldSize { get; init; }
 
     public byte MaxFieldSize { get; init; }
