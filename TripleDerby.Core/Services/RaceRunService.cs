@@ -3,6 +3,7 @@ using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Services;
 
@@ -21,42 +22,20 @@ public class RaceRunService(ITripleDerbyRepository repository) : IRaceRunService
             cancellationToken);
     }
 
-    public async Task<PagedResult<RaceRunSummary>?> GetRaceRuns(
+    public async Task<PagedList<RaceRunSummary>?> GetRaceRuns(
         byte raceId,
-        int page,
-        int pageSize,
+        PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Verify race exists
         var race = await repository.FindAsync<Race>(raceId, cancellationToken);
         if (race == null)
             return null;
 
-        var spec = new RaceRunsByRaceSpecification(raceId);
-        var allRuns = await repository.ListAsync(spec, cancellationToken);
-        var totalCount = allRuns.Count;
+        // Use specification to handle filtering, sorting, and projection
+        var spec = new RaceRunFilterSpecification(raceId, request);
+        var pagedList = await repository.ListAsync(spec, cancellationToken);
 
-        var runs = allRuns
-            .OrderByDescending(r => r.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(r => new RaceRunSummary
-            {
-                RaceRunId = r.Id,
-                ConditionId = r.ConditionId,
-                ConditionName = r.ConditionId.ToString(),
-                WinnerName = r.WinHorse?.Name ?? "Unknown",
-                WinnerTime = r.Horses.FirstOrDefault(h => h.Place == 1)?.Time ?? 0.0,
-                FieldSize = r.Horses.Count
-            })
-            .ToList();
-
-        return new PagedResult<RaceRunSummary>
-        {
-            Items = runs,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-        };
+        return pagedList;
     }
 }

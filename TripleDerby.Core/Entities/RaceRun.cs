@@ -28,6 +28,8 @@ public class RaceRun
 
     public int Purse { get; set; }
 
+    public DateTimeOffset CreatedDate { get; set; }
+
     public virtual ICollection<RaceRunHorse> Horses { get; set; } = null!;
 
     public virtual ICollection<RaceRunTick> RaceRunTicks { get; set; } = null!;

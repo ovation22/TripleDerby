@@ -200,8 +200,10 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         var overtakingManager = new OvertakingManager(mockRandom.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
+        var timeManager = new Mock<ITimeManager>();
+
         // Create race executor and run simulation
-        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
 
         // We need to set the condition BEFORE the race runs
         // The issue is that RaceExecutor.Race() calls GenerateRandomConditionId()

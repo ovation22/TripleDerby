@@ -1,4 +1,5 @@
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Abstractions.Services;
 
@@ -20,9 +21,8 @@ public interface IRaceRunService
     /// Gets a paginated list of race runs for a specific race.
     /// </summary>
     /// <param name="raceId">The race identifier</param>
-    /// <param name="page">Page number (1-based)</param>
-    /// <param name="pageSize">Number of items per page</param>
+    /// <param name="request">Pagination request with page, size, sorting parameters</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paginated race run summaries, or null if race not found</returns>
-    Task<PagedResult<RaceRunSummary>?> GetRaceRuns(byte raceId, int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<PagedList<RaceRunSummary>?> GetRaceRuns(byte raceId, PaginationRequest request, CancellationToken cancellationToken = default);
 }

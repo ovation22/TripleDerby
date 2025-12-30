@@ -22,6 +22,7 @@ public class RaceExecutor(
     IPurseCalculator purseCalculator,
     IOvertakingManager overtakingManager,
     IEventDetector eventDetector,
+    ITimeManager timeManager,
     ILogger<RaceExecutor> logger) : IRaceExecutor
 {
     public async Task<RaceRunResult> Race(byte raceId, Guid horseId, CancellationToken cancellationToken)
@@ -58,7 +59,8 @@ public class RaceExecutor(
             Purse = race.Purse,
             ConditionId = GenerateRandomConditionId(),
             Horses = new List<RaceRunHorse>(),
-            RaceRunTicks = new List<RaceRunTick>()
+            RaceRunTicks = new List<RaceRunTick>(),
+            CreatedDate = timeManager.OffsetUtcNow()
         };
         InitializeHorses(raceRun, horses);
 

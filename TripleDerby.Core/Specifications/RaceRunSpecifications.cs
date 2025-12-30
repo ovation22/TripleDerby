@@ -45,18 +45,3 @@ public sealed class RaceRunDetailSpecification : Specification<RaceRun, RaceRunR
         });
     }
 }
-
-/// <summary>
-/// Specification for fetching all race runs for a specific race.
-/// </summary>
-public sealed class RaceRunsByRaceSpecification : Specification<RaceRun>
-{
-    public RaceRunsByRaceSpecification(byte raceId)
-    {
-        Query.Where(rr => rr.RaceId == raceId);
-
-        Query.Include(rr => rr.Horses);
-        Query.Include($"{nameof(RaceRun.Horses)}.{nameof(RaceRunHorse.Horse)}");
-        Query.Include(rr => rr.WinHorse);
-    }
-}

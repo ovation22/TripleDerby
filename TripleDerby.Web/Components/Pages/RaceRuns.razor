@@ -1,0 +1,154 @@
+@page "/races/{RaceId:int}/runs"
+@rendermode InteractiveServer
+
+@using System.Linq
+@using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IRaceApiClient RaceApi
+@inject IRaceRunApiClient RaceRunApi
+@inject NavigationManager Navigation
+
+<PageTitle>@(_race?.Name ?? "Loading...") - Race Runs</PageTitle>
+
+@if (_loadingRace)
+{
+    <FluentProgressRing />
+    <p>Loading race details...</p>
+}
+else if (_race == null)
+{
+    <FluentMessageBar Title="Error" Intent="MessageIntent.Error">
+        Unable to load race details. The race may not exist.
+    </FluentMessageBar>
+}
+else
+{
+    <div style="margin-bottom: 2rem;">
+        <h2>@_race.Name</h2>
+        <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+            <div><strong>Track:</strong> @_race.Track</div>
+            <div><strong>Distance:</strong> @_race.Furlongs furlongs</div>
+            <div><strong>Surface:</strong> @_race.Surface</div>
+            <div><strong>Class:</strong> @_race.RaceClass</div>
+            <div><strong>Purse:</strong> @_race.Purse.ToString("C")</div>
+        </div>
+    </div>
+
+    <div style="min-height: 490px;" tabindex="-1">
+    <FluentDataGrid @ref="dataGrid"
+                    Items="@_raceRuns"
+                    RefreshItems="RefreshItemsAsync"
+                    DisplayMode="DataGridDisplayMode.Table"
+                    TGridItem="RaceRunSummary"
+                    Pagination="_pagination"
+                    HeaderCellAsButtonWithMenu=true
+                    UseMenuService=false
+                    Loading="_loading">
+        <PropertyColumn Property="@(c => c.WinnerName)" Title="Winner" Sortable="true"  />
+        <PropertyColumn Property="@(c => c.WinnerDisplayTime)" Title="Winning Time" Align="Align.End" />
+        <PropertyColumn Property="@(c => c.FieldSize)" Title="Field Size" Align="Align.End" />
+        <PropertyColumn Property="@(c => c.ConditionName)" Title="Track Condition" Sortable="true" />
+        <PropertyColumn Property="@(c => c.Purse)" Format="C" Sortable="true" />
+        <TemplateColumn Title="Run Date" Sortable="true" SortBy="@_sortByCreated" Align="Align.End" InitialSortDirection=FUISort.Descending IsDefaultSortColumn=true>
+            <div>@context.RunDate.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss")</div>
+        </TemplateColumn>
+        <TemplateColumn Title="Actions" Align="@Align.End">
+            <FluentButton aria-label="View race details"
+                          IconEnd="@(new Icons.Regular.Size16.Eye())"
+                          @onclick="@(() => NavigateToRaceRunDetails(context))" />
+        </TemplateColumn>
+    </FluentDataGrid>
+    </div>
+
+    <FluentPaginator State="@_pagination" />
+}
+
+@code {
+    [Parameter]
+    public int RaceId { get; set; }
+
+    // Race details
+    bool _loadingRace = true;
+    RaceResult? _race;
+
+    // Grid state
+    bool _loading = true;
+    IQueryable<RaceRunSummary> _raceRuns = Enumerable.Empty<RaceRunSummary>().AsQueryable();
+    FluentDataGrid<RaceRunSummary>? dataGrid;
+    readonly PaginationState _pagination = new() { ItemsPerPage = 10 };
+
+    readonly GridSort<RaceRunSummary> _sortByCreated = GridSort<RaceRunSummary>
+        .ByAscending(p => p.RunDate);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaceDetailsAsync();
+    }
+
+    private async Task LoadRaceDetailsAsync()
+    {
+        _loadingRace = true;
+
+        try
+        {
+            _race = await RaceApi.GetByIdAsync((byte)RaceId);
+        }
+        catch (Exception)
+        {
+            _race = null;
+        }
+        finally
+        {
+            _loadingRace = false;
+        }
+    }
+
+    protected async Task RefreshItemsAsync(GridItemsProviderRequest<RaceRunSummary> req)
+    {
+        _loading = true;
+
+        var start = req.StartIndex;
+        var count = req.Count is > 0
+            ? req.Count.Value
+            : _pagination.ItemsPerPage;
+        if (count <= 0) count = _pagination.ItemsPerPage > 0 ? _pagination.ItemsPerPage : 1;
+
+        var page = (start / count) + 1;
+
+        var sortBy = "WinnerName";
+        var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
+
+        var s = req.GetSortByProperties().FirstOrDefault(x => !string.IsNullOrEmpty(x.PropertyName));
+        if (!string.IsNullOrEmpty(s.PropertyName))
+        {
+            sortBy = s.PropertyName;
+            sortDirection = s.Direction == FUISort.Ascending
+                ? SharedKernel.Pagination.SortDirection.Asc
+                : SharedKernel.Pagination.SortDirection.Desc;
+        }
+
+        var request = new PaginationRequest
+        {
+            Page = page,
+            Size = count,
+            SortBy = sortBy,
+            Direction = sortDirection
+        };
+
+        var response = await RaceRunApi.FilterAsync((byte)RaceId, request);
+
+        _raceRuns = (response?.Data ?? Enumerable.Empty<RaceRunSummary>()).AsQueryable();
+        await _pagination.SetTotalItemCountAsync(response?.Total ?? 0);
+
+        _loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void NavigateToRaceRunDetails(RaceRunSummary raceRun)
+    {
+        Navigation.NavigateTo($"/race-run/{RaceId}/{raceRun.RaceRunId}");
+    }
+}

@@ -5,9 +5,9 @@ using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Specifications;
 
-public sealed class HorseSearchSpecificationToDto : SearchSpecification<Horse, HorseResult>
+public sealed class HorseFilterSpecificationToDto : FilterSpecification<Horse, HorseResult>
 {
-    private static readonly Dictionary<string, string> mappings = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> Mappings = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Horse", "Name" },
         { "Color", "Color.Name" },
@@ -17,8 +17,8 @@ public sealed class HorseSearchSpecificationToDto : SearchSpecification<Horse, H
         { "Created", "CreatedDate" }
     };
 
-    public HorseSearchSpecificationToDto(PaginationRequest request)
-        : base(request, mappings, defaultSortBy: "Horse", defaultSortDirection: SortDirection.Asc)
+    public HorseFilterSpecificationToDto(PaginationRequest request)
+        : base(request, Mappings, defaultSortBy: "Horse", defaultSortDirection: SortDirection.Asc)
     {
         Query.Select(h => new HorseResult
         {

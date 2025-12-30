@@ -5,16 +5,17 @@ using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Specifications;
 
-public sealed class RaceSearchSpecificationToDto : SearchSpecification<Race, RacesResult>
+public sealed class RaceFilterSpecificationToDto : FilterSpecification<Race, RacesResult>
 {
-    private static readonly Dictionary<string, string> mappings = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> Mappings = new(StringComparer.OrdinalIgnoreCase)
     {
         { "Surface", "Surface.Name" },
-        { "Track", "Track.Name" }
+        { "Track", "Track.Name" },
+        { "RaceClass", "RaceClass.Name" }
     };
 
-    public RaceSearchSpecificationToDto(PaginationRequest request)
-        : base(request, mappings, defaultSortBy: "Name", defaultSortDirection: SortDirection.Asc)
+    public RaceFilterSpecificationToDto(PaginationRequest request)
+        : base(request, Mappings, defaultSortBy: "Name", defaultSortDirection: SortDirection.Asc)
     {
         Query.Select(r => new RacesResult
         {
@@ -26,8 +27,11 @@ public sealed class RaceSearchSpecificationToDto : SearchSpecification<Race, Rac
             Surface = r.Surface.Name,
             TrackId = r.TrackId,
             Track = r.Track.Name,
+            RaceClassId = r.RaceClassId,
+            RaceClass = r.RaceClass.Name,
             MinFieldSize = r.MinFieldSize,
-            MaxFieldSize = r.MaxFieldSize
+            MaxFieldSize = r.MaxFieldSize,
+            Purse = r.Purse
         });
     }
 }

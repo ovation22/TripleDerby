@@ -15,8 +15,6 @@
 
 <PageTitle>@(_race?.Name ?? "Loading...")</PageTitle>
 
-<h1>Race Run</h1>
-
 @if (_loading)
 {
     <FluentProgressRing />
@@ -36,6 +34,8 @@ else
             <div><strong>Track:</strong> @_race.Track</div>
             <div><strong>Distance:</strong> @_race.Furlongs furlongs</div>
             <div><strong>Surface:</strong> @_race.Surface</div>
+            <div><strong>Class:</strong> @_race.RaceClass</div>
+            <div><strong>Purse:</strong> @_race.Purse.ToString("C")</div>
         </div>
     </div>
 
@@ -144,7 +144,7 @@ else
 
     // Race details
     bool _loading = true;
-    RacesResult? _race;
+    RaceResult? _race;
 
     // Form state
     HorseResult? _selectedHorse;
@@ -181,20 +181,7 @@ else
 
         try
         {
-            var request = new PaginationRequest
-            {
-                Page = 1,
-                Size = 1,
-                SortBy = "Id",
-                Direction = SharedKernel.Pagination.SortDirection.Asc,
-                Filters = new Dictionary<string, Filter>
-                {
-                    ["Id"] = new() { Operator = FilterOperator.Eq, Value = RaceId.ToString() }
-                }
-            };
-
-            var response = await RaceApi.FilterAsync(request);
-            _race = response?.Data.FirstOrDefault();
+            _race = await RaceApi.GetByIdAsync((byte)RaceId);
         }
         catch (Exception ex)
         {

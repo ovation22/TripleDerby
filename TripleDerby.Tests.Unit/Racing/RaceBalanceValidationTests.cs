@@ -412,8 +412,10 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
         var overtakingManager = new OvertakingManager(mockRandom.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
+        var timeManager = new Mock<ITimeManager>();
+
         // Create race executor and run simulation
-        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
         var result = await raceExecutor.Race(1, horse.Id, CancellationToken.None);
 
         // Extract results

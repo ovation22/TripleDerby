@@ -75,13 +75,13 @@ public class FilterSpecification<T> : PaginatedSpecification<T> where T : class
     }
 }
 
-public class SearchSpecification<T, TResult> : PaginatedSpecification<T, TResult> where T : class
+public class FilterSpecification<T, TResult> : PaginatedSpecification<T, TResult> where T : class
 {
     /// <summary>
     /// Public ctor for callers that don't provide property mappings.
     /// Use this when you don't need to supply per-type mappings (most call sites).
     /// </summary>
-    public SearchSpecification(
+    public FilterSpecification(
         PaginationRequest request,
         string? defaultSortBy = null,
         SortDirection? defaultSortDirection = null)
@@ -94,7 +94,7 @@ public class SearchSpecification<T, TResult> : PaginatedSpecification<T, TResult
     /// Derived specs should call this ctor and pass their static mapping dictionary to avoid
     /// calling virtual members from the base constructor.
     /// </summary>
-    protected SearchSpecification(
+    protected FilterSpecification(
         PaginationRequest request,
         Dictionary<string, string>? propertyMappings,
         string? defaultSortBy = null,
