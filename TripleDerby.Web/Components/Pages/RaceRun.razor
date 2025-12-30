@@ -1,0 +1,481 @@
+@page "/race-run/{RaceId:int}"
+@rendermode InteractiveServer
+
+@using System.Linq
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IRaceApiClient RaceApi
+@inject IHorseApiClient HorseApi
+@inject IRaceRunApiClient RaceRunApi
+@inject IJSRuntime JS
+
+@implements IDisposable
+
+<PageTitle>@(_race?.Name ?? "Loading...")</PageTitle>
+
+<h1>Race Run</h1>
+
+@if (_loading)
+{
+    <FluentProgressRing />
+    <p>Loading race details...</p>
+}
+else if (_race == null)
+{
+    <FluentMessageBar Title="Error" Intent="MessageIntent.Error">
+        Unable to load race details. The race may not exist.
+    </FluentMessageBar>
+}
+else
+{
+    <div style="margin-bottom: 2rem;">
+        <h2>@_race.Name</h2>
+        <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+            <div><strong>Track:</strong> @_race.Track</div>
+            <div><strong>Distance:</strong> @_race.Furlongs furlongs</div>
+            <div><strong>Surface:</strong> @_race.Surface</div>
+        </div>
+    </div>
+
+    @if (!_hasRaceStarted)
+    {
+        <div style="margin-top: 2rem;">
+            <h3>Select Horse</h3>
+
+            <div style="margin-top: 1rem;">
+                <label><strong>Horse</strong></label>
+                <FluentAutocomplete TOption="HorseResult"
+                                    Width="400px"
+                                    Placeholder="Search horses..."
+                                    OptionText="@(h => $"{h.Name} ({h.Owner})")"
+                                    Multiple="false"
+                                    OnOptionsSearch="OnHorseOptionsSearchAsync"
+                                    @bind-SelectedOption="_selectedHorse" />
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <FluentButton Appearance="Appearance.Accent"
+                              Disabled="@(_selectedHorse == null || _isSubmitting)"
+                              @onclick="SubmitRaceRunAsync">
+                    Start Race
+                </FluentButton>
+            </div>
+        </div>
+    }
+
+    @if (_isPolling)
+    {
+        <div style="margin-top: 2rem;">
+            <FluentProgressRing />
+            <span style="margin-left: 1rem;">Status: @_currentStatus</span>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <FluentMessageBar Style="margin-top: 2rem;"
+                          Title="Error"
+                          Intent="MessageIntent.Error"
+                          @bind-Hidden="_hideError">
+            @_errorMessage
+        </FluentMessageBar>
+    }
+
+    @if (_playByPlayLines.Any())
+    {
+        <div @ref="_playByPlayContainer"
+             class="play-by-play-container"
+             @onscroll="OnScrollAsync">
+            @for (int i = 0; i < _playByPlayLines.Count; i++)
+            {
+                var line = _playByPlayLines[i];
+                var isFirstLine = i == 0;
+                <div class="play-by-play-line">
+                    @((MarkupString)(isFirstLine ? line : BoldCapitalizedWords(line)))
+                </div>
+            }
+        </div>
+    }
+
+    @if (_raceCompleted)
+    {
+        <div style="margin-top: 2rem;">
+            <FluentButton Appearance="Appearance.Accent"
+                          @onclick="RaceAnotherHorse">
+                Race Another Horse
+            </FluentButton>
+        </div>
+    }
+}
+
+<script>
+    window.getScrollInfo = function (element) {
+        if (!element) {
+            return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 };
+        }
+
+        return {
+            scrollTop: element.scrollTop,
+            scrollHeight: element.scrollHeight,
+            clientHeight: element.clientHeight
+        };
+    };
+
+    window.scrollToBottom = function (element, behavior) {
+        if (!element) {
+            return;
+        }
+
+        // behavior should be either "smooth" or "instant"
+        const scrollBehavior = behavior === "smooth" ? "smooth" : "auto";
+
+        element.scrollTo({
+            top: element.scrollHeight,
+            behavior: scrollBehavior
+        });
+    };
+</script>
+
+@code {
+    [Parameter]
+    public int RaceId { get; set; }
+
+    // Race details
+    bool _loading = true;
+    RacesResult? _race;
+
+    // Form state
+    HorseResult? _selectedHorse;
+
+    // Race state
+    bool _hasRaceStarted;
+    bool _isSubmitting;
+    bool _isPolling;
+    bool _raceCompleted;
+    Guid? _currentRequestId;
+    string _currentStatus = "";
+
+    // Error state
+    string? _errorMessage;
+    bool _hideError = true;
+
+    // Play-by-play state
+    readonly List<string> _playByPlayLines = [];
+    CancellationTokenSource? _pollCts;
+
+    // Auto-scroll state
+    ElementReference _playByPlayContainer;
+    bool _userHasScrolledUp;
+    int _pendingLinesCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaceDetailsAsync();
+    }
+
+    private async Task LoadRaceDetailsAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            var request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 1,
+                SortBy = "Id",
+                Direction = SharedKernel.Pagination.SortDirection.Asc,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Id"] = new() { Operator = FilterOperator.Eq, Value = RaceId.ToString() }
+                }
+            };
+
+            var response = await RaceApi.FilterAsync(request);
+            _race = response?.Data.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading race: {ex.Message}";
+            _hideError = false;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnHorseOptionsSearchAsync(OptionsSearchEventArgs<HorseResult> e)
+    {
+        var q = e.Text.Trim();
+
+        PaginationRequest request;
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Name",
+                Direction = SharedKernel.Pagination.SortDirection.Asc,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Owner"] = new() { Operator = FilterOperator.Ne, Value = "Breeders" }
+                }
+            };
+        }
+        else
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Name",
+                Direction = SharedKernel.Pagination.SortDirection.Asc,
+                Operator = LogicalOperator.And,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Horse"] = new() { Operator = FilterOperator.Contains, Value = q },
+                    ["Owner"] = new() { Operator = FilterOperator.Ne, Value = "Breeders" }
+                }
+            };
+        }
+
+        var resp = await HorseApi.FilterAsync(request);
+        e.Items = resp?.Data ?? [];
+    }
+
+    private async Task SubmitRaceRunAsync()
+    {
+        if (_selectedHorse == null)
+            return;
+
+        // Clear previous results
+        _playByPlayLines.Clear();
+        _errorMessage = null;
+        _hideError = true;
+        _raceCompleted = false;
+        _userHasScrolledUp = false;
+
+        _isSubmitting = true;
+        _hasRaceStarted = true;
+
+        try
+        {
+            // Submit race run
+            var result = await RaceRunApi.SubmitRaceRunAsync((byte)RaceId, _selectedHorse.Id);
+
+            if (result == null)
+            {
+                _errorMessage = "Failed to submit race run.";
+                _hideError = false;
+                _hasRaceStarted = false;
+                return;
+            }
+
+            _currentRequestId = result.Id;
+            _currentStatus = result.Status.ToString();
+
+            // Start polling
+            await StartPollingAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error submitting race run: {ex.Message}";
+            _hideError = false;
+            _hasRaceStarted = false;
+        }
+        finally
+        {
+            _isSubmitting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task StartPollingAsync()
+    {
+        if (_currentRequestId == null)
+            return;
+
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = new CancellationTokenSource();
+
+        _isPolling = true;
+        var attempts = 0;
+        var maxAttempts = 10;
+
+        try
+        {
+            while (attempts < maxAttempts && !_pollCts.Token.IsCancellationRequested)
+            {
+                await Task.Delay(1000, _pollCts.Token);
+
+                var status = await RaceRunApi.GetRequestStatusAsync((byte)RaceId, _currentRequestId.Value);
+
+                if (status == null)
+                {
+                    _errorMessage = "Failed to get race status.";
+                    _hideError = false;
+                    break;
+                }
+
+                _currentStatus = status.Status.ToString();
+                await InvokeAsync(StateHasChanged);
+
+                if (status is { Status: SharedKernel.Enums.RaceRequestStatus.Completed, RaceRunId: not null })
+                {
+                    // Stop showing polling spinner
+                    _isPolling = false;
+                    await InvokeAsync(StateHasChanged);
+
+                    // Fetch full result and start ticker
+                    var result = await RaceRunApi.GetRaceRunResultAsync((byte)RaceId, status.RaceRunId.Value);
+
+                    if (result != null)
+                    {
+                        await AnimatePlayByPlayAsync(result.PlayByPlay);
+                    }
+                    break;
+                }
+                else if (status.Status == SharedKernel.Enums.RaceRequestStatus.Failed)
+                {
+                    _errorMessage = $"Race failed: {status.FailureReason ?? "Unknown error"}";
+                    _hideError = false;
+                    break;
+                }
+
+                attempts++;
+            }
+
+            if (attempts >= maxAttempts)
+            {
+                _errorMessage = "Race processing timed out.";
+                _hideError = false;
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Cancelled, ignore
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error polling race status: {ex.Message}";
+            _hideError = false;
+        }
+        finally
+        {
+            _isPolling = false;
+            _raceCompleted = true;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task AnimatePlayByPlayAsync(List<string> playByPlay)
+    {
+        _playByPlayLines.Clear();
+
+        foreach (var entry in playByPlay)
+        {
+            var lines = entry.Split(';');
+            _pendingLinesCount = lines.Length;
+
+            foreach (var line in lines)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    _playByPlayLines.Add(line.Trim());
+                    await InvokeAsync(StateHasChanged);
+
+                    // Auto-scroll if user hasn't scrolled up
+                    await AutoScrollAsync();
+
+                    _pendingLinesCount--;
+                    await Task.Delay(500);
+                }
+            }
+
+            // Pause between entries
+            await Task.Delay(1000);
+        }
+    }
+
+    private async Task AutoScrollAsync()
+    {
+        if (_userHasScrolledUp)
+            return;
+
+        try
+        {
+            // Use smooth scroll for single lines, instant for multiple pending
+            var behavior = _pendingLinesCount > 3 ? "instant" : "smooth";
+            await JS.InvokeVoidAsync("scrollToBottom", _playByPlayContainer, behavior);
+        }
+        catch (Exception)
+        {
+            // JS interop may fail if element not ready, ignore
+        }
+    }
+
+    private async Task OnScrollAsync()
+    {
+        try
+        {
+            var scrollInfo = await JS.InvokeAsync<ScrollInfo>("getScrollInfo", _playByPlayContainer);
+
+            // Check if within 50px of bottom
+            var distanceFromBottom = scrollInfo.ScrollHeight - scrollInfo.ScrollTop - scrollInfo.ClientHeight;
+            _userHasScrolledUp = distanceFromBottom > 50;
+        }
+        catch (Exception)
+        {
+            // JS interop may fail, ignore
+        }
+    }
+
+    private void RaceAnotherHorse()
+    {
+        // Clear state
+        _playByPlayLines.Clear();
+        _selectedHorse = null;
+        _hasRaceStarted = false;
+        _raceCompleted = false;
+        _isPolling = false;
+        _isSubmitting = false;
+        _currentRequestId = null;
+        _currentStatus = "";
+        _errorMessage = null;
+        _hideError = true;
+        _userHasScrolledUp = false;
+
+        StateHasChanged();
+    }
+
+    private string BoldCapitalizedWords(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return text;
+
+        // Match words that start with a capital letter followed by lowercase letters,
+        // including hyphenated words like "Black-and-white"
+        var pattern = @"\b([A-Z][a-z]+(?:-[a-z]+)*)\b";
+        var result = System.Text.RegularExpressions.Regex.Replace(text, pattern, "<strong>$1</strong>");
+        return result;
+    }
+
+    public void Dispose()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+    }
+
+    // ScrollInfo class for JS interop
+    private class ScrollInfo
+    {
+        public double ScrollTop { get; init; }
+        public double ScrollHeight { get; init; }
+        public double ClientHeight { get; init; }
+    }
+}
