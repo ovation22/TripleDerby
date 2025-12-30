@@ -7,21 +7,42 @@
 @using TripleDerby.SharedKernel.Pagination
 @using TripleDerby.Web.ApiClients.Abstractions
 
+@inject IRaceApiClient RaceApi
 @inject IRaceRunApiClient RaceRunApi
 @inject NavigationManager Navigation
 
-<PageTitle>Race Runs</PageTitle>
+<PageTitle>@(_race?.Name ?? "Loading...") - Race Runs</PageTitle>
 
-<h1>Race Runs</h1>
+@if (_loadingRace)
+{
+    <FluentProgressRing />
+    <p>Loading race details...</p>
+}
+else if (_race == null)
+{
+    <FluentMessageBar Title="Error" Intent="MessageIntent.Error">
+        Unable to load race details. The race may not exist.
+    </FluentMessageBar>
+}
+else
+{
+    <div style="margin-bottom: 2rem;">
+        <h2>@_race.Name</h2>
+        <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+            <div><strong>Track:</strong> @_race.Track</div>
+            <div><strong>Distance:</strong> @_race.Furlongs furlongs</div>
+            <div><strong>Surface:</strong> @_race.Surface</div>
+        </div>
+    </div>
 
-<FluentBreadcrumb>
-    <FluentBreadcrumbItem Href="/races">
-        Races
-    </FluentBreadcrumbItem>
-    <FluentBreadcrumbItem>Current Race</FluentBreadcrumbItem>
-</FluentBreadcrumb>
+    <FluentBreadcrumb>
+        <FluentBreadcrumbItem Href="/races">
+            Races
+        </FluentBreadcrumbItem>
+        <FluentBreadcrumbItem>@_race.Name</FluentBreadcrumbItem>
+    </FluentBreadcrumb>
 
-<div style="min-height: 490px;" tabindex="-1">
+    <div style="min-height: 490px;" tabindex="-1">
     <FluentDataGrid @ref="dataGrid"
                     Items="@_raceRuns"
                     RefreshItems="RefreshItemsAsync"
@@ -44,13 +65,18 @@
                           @onclick="@(() => NavigateToRaceRunDetails(context))" />
         </TemplateColumn>
     </FluentDataGrid>
-</div>
+    </div>
 
-<FluentPaginator State="@_pagination" />
+    <FluentPaginator State="@_pagination" />
+}
 
 @code {
     [Parameter]
     public int RaceId { get; set; }
+
+    // Race details
+    bool _loadingRace = true;
+    RaceResult? _race;
 
     // Grid state
     bool _loading = true;
@@ -60,6 +86,29 @@
 
     readonly GridSort<RaceRunSummary> _sortByCreated = GridSort<RaceRunSummary>
         .ByAscending(p => p.RunDate);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaceDetailsAsync();
+    }
+
+    private async Task LoadRaceDetailsAsync()
+    {
+        _loadingRace = true;
+
+        try
+        {
+            _race = await RaceApi.GetByIdAsync((byte)RaceId);
+        }
+        catch (Exception)
+        {
+            _race = null;
+        }
+        finally
+        {
+            _loadingRace = false;
+        }
+    }
 
     protected async Task RefreshItemsAsync(GridItemsProviderRequest<RaceRunSummary> req)
     {

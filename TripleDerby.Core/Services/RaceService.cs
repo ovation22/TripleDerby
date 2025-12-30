@@ -20,9 +20,15 @@ public class RaceService(
     ITimeManager timeManager,
     ILogger<RaceService> logger) : IRaceService
 {
-    public Task<RaceResult> Get(byte id, CancellationToken cancellationToken = default)
+    public async Task<RaceResult> Get(byte id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var spec = new RaceByIdSpecification(id);
+        var result = await repository.SingleOrDefaultAsync(spec, cancellationToken);
+
+        if (result == null)
+            throw new KeyNotFoundException($"Race with ID {id} not found.");
+
+        return result;
     }
 
     public async Task<PagedList<RacesResult>> Filter(PaginationRequest request, CancellationToken cancellationToken = default)
