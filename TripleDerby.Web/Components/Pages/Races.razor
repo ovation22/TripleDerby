@@ -8,6 +8,8 @@
 @using TripleDerby.Web.ApiClients.Abstractions
 
 @inject IRaceApiClient RaceApi
+@inject IHorseApiClient HorseApi
+@inject IRaceRunApiClient RaceRunApi
 
 @implements IDisposable
 
@@ -38,7 +40,70 @@
 
 <FluentPaginator State="@pagination" />
 
+<h2 style="margin-top: 2rem;">Submit Race Run</h2>
+
+<div style="margin-top: 1rem;">
+    <label><strong>Race</strong></label>
+    <FluentAutocomplete TOption="RacesResult"
+                        Width="400px"
+                        Placeholder="Search races..."
+                        OptionText="@(r => $"{r.Name} ({r.Track}, {r.Furlongs} furlongs)")"
+                        Multiple="false"
+                        OnOptionsSearch="OnRaceOptionsSearchAsync"
+                        @bind-SelectedOption="_selectedRace" />
+</div>
+
+<div style="margin-top: 1rem;">
+    <label><strong>Horse</strong></label>
+    <FluentAutocomplete TOption="HorseResult"
+                        Width="400px"
+                        Placeholder="Search horses..."
+                        OptionText="@(h => $"{h.Name} ({h.Owner})")"
+                        Multiple="false"
+                        OnOptionsSearch="OnHorseOptionsSearchAsync"
+                        @bind-SelectedOption="_selectedHorse" />
+</div>
+
+<div style="margin-top: 1rem;">
+    <FluentButton Appearance="Appearance.Accent"
+                  Disabled="@(_selectedRace == null || _selectedHorse == null || _isSubmitting)"
+                  @onclick="SubmitRaceRunAsync">
+        Submit Race Run
+    </FluentButton>
+</div>
+
+@if (_isPolling)
+{
+    <div style="margin-top: 2rem;">
+        <FluentProgressRing />
+        <span style="margin-left: 1rem;">Status: @_currentStatus</span>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <FluentMessageBar Style="margin-top: 2rem;"
+                      Title="Error"
+                      Intent="MessageIntent.Error"
+                      @bind-Hidden="_hideError">
+        @_errorMessage
+        <FluentButton Appearance="Appearance.Lightweight" @onclick="RefreshStatusAsync">Refresh</FluentButton>
+    </FluentMessageBar>
+}
+
+@if (_playByPlayLines.Any())
+{
+    <div style="margin-top: 2rem; font-family: monospace; white-space: pre-line;">
+        @foreach (var line in _playByPlayLines)
+        {
+            @line
+            <br />
+        }
+    </div>
+}
+
 @code {
+    // Grid state
     bool loading = true;
     IQueryable<RacesResult> races = Enumerable.Empty<RacesResult>().AsQueryable();
     FluentDataGrid<RacesResult>? dataGrid;
@@ -46,6 +111,24 @@
 
     GridSort<RacesResult> sortByName = GridSort<RacesResult>
         .ByAscending(p => p.Name);
+
+    // Form state
+    RacesResult? _selectedRace;
+    HorseResult? _selectedHorse;
+
+    // Submission and polling state
+    bool _isSubmitting = false;
+    bool _isPolling = false;
+    Guid? _currentRequestId;
+    string _currentStatus = "";
+
+    // Error state
+    string? _errorMessage;
+    bool _hideError = true;
+
+    // Play-by-play state
+    List<string> _playByPlayLines = new();
+    CancellationTokenSource? _pollCts;
 
     protected async Task RefreshItemsAsync(GridItemsProviderRequest<RacesResult> req)
     {
@@ -88,8 +171,232 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnRaceOptionsSearchAsync(OptionsSearchEventArgs<RacesResult> e)
+    {
+        var q = e.Text.Trim();
+
+        PaginationRequest request;
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Name",
+                Direction = SharedKernel.Pagination.SortDirection.Asc
+            };
+        }
+        else
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Name",
+                Direction = SharedKernel.Pagination.SortDirection.Asc,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Name"] = new() { Operator = FilterOperator.Contains, Value = q }
+                }
+            };
+        }
+
+        var resp = await RaceApi.FilterAsync(request);
+        e.Items = resp?.Data ?? [];
+    }
+
+    private async Task OnHorseOptionsSearchAsync(OptionsSearchEventArgs<HorseResult> e)
+    {
+        var q = e.Text.Trim();
+
+        PaginationRequest request;
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Name",
+                Direction = SharedKernel.Pagination.SortDirection.Asc,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Owner"] = new() { Operator = FilterOperator.Ne, Value = "Breeders" }
+                }
+            };
+        }
+        else
+        {
+            request = new PaginationRequest
+            {
+                Page = 1,
+                Size = 20,
+                SortBy = "Name",
+                Direction = SharedKernel.Pagination.SortDirection.Asc,
+                Operator = LogicalOperator.And,
+                Filters = new Dictionary<string, Filter>
+                {
+                    ["Horse"] = new() { Operator = FilterOperator.Contains, Value = q },
+                    ["Owner"] = new() { Operator = FilterOperator.Ne, Value = "Breeders" }
+                }
+            };
+        }
+
+        var resp = await HorseApi.FilterAsync(request);
+        e.Items = resp?.Data ?? [];
+    }
+
+    private async Task SubmitRaceRunAsync()
+    {
+        if (_selectedRace == null || _selectedHorse == null)
+            return;
+
+        // Clear previous results
+        _playByPlayLines.Clear();
+        _errorMessage = null;
+        _hideError = true;
+
+        _isSubmitting = true;
+        try
+        {
+            // Submit race run
+            var result = await RaceRunApi.SubmitRaceRunAsync(_selectedRace.Id, _selectedHorse.Id);
+
+            if (result == null)
+            {
+                _errorMessage = "Failed to submit race run.";
+                _hideError = false;
+                return;
+            }
+
+            _currentRequestId = result.Id;
+            _currentStatus = result.Status.ToString();
+
+            // Start polling
+            await StartPollingAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error submitting race run: {ex.Message}";
+            _hideError = false;
+        }
+        finally
+        {
+            _isSubmitting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task StartPollingAsync()
+    {
+        if (_selectedRace == null || _currentRequestId == null)
+            return;
+
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = new CancellationTokenSource();
+
+        _isPolling = true;
+        var attempts = 0;
+        var maxAttempts = 10;
+
+        try
+        {
+            while (attempts < maxAttempts && !_pollCts.Token.IsCancellationRequested)
+            {
+                await Task.Delay(1000, _pollCts.Token);
+
+                var status = await RaceRunApi.GetRequestStatusAsync(_selectedRace.Id, _currentRequestId.Value);
+
+                if (status == null)
+                {
+                    _errorMessage = "Failed to get race status.";
+                    _hideError = false;
+                    break;
+                }
+
+                _currentStatus = status.Status.ToString();
+                await InvokeAsync(StateHasChanged);
+
+                if (status.Status == SharedKernel.Enums.RaceRequestStatus.Completed && status.RaceRunId.HasValue)
+                {
+                    // Fetch full result and start ticker
+                    var result = await RaceRunApi.GetRaceRunResultAsync(_selectedRace.Id, status.RaceRunId.Value);
+
+                    if (result != null)
+                    {
+                        await AnimatePlayByPlayAsync(result.PlayByPlay);
+                    }
+                    break;
+                }
+                else if (status.Status == SharedKernel.Enums.RaceRequestStatus.Failed)
+                {
+                    _errorMessage = $"Race failed: {status.FailureReason ?? "Unknown error"}";
+                    _hideError = false;
+                    break;
+                }
+
+                attempts++;
+            }
+
+            if (attempts >= maxAttempts)
+            {
+                _errorMessage = "Race processing timed out. Click Refresh to check status.";
+                _hideError = false;
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Cancelled, ignore
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error polling race status: {ex.Message}";
+            _hideError = false;
+        }
+        finally
+        {
+            _isPolling = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task AnimatePlayByPlayAsync(List<string> playByPlay)
+    {
+        _playByPlayLines.Clear();
+
+        foreach (var entry in playByPlay)
+        {
+            var lines = entry.Split(';');
+
+            foreach (var line in lines)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    _playByPlayLines.Add(line.Trim());
+                    await InvokeAsync(StateHasChanged);
+                    await Task.Delay(500);
+                }
+            }
+
+            // Pause between entries
+            await Task.Delay(1000);
+        }
+    }
+
+    private async Task RefreshStatusAsync()
+    {
+        if (_selectedRace == null || _currentRequestId == null)
+            return;
+
+        _errorMessage = null;
+        _hideError = true;
+
+        await StartPollingAsync();
+    }
+
     public void Dispose()
     {
-        // Cleanup if needed
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
     }
 }
