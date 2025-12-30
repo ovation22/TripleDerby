@@ -36,6 +36,9 @@
             <FluentButton aria-label="Start race"
                           IconEnd="@(new Icons.Regular.Size16.Play())"
                           @onclick="@(() => NavigateToRaceRun(context))" />
+            <FluentButton aria-label="View runs"
+                          IconEnd="@(new Icons.Regular.Size16.History())"
+                          @onclick="@(() => NavigateToRaceRuns(context))" />
         </TemplateColumn>
     </FluentDataGrid>
 </div>
@@ -93,5 +96,10 @@
     private void NavigateToRaceRun(RacesResult race)
     {
         Navigation.NavigateTo($"/race-run/{race.Id}");
+    }
+
+    private void NavigateToRaceRuns(RacesResult race)
+    {
+        Navigation.NavigateTo($"/races/{race.Id}/runs");
     }
 }

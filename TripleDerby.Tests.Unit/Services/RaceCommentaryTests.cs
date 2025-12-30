@@ -1,13 +1,11 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Racing;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing;
-using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Tests.Unit.Services;
@@ -18,29 +16,29 @@ namespace TripleDerby.Tests.Unit.Services;
 public class RaceCommentaryTests
 {
     private readonly Mock<ITripleDerbyRepository> _repositoryMock;
-    private readonly Mock<IRandomGenerator> _randomGeneratorMock;
     private readonly RaceExecutor _sut;
 
     public RaceCommentaryTests()
     {
         _repositoryMock = new Mock<ITripleDerbyRepository>();
-        _randomGeneratorMock = new Mock<IRandomGenerator>();
-        _randomGeneratorMock.Setup(r => r.NextDouble()).Returns(0.5);
-        _randomGeneratorMock.Setup(r => r.Next(It.IsAny<int>())).Returns(0);
-        _randomGeneratorMock.Setup(r => r.Next(It.IsAny<int>(), It.IsAny<int>())).Returns(7);
+        Mock<IRandomGenerator> randomGeneratorMock = new();
+        randomGeneratorMock.Setup(r => r.NextDouble()).Returns(0.5);
+        randomGeneratorMock.Setup(r => r.Next(It.IsAny<int>())).Returns(0);
+        randomGeneratorMock.Setup(r => r.Next(It.IsAny<int>(), It.IsAny<int>())).Returns(7);
 
         _repositoryMock
             .Setup(r => r.ListAsync(It.IsAny<SimilarRaceStartsSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Horse>());
 
-        var speedModifierCalculator = new SpeedModifierCalculator(_randomGeneratorMock.Object);
+        var speedModifierCalculator = new SpeedModifierCalculator(randomGeneratorMock.Object);
         var staminaCalculator = new StaminaCalculator();
-        var commentaryGenerator = new RaceCommentaryGenerator(_randomGeneratorMock.Object);
+        var commentaryGenerator = new RaceCommentaryGenerator(randomGeneratorMock.Object);
         var purseCalculator = new PurseCalculator();
-        var overtakingManager = new OvertakingManager(_randomGeneratorMock.Object, speedModifierCalculator);
+        var overtakingManager = new OvertakingManager(randomGeneratorMock.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
+        var timeManager = new Mock<ITimeManager>();
 
-        _sut = new RaceExecutor(_repositoryMock.Object, _randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, NullLogger<RaceExecutor>.Instance);
+        _sut = new RaceExecutor(_repositoryMock.Object, randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
     }
 
     [Fact]

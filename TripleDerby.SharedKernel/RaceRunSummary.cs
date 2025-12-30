@@ -13,5 +13,7 @@ public record RaceRunSummary
     public string ConditionName { get; init; } = null!;
     public string WinnerName { get; init; } = null!;
     public double WinnerTime { get; init; }
+    public string WinnerDisplayTime => TimeSpan.FromSeconds(WinnerTime * 0.50633).ToString(@"m\:ss\.ff");
     public int FieldSize { get; init; }
+    public DateTimeOffset RunDate { get; set; }
 }

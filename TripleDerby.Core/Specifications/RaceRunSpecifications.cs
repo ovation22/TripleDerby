@@ -1,7 +1,6 @@
 using Ardalis.Specification;
 using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel;
-using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Specifications;
 
@@ -43,39 +42,6 @@ public sealed class RaceRunDetailSpecification : Specification<RaceRun, RaceRunR
                 .OrderBy(t => t.Tick)
                 .Select(t => t.Note!)
                 .ToList()
-        });
-    }
-}
-
-/// <summary>
-/// Specification for fetching race runs for a specific race with filtering, sorting, and pagination.
-/// Projects to RaceRunSummary for grid display.
-/// </summary>
-public sealed class RaceRunFilterSpecification : SearchSpecification<RaceRun, RaceRunSummary>
-{
-    private static readonly Dictionary<string, string> PropertyMappings = new(StringComparer.OrdinalIgnoreCase)
-    {
-        { "WinnerName", "WinHorse.Name" },
-        { "WinnerTime", "Horses.FirstOrDefault(h => h.Place == 1).Time" }, // Note: This won't work for sorting in SQL, handled manually
-        { "FieldSize", "Horses.Count" }, // Note: This won't work for sorting in SQL, handled manually
-        { "ConditionName", "ConditionId" }
-    };
-
-    public RaceRunFilterSpecification(byte raceId, PaginationRequest request)
-        : base(request, PropertyMappings, defaultSortBy: "Id", defaultSortDirection: SortDirection.Desc)
-    {
-        // Filter by race
-        Query.Where(rr => rr.RaceId == raceId);
-
-        // Project to RaceRunSummary
-        Query.Select(rr => new RaceRunSummary
-        {
-            RaceRunId = rr.Id,
-            ConditionId = rr.ConditionId,
-            ConditionName = rr.ConditionId.ToString(),
-            WinnerName = rr.WinHorse.Name,
-            WinnerTime = rr.Horses.Where(h => h.Place == 1).Select(h => h.Time).FirstOrDefault(),
-            FieldSize = rr.Horses.Count
         });
     }
 }

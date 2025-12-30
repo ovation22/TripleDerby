@@ -27,7 +27,7 @@ public class RaceService(
 
     public async Task<PagedList<RacesResult>> Filter(PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        var spec = new RaceSearchSpecificationToDto(request);
+        var spec = new RaceFilterSpecificationToDto(request);
 
         return await repository.ListAsync(spec, cancellationToken);
     }

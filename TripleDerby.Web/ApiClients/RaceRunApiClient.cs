@@ -1,6 +1,8 @@
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Dtos;
+using TripleDerby.SharedKernel.Pagination;
 using TripleDerby.Web.ApiClients.Abstractions;
+using TripleDerby.Web.ApiClients.Extensions;
 
 namespace TripleDerby.Web.ApiClients;
 
@@ -52,6 +54,22 @@ public class RaceRunApiClient(HttpClient httpClient, ILogger<RaceRunApiClient> l
 
         Logger.LogError("Unable to get race run result. RaceId: {RaceId}, RunId: {RunId}, Status: {Status} Error: {Error}",
             raceId, runId, resp.StatusCode, resp.Error);
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a paginated, sortable list of race runs for a specific race.
+    /// </summary>
+    public async Task<PagedList<RaceRunSummary>?> FilterAsync(byte raceId, PaginationRequest request, CancellationToken cancellationToken = default)
+    {
+        var url = request.ToQueryString($"/api/races/{raceId}/runs");
+        var resp = await GetAsync<PagedList<RaceRunSummary>>(url, cancellationToken);
+
+        if (resp.Success)
+            return resp.Data;
+
+        Logger.LogError("Unable to get race runs. RaceId: {RaceId}, Page: {Page}, Size: {Size}, Status: {Status} Error: {Error}",
+            raceId, request.Page, request.Size, resp.StatusCode, resp.Error);
         return null;
     }
 }

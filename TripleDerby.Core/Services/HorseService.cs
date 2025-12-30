@@ -69,7 +69,7 @@ public class HorseService(ITripleDerbyRepository repository) : IHorseService
 
     private async Task<PagedList<HorseResult>> FilterWithSpecMapping(PaginationRequest request, CancellationToken cancellationToken)
     {
-        var spec = new HorseSearchSpecificationToDto(request);
+        var spec = new HorseFilterSpecificationToDto(request);
 
         var pagedHorseResults = await repository.ListAsync(spec, cancellationToken);
 

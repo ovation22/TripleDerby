@@ -5,7 +5,7 @@ using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Specifications;
 
-public sealed class RaceSearchSpecificationToDto : SearchSpecification<Race, RacesResult>
+public sealed class RaceFilterSpecificationToDto : FilterSpecification<Race, RacesResult>
 {
     private static readonly Dictionary<string, string> mappings = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -13,7 +13,7 @@ public sealed class RaceSearchSpecificationToDto : SearchSpecification<Race, Rac
         { "Track", "Track.Name" }
     };
 
-    public RaceSearchSpecificationToDto(PaginationRequest request)
+    public RaceFilterSpecificationToDto(PaginationRequest request)
         : base(request, mappings, defaultSortBy: "Name", defaultSortDirection: SortDirection.Asc)
     {
         Query.Select(r => new RacesResult
