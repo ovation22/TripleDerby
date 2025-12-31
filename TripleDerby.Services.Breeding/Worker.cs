@@ -1,19 +1,15 @@
+using TripleDerby.Core.Abstractions.Messaging;
+
 namespace TripleDerby.Services.Breeding;
 
-public class Worker : BackgroundService
+public class Worker(ILogger<Worker> logger, IMessageConsumer consumer) : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
-    private readonly RabbitMqBreedingConsumer _consumer;
-
-    public Worker(ILogger<Worker> logger, RabbitMqBreedingConsumer consumer)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _consumer = consumer ?? throw new ArgumentNullException(nameof(consumer));
-    }
+    private readonly ILogger<Worker> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IMessageConsumer _consumer = consumer ?? throw new ArgumentNullException(nameof(consumer));
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Worker starting RabbitMqBreedingConsumer.");
+        _logger.LogInformation("Worker starting message consumer.");
 
         try
         {
@@ -22,7 +18,7 @@ public class Worker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to start RabbitMqBreedingConsumer. Host will stop.");
+            _logger.LogError(ex, "Failed to start message consumer. Host will stop.");
             throw; // fail fast so host doesn't run in a broken state
         }
 
@@ -37,7 +33,7 @@ public class Worker : BackgroundService
         }
         finally
         {
-            _logger.LogInformation("Worker stopping RabbitMqBreedingConsumer.");
+            _logger.LogInformation("Worker stopping message consumer.");
 
             try
             {
@@ -45,7 +41,7 @@ public class Worker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while stopping RabbitMqBreedingConsumer.");
+                _logger.LogError(ex, "Error while stopping message consumer.");
             }
 
             try
@@ -54,7 +50,7 @@ public class Worker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Exception while disposing RabbitMqBreedingConsumer.");
+                _logger.LogWarning(ex, "Exception while disposing message consumer.");
             }
 
             _logger.LogInformation("Worker stopped.");

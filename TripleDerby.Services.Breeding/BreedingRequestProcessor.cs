@@ -18,67 +18,77 @@ public class BreedingRequestProcessor(
     ITimeManager timeManager)
     : IBreedingRequestProcessor
 {
-    public async Task ProcessAsync(BreedingRequested request, CancellationToken cancellationToken)
+    public async Task<MessageProcessingResult> ProcessAsync(BreedingRequested request, MessageContext context)
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
 
+        var cancellationToken = context.CancellationToken;
         cancellationToken.ThrowIfCancellationRequested();
 
         logger.LogInformation("Processing breeding request {RequestId} (sire={SireId}, dam={DamId})", request.RequestId, request.SireId, request.DamId);
 
-        // idempotency: load persisted request
-        var stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
-        if (stored is null)
-        {
-            logger.LogWarning("BreedingRequest {RequestId} not found in DB; skipping", request.RequestId);
-            return;
-        }
-
-        // If already completed, skip
-        if (stored.Status == BreedingRequestStatus.Completed)
-        {
-            logger.LogInformation("Skipping request {RequestId} because status is {Status}", request.RequestId, stored.Status);
-            return;
-        }
-
-        // If previously failed, allow replay – log and proceed to claim
-        if (stored.Status == BreedingRequestStatus.Failed)
-        {
-            logger.LogInformation("Reprocessing failed BreedingRequest {RequestId}. Previous failure: {FailureReason}", request.RequestId, stored.FailureReason);
-        }
-
-        // If already in progress, skip to avoid concurrent processing
-        if (stored.Status == BreedingRequestStatus.InProgress)
-        {
-            logger.LogInformation("Skipping request {RequestId} because it is already InProgress", request.RequestId);
-            return;
-        }
-
-        // Claim the request so other workers won't process it concurrently.
         try
         {
-            stored.Status = BreedingRequestStatus.InProgress;
-            stored.UpdatedDate = timeManager.OffsetUtcNow();
-            await repository.UpdateAsync(stored, cancellationToken);
+            // idempotency: load persisted request
+            var stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+            if (stored is null)
+            {
+                logger.LogWarning("BreedingRequest {RequestId} not found in DB; skipping", request.RequestId);
+                return MessageProcessingResult.Succeeded();
+            }
+
+            // If already completed, skip
+            if (stored.Status == BreedingRequestStatus.Completed)
+            {
+                logger.LogInformation("Skipping request {RequestId} because status is {Status}", request.RequestId, stored.Status);
+                return MessageProcessingResult.Succeeded();
+            }
+
+            // If previously failed, allow replay – log and proceed to claim
+            if (stored.Status == BreedingRequestStatus.Failed)
+            {
+                logger.LogInformation("Reprocessing failed BreedingRequest {RequestId}. Previous failure: {FailureReason}", request.RequestId, stored.FailureReason);
+            }
+
+            // If already in progress, skip to avoid concurrent processing
+            if (stored.Status == BreedingRequestStatus.InProgress)
+            {
+                logger.LogInformation("Skipping request {RequestId} because it is already InProgress", request.RequestId);
+                return MessageProcessingResult.Succeeded();
+            }
+
+            // Claim the request so other workers won't process it concurrently.
+            try
+            {
+                stored.Status = BreedingRequestStatus.InProgress;
+                stored.UpdatedDate = timeManager.OffsetUtcNow();
+                await repository.UpdateAsync(stored, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to claim BreedingRequest {RequestId} for processing; another worker may have claimed it", request.RequestId);
+                // reload and re-check status
+                stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
+                if (stored is not null && stored.Status != BreedingRequestStatus.InProgress)
+                {
+                    logger.LogInformation("Request {RequestId} is no longer available for processing (status={Status}), skipping", request.RequestId, stored.Status);
+                    return MessageProcessingResult.Succeeded();
+                }
+
+                // if we couldn't claim, and it's still not in progress, proceed – a later duplicate check in DB will avoid double side effects in most cases.
+            }
+
+            await Breed(request, cancellationToken);
+
+            logger.LogInformation("Completed processing breeding request {RequestId}", request.RequestId);
+            return MessageProcessingResult.Succeeded();
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to claim BreedingRequest {RequestId} for processing; another worker may have claimed it", request.RequestId);
-            // reload and re-check status
-            stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
-            if (stored is not null && stored.Status != BreedingRequestStatus.InProgress)
-            {
-                logger.LogInformation("Request {RequestId} is no longer available for processing (status={Status}), skipping", request.RequestId, stored.Status);
-                return;
-            }
-
-            // if we couldn't claim, and it's still not in progress, proceed – a later duplicate check in DB will avoid double side effects in most cases.
+            logger.LogError(ex, "Failed to process breeding request {RequestId}", request.RequestId);
+            return MessageProcessingResult.FailedWithException(ex, requeue: false);
         }
-
-        await Breed(request, cancellationToken);
-
-        logger.LogInformation("Completed processing breeding request {RequestId}", request.RequestId);
     }
 
     private async Task Breed(BreedingRequested request, CancellationToken cancellationToken)

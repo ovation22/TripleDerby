@@ -127,7 +127,8 @@ public class RabbitMqBreedingConsumer : IMessageConsumer
             {
                 using var scope = _scopeFactory.CreateScope();
                 var processor = scope.ServiceProvider.GetRequiredService<IBreedingRequestProcessor>();
-                await processor.ProcessAsync(request, CancellationToken.None);
+                var context = new MessageContext { CancellationToken = CancellationToken.None };
+                await processor.ProcessAsync(request, context);
 
                 await _channelLock.WaitAsync();
                 try
