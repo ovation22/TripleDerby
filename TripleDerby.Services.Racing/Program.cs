@@ -52,6 +52,7 @@ builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
 builder.Services.AddSingleton<IMessageBrokerAdapter, ServiceBusBrokerAdapter>();
 builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceRequested, IRaceRequestProcessor>>();
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddKeyedSingleton<IMessagePublisher, AzureServiceBusPublisher>("servicebus");
 builder.Services.AddSingleton<IMessagePublisher, AzureServiceBusPublisher>();
 
 builder.AddSqlServerClient(connectionName: "sql");
