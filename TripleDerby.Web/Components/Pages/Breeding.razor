@@ -161,6 +161,37 @@
     </div>
 }
 
+@if (_foal != null && _breedingCompleted)
+{
+    <div style="margin-top: 2rem; padding: 1rem; border: 1px solid var(--neutral-stroke-rest); border-radius: 4px;">
+        <h3>Breeding Successful!</h3>
+        <div style="margin-top: 1rem;">
+            <div><strong>Foal Name:</strong> @_foal.Name</div>
+            <div><strong>Color:</strong> @_foal.Color</div>
+            <div style="margin-top: 0.5rem;"><strong>Parents:</strong></div>
+            <div style="margin-left: 1rem;">
+                <div>Sire: @(_foal.Sire ?? "Unknown")</div>
+                <div>Dam: @(_foal.Dam ?? "Unknown")</div>
+            </div>
+            <div style="margin-top: 0.5rem;"><strong>Stats:</strong></div>
+            <div style="margin-left: 1rem;">
+                <div>Starts: @_foal.RaceStarts</div>
+                <div>Wins: @_foal.RaceWins</div>
+                <div>Place: @_foal.RacePlace</div>
+                <div>Show: @_foal.RaceShow</div>
+                <div>Earnings: $@_foal.Earnings</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <FluentButton Appearance="Appearance.Accent"
+                          @onclick="BreedAnotherPair">
+                Breed Another Pair
+            </FluentButton>
+        </div>
+    </div>
+}
+
 @if (_breedResult is not null)
 {
     <div style="margin-top:1rem;">
@@ -357,9 +388,12 @@
                     _isPolling = false;
                     await InvokeAsync(StateHasChanged);
 
-                    // Fetch foal details (will be implemented in Phase 5)
-                    // var foal = await HorseApi.GetByIdAsync(status.FoalId.Value);
-                    // if (foal != null) _foal = foal;
+                    // Fetch foal details
+                    var foal = await HorseApi.GetByIdAsync(status.FoalId.Value);
+                    if (foal != null)
+                    {
+                        _foal = foal;
+                    }
                     break;
                 }
                 else if (status.Status == BreedingRequestStatus.Failed)
@@ -393,6 +427,26 @@
             _breedingCompleted = true;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private void BreedAnotherPair()
+    {
+        // Clear all state
+        _foal = null;
+        _selectedOwner = null;
+        _hasBreedingStarted = false;
+        _breedingCompleted = false;
+        _isPolling = false;
+        _isSubmitting = false;
+        _currentRequestId = null;
+        _currentStatus = "";
+        _errorMessage = null;
+        _hideError = true;
+
+        // Reset to first dam/sire (keep selections visible)
+        // User can change selections for next breeding
+
+        StateHasChanged();
     }
 
     public void Dispose()
