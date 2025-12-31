@@ -127,8 +127,8 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
     /// <summary>
     /// Ensures a dedicated publish channel is available for message publishing.
-    /// Uses double-checked locking to create channel only once and reuse it for all publishes.
-    /// This eliminates the overhead of creating/disposing ~350 channels/second.
+    /// Channel creation uses lock-free double-checked pattern for performance.
+    /// The actual channel usage is protected by _publishLock in PublishAsync.
     /// </summary>
     private async Task EnsurePublishChannelAsync(CancellationToken cancellationToken = default)
     {
@@ -137,29 +137,33 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
             return;
 
         // Slow path: need to create channel (only happens once, or after connection loss)
-        await _connectionLock.WaitAsync(cancellationToken);
-        try
+        // Use Interlocked pattern for lock-free channel creation
+        var currentChannel = _publishChannel;
+        if (currentChannel is not { IsOpen: true })
         {
-            // Double-check: another thread may have created while we waited
-            if (_publishChannel is { IsOpen: true })
-                return;
-
             // Close existing channel if it exists but is not open
-            if (_publishChannel != null)
+            if (currentChannel != null)
             {
-                try { await _publishChannel.CloseAsync(cancellationToken); } catch { }
-                try { _publishChannel.Dispose(); } catch { }
-                _publishChannel = null;
+                try { await currentChannel.CloseAsync(cancellationToken); } catch { }
+                try { currentChannel.Dispose(); } catch { }
             }
 
             _logger.LogInformation("Creating dedicated RabbitMQ publisher channel...");
-            _publishChannel = await _connection!.CreateChannelAsync(cancellationToken: cancellationToken);
+            var newChannel = await _connection!.CreateChannelAsync(cancellationToken: cancellationToken);
 
-            _logger.LogInformation("Publisher channel created and ready for use");
-        }
-        finally
-        {
-            _connectionLock.Release();
+            // Atomic swap - if another thread created a channel, use theirs and dispose ours
+            var originalChannel = Interlocked.CompareExchange(ref _publishChannel, newChannel, currentChannel);
+            if (originalChannel != currentChannel && originalChannel is { IsOpen: true })
+            {
+                // Another thread won the race, dispose our channel
+                try { await newChannel.CloseAsync(cancellationToken); } catch { }
+                try { newChannel.Dispose(); } catch { }
+                _logger.LogInformation("Another thread created the channel first, using theirs");
+            }
+            else
+            {
+                _logger.LogInformation("Publisher channel created and ready for use");
+            }
         }
     }
 
