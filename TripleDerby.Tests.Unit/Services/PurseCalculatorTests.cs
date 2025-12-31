@@ -20,8 +20,8 @@ public class PurseCalculatorTests
     [InlineData(RaceClassId.AllowanceOptional, 10, 50000)]
     [InlineData(RaceClassId.Stakes, 10, 100000)]
     [InlineData(RaceClassId.GradeIII, 10, 200000)]
-    [InlineData(RaceClassId.GradeII, 10, 500000)]
-    [InlineData(RaceClassId.GradeI, 10, 1000000)]
+    [InlineData(RaceClassId.EliteStakes, 10, 500000)]
+    [InlineData(RaceClassId.Championship, 10, 1000000)]
     [Trait("Category", "PurseCalculation")]
     public void CalculateTotalPurse_At10Furlongs_ReturnsBasePurse(RaceClassId raceClass, decimal furlongs, int expectedPurse)
     {
@@ -40,7 +40,7 @@ public class PurseCalculatorTests
         // Expected: $1,000,000 × (1 + (12 - 10) × 0.05) = $1,000,000 × 1.10 = $1,100,000
 
         // Act
-        var result = _sut.CalculateTotalPurse(RaceClassId.GradeI, 12m);
+        var result = _sut.CalculateTotalPurse(RaceClassId.Championship, 12m);
 
         // Assert
         Assert.Equal(1100000, result);
@@ -83,7 +83,7 @@ public class PurseCalculatorTests
         // Expected: $1,000,000 × (1 + (14 - 10) × 0.05) = $1,000,000 × 1.20 = $1,200,000
 
         // Act
-        var result = _sut.CalculateTotalPurse(RaceClassId.GradeI, 14m);
+        var result = _sut.CalculateTotalPurse(RaceClassId.Championship, 14m);
 
         // Assert
         Assert.Equal(1200000, result);
@@ -245,7 +245,7 @@ public class PurseCalculatorTests
         var expectedPayout = 3000; // 3%
 
         // Act
-        var result = _sut.CalculatePayout(RaceClassId.GradeII, totalPurse, 5);
+        var result = _sut.CalculatePayout(RaceClassId.EliteStakes, totalPurse, 5);
 
         // Assert
         Assert.Equal(expectedPayout, result);
@@ -261,7 +261,7 @@ public class PurseCalculatorTests
         var expectedPayout = 620000; // 62%
 
         // Act
-        var result = _sut.CalculatePayout(RaceClassId.GradeI, totalPurse, 1);
+        var result = _sut.CalculatePayout(RaceClassId.Championship, totalPurse, 1);
 
         // Assert
         Assert.Equal(expectedPayout, result);
@@ -277,7 +277,7 @@ public class PurseCalculatorTests
         var expectedPayout = 30000; // 3%
 
         // Act
-        var result = _sut.CalculatePayout(RaceClassId.GradeI, totalPurse, 5);
+        var result = _sut.CalculatePayout(RaceClassId.Championship, totalPurse, 5);
 
         // Assert
         Assert.Equal(expectedPayout, result);
@@ -292,7 +292,7 @@ public class PurseCalculatorTests
         var totalPurse = 1000000;
 
         // Act
-        var result = _sut.CalculatePayout(RaceClassId.GradeI, totalPurse, 6);
+        var result = _sut.CalculatePayout(RaceClassId.Championship, totalPurse, 6);
 
         // Assert
         Assert.Equal(0, result);
@@ -341,7 +341,7 @@ public class PurseCalculatorTests
         var totalPurse = 1000000;
 
         // Act
-        var result = _sut.CalculateAllPayouts(RaceClassId.GradeI, totalPurse);
+        var result = _sut.CalculateAllPayouts(RaceClassId.Championship, totalPurse);
 
         // Assert
         Assert.Equal(5, result.Count);
@@ -360,7 +360,7 @@ public class PurseCalculatorTests
         var totalPurse = 500000;
 
         // Act
-        var result = _sut.CalculateAllPayouts(RaceClassId.GradeII, totalPurse);
+        var result = _sut.CalculateAllPayouts(RaceClassId.EliteStakes, totalPurse);
 
         // Assert
         Assert.Equal(5, result.Count);

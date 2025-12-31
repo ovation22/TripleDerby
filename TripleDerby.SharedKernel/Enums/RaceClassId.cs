@@ -9,6 +9,6 @@ public enum RaceClassId : byte
     AllowanceOptional = 5,
     Stakes = 6,
     GradeIII = 7,
-    GradeII = 8,
-    GradeI = 9
+    EliteStakes = 8,
+    Championship = 9
 }

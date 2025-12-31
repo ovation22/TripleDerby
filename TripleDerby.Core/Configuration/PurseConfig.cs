@@ -27,8 +27,8 @@ public static class PurseConfig
             { RaceClassId.AllowanceOptional, 50000 },// $50,000 for allowance optional
             { RaceClassId.Stakes, 100000 },          // $100,000 for stakes
             { RaceClassId.GradeIII, 200000 },        // $200,000 for Grade III
-            { RaceClassId.GradeII, 500000 },         // $500,000 for Grade II
-            { RaceClassId.GradeI, 1000000 }          // $1,000,000 for Grade I
+            { RaceClassId.EliteStakes, 500000 },         // $500,000 for Grade II
+            { RaceClassId.Championship, 1000000 }          // $1,000,000 for Grade I
         };
 
     /// <summary>
@@ -118,7 +118,7 @@ public static class PurseConfig
             },
 
             // Grade II: Elite prestige (pay top 5)
-            { RaceClassId.GradeII, new PurseDistribution
+            { RaceClassId.EliteStakes, new PurseDistribution
                 {
                     PaidPlaces = 5,
                     Percentages = [0.55m, 0.20m, 0.10m, 0.07m, 0.03m],
@@ -127,7 +127,7 @@ public static class PurseConfig
             },
 
             // Grade I: Championship pattern (extremely top-heavy, pay top 5)
-            { RaceClassId.GradeI, new PurseDistribution
+            { RaceClassId.Championship, new PurseDistribution
                 {
                     PaidPlaces = 5,
                     Percentages = [0.62m, 0.20m, 0.10m, 0.05m, 0.03m],
