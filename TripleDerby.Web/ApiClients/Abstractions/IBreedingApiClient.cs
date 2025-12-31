@@ -13,4 +13,8 @@ public interface IBreedingApiClient
         Guid damId,
         Guid ownerId,
         CancellationToken cancellationToken = default);
+
+    Task<BreedingRequestStatusResult?> GetRequestStatusAsync(
+        Guid breedingRequestId,
+        CancellationToken cancellationToken = default);
 }

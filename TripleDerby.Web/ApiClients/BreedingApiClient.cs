@@ -76,4 +76,22 @@ public class BreedingApiClient(HttpClient httpClient, ILogger<BreedingApiClient>
             sireId, damId, ownerId, resp.StatusCode, resp.Error);
         return null;
     }
+
+    /// <summary>
+    /// Gets the status of a breeding request.
+    /// </summary>
+    public async Task<BreedingRequestStatusResult?> GetRequestStatusAsync(
+        Guid breedingRequestId,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"/api/breeding/requests/{breedingRequestId}";
+        var resp = await GetAsync<Resource<BreedingRequestStatusResult>>(url, cancellationToken);
+
+        if (resp.Success && resp.Data != null)
+            return resp.Data.Data;
+
+        Logger.LogError("Unable to get breeding request status. RequestId: {RequestId}, Status: {Status} Error: {Error}",
+            breedingRequestId, resp.StatusCode, resp.Error);
+        return null;
+    }
 }
