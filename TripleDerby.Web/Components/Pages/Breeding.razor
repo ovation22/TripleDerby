@@ -1,12 +1,15 @@
 ﻿@page "/breeding"
 @rendermode InteractiveServer
+@implements IDisposable
 @using System.Linq
 @using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Enums
 @using TripleDerby.SharedKernel.Pagination
 @using TripleDerby.Web.ApiClients.Abstractions
 @using TripleDerby.Web.Components.Ui;
 
 @inject IBreedingApiClient BreedingApi
+@inject IHorseApiClient HorseApi
 @inject IUserApiClient UserApi
 
 <PageTitle>Breeding</PageTitle>
@@ -148,6 +151,14 @@
                       @bind-Hidden="_hideError">
         @_errorMessage
     </FluentMessageBar>
+}
+
+@if (_isPolling)
+{
+    <div style="margin-top: 2rem;">
+        <FluentProgressRing />
+        <span style="margin-left: 1rem;">Status: @_currentStatus</span>
+    </div>
 }
 
 @if (_breedResult is not null)
@@ -294,8 +305,8 @@
             _currentRequestId = result.Id;
             _currentStatus = result.Status.ToString();
 
-            // Start polling (will be implemented in Phase 4)
-            // await StartPollingAsync();
+            // Start polling
+            await StartPollingAsync();
         }
         catch (Exception ex)
         {
@@ -308,5 +319,85 @@
             _isSubmitting = false;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private async Task StartPollingAsync()
+    {
+        if (_currentRequestId == null)
+            return;
+
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = new CancellationTokenSource();
+
+        _isPolling = true;
+        var attempts = 0;
+        var maxAttempts = 10;
+
+        try
+        {
+            while (attempts < maxAttempts && !_pollCts.Token.IsCancellationRequested)
+            {
+                await Task.Delay(1000, _pollCts.Token);
+
+                var status = await BreedingApi.GetRequestStatusAsync(_currentRequestId.Value);
+
+                if (status == null)
+                {
+                    _errorMessage = "Failed to get breeding status.";
+                    _hideError = false;
+                    break;
+                }
+
+                _currentStatus = status.Status.ToString();
+                await InvokeAsync(StateHasChanged);
+
+                if (status is { Status: BreedingRequestStatus.Completed, FoalId: not null })
+                {
+                    _isPolling = false;
+                    await InvokeAsync(StateHasChanged);
+
+                    // Fetch foal details (will be implemented in Phase 5)
+                    // var foal = await HorseApi.GetByIdAsync(status.FoalId.Value);
+                    // if (foal != null) _foal = foal;
+                    break;
+                }
+                else if (status.Status == BreedingRequestStatus.Failed)
+                {
+                    _errorMessage = $"Breeding failed: {status.FailureReason ?? "Unknown error"}";
+                    _hideError = false;
+                    break;
+                }
+
+                attempts++;
+            }
+
+            if (attempts >= maxAttempts)
+            {
+                _errorMessage = "Breeding processing timed out.";
+                _hideError = false;
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Polling cancelled, ignore
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error polling breeding status: {ex.Message}";
+            _hideError = false;
+        }
+        finally
+        {
+            _isPolling = false;
+            _breedingCompleted = true;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
     }
 }
