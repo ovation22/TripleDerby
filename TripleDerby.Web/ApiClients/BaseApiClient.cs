@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -74,6 +75,40 @@ public abstract class BaseApiClient(HttpClient httpClient, ILogger logger)
         {
             Logger.LogError(ex, "POST {Url} failed", url);
             return new ApiResponse<T>(false, default, ex.Message, HttpStatusCode.InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Generic POST with request body that returns an ApiResponse&lt;TResponse&gt; so callers can inspect success/info.
+    /// </summary>
+    protected async Task<ApiResponse<TResponse>> PostAsync<TRequest, TResponse>(
+        string url,
+        TRequest requestBody,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(requestBody, JsonOptions);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var resp = await HttpClient.PostAsync(url, content, cancellationToken);
+            var status = resp.StatusCode;
+
+            if (resp.IsSuccessStatusCode)
+            {
+                await using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
+                var data = await JsonSerializer.DeserializeAsync<TResponse>(stream, JsonOptions, cancellationToken);
+                return new ApiResponse<TResponse>(true, data, null, status);
+            }
+
+            var error = await resp.Content.ReadAsStringAsync(cancellationToken);
+            Logger.LogWarning("POST {Url} returned {Status}: {Error}", url, status, error);
+            return new ApiResponse<TResponse>(false, default, error, status);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "POST {Url} failed", url);
+            return new ApiResponse<TResponse>(false, default, ex.Message, HttpStatusCode.InternalServerError);
         }
     }
 }
