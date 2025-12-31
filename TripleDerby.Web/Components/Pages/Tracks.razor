@@ -1,7 +1,79 @@
 ﻿@page "/tracks"
 @rendermode InteractiveServer
 
+@using System.Linq
+@using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject ITrackApiClient TrackApi
+
 <PageTitle>Tracks</PageTitle>
 
 <h1>Tracks</h1>
 
+<div style="min-height: 490px;" tabindex="-1">
+    <FluentDataGrid @ref="dataGrid"
+                    Items="@tracks"
+                    RefreshItems="RefreshItemsAsync"
+                    DisplayMode="DataGridDisplayMode.Table"
+                    TGridItem="TracksResult"
+                    Pagination="pagination"
+                    HeaderCellAsButtonWithMenu=true
+                    UseMenuService=false
+                    Loading="loading">
+        <PropertyColumn Property="@(c => c.Name)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true />
+    </FluentDataGrid>
+</div>
+
+<FluentPaginator State="@pagination" />
+
+@code {
+    // Grid state
+    bool loading = true;
+    IQueryable<TracksResult> tracks = Enumerable.Empty<TracksResult>().AsQueryable();
+    FluentDataGrid<TracksResult>? dataGrid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+
+    protected async Task RefreshItemsAsync(GridItemsProviderRequest<TracksResult> req)
+    {
+        loading = true;
+
+        var start = req.StartIndex;
+        var count = (req.Count.HasValue && req.Count.Value > 0)
+            ? req.Count.Value
+            : pagination.ItemsPerPage;
+        if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 1;
+
+        var page = (start / count) + 1;
+
+        var sortBy = "Name";
+        var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
+
+        var s = req.GetSortByProperties().FirstOrDefault(x => !string.IsNullOrEmpty(x.PropertyName));
+        if (!string.IsNullOrEmpty(s.PropertyName))
+        {
+            sortBy = s.PropertyName;
+            sortDirection = s.Direction == FUISort.Ascending
+                ? SharedKernel.Pagination.SortDirection.Asc
+                : SharedKernel.Pagination.SortDirection.Desc;
+        }
+
+        var request = new PaginationRequest
+        {
+            Page = page,
+            Size = count,
+            SortBy = sortBy,
+            Direction = sortDirection
+        };
+
+        var response = await TrackApi.FilterAsync(request);
+
+        tracks = (response?.Data ?? Enumerable.Empty<TracksResult>()).AsQueryable();
+        await pagination.SetTotalItemCountAsync(response?.Total ?? 0);
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

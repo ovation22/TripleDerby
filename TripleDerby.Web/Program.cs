@@ -39,6 +39,10 @@ builder.Services.AddHttpClient<IRaceApiClient, RaceApiClient>(client =>
 builder.Services.AddHttpClient<IRaceRunApiClient, RaceRunApiClient>(client =>
 {
     client.BaseAddress = new("https+http://api");
+});
+builder.Services.AddHttpClient<ITrackApiClient, TrackApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://api");
 }); 
 
 var app = builder.Build();
