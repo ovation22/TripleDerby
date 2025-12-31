@@ -5,6 +5,7 @@ using TripleDerby.Core.Abstractions.Generators;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Services;
 using TripleDerby.Services.Breeding;
 using TripleDerby.SharedKernel.Enums;
 
@@ -18,13 +19,16 @@ public class GenerateHorseStatisticsTests
         ITripleDerbyRepository repo = Mock.Of<ITripleDerbyRepository>();
         IHorseNameGenerator nameGen = Mock.Of<IHorseNameGenerator>();
         ITimeManager timeMgr = Mock.Of<ITimeManager>();
+        var colorCacheLogger = new Mock<ILogger<ColorCache>>();
+        ColorCache colorCache = new ColorCache(colorCacheLogger.Object);
 
         return new BreedingExecutor(
             rnd.Object,
             repo,
             nameGen,
             timeMgr,
-            logger.Object);
+            logger.Object,
+            colorCache);
     }
 
     private static MethodInfo GetGenerateHorseStatisticsMethod()

@@ -5,6 +5,7 @@ using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Generators;
+using TripleDerby.Core.Services;
 using TripleDerby.Infrastructure.Data;
 using TripleDerby.Infrastructure.Data.Repositories;
 using TripleDerby.Infrastructure.Messaging;
@@ -43,6 +44,7 @@ builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 builder.Services.AddSingleton<IHorseNameGenerator, HorseNameGenerator>();
 builder.Services.AddSingleton<IMessagePublisher, RabbitMqMessagePublisher>();
+builder.Services.AddSingleton<ColorCache>(); // Color cache for performance optimization
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddRabbitMQClient(connectionName: "messaging");
