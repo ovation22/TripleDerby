@@ -31,8 +31,10 @@ public class BreedingRequestProcessorTests
             publisher.Object,
             timeMgr.Object);
 
+        var context = new MessageContext { CancellationToken = CancellationToken.None };
+
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => processor.ProcessAsync(null!, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => processor.ProcessAsync(null!, context));
     }
 
     [Fact]
@@ -58,10 +60,13 @@ public class BreedingRequestProcessorTests
             publisher.Object,
             timeMgr.Object);
 
-        // Act
-        await processor.ProcessAsync(request, CancellationToken.None);
+        var context = new MessageContext { CancellationToken = CancellationToken.None };
 
-        // Assert - no publish, no further repository updates
+        // Act
+        var result = await processor.ProcessAsync(request, context);
+
+        // Assert
+        Assert.True(result.Success);
         repo.Verify(r => r.UpdateAsync(It.IsAny<BreedingRequest>(), It.IsAny<CancellationToken>()), Times.Never);
         publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<MessagePublishOptions?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -96,10 +101,13 @@ public class BreedingRequestProcessorTests
             publisher.Object,
             timeMgr.Object);
 
-        // Act
-        await processor.ProcessAsync(request, CancellationToken.None);
+        var context = new MessageContext { CancellationToken = CancellationToken.None };
 
-        // Assert - we shouldn't attempt to claim or publish
+        // Act
+        var result = await processor.ProcessAsync(request, context);
+
+        // Assert
+        Assert.True(result.Success);
         repo.Verify(r => r.UpdateAsync(It.IsAny<BreedingRequest>(), It.IsAny<CancellationToken>()), Times.Never);
         publisher.Verify(p => p.PublishAsync(It.IsAny<BreedingCompleted>(), It.IsAny<MessagePublishOptions?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -143,10 +151,13 @@ public class BreedingRequestProcessorTests
             publisher.Object,
             timeMgr.Object);
 
-        // Act
-        await processor.ProcessAsync(request, CancellationToken.None);
+        var context = new MessageContext { CancellationToken = CancellationToken.None };
 
-        // Assert - after failing to claim and reloading to a non-InProgress status, processor should return
+        // Act
+        var result = await processor.ProcessAsync(request, context);
+
+        // Assert
+        Assert.True(result.Success);
         // Verify UpdateAsync was attempted (the claim)
         repo.Verify(r => r.UpdateAsync(It.IsAny<BreedingRequest>(), It.IsAny<CancellationToken>()), Times.Once);
 

@@ -1,8 +1,8 @@
-namespace TripleDerby.Services.Breeding;
-
+using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.SharedKernel.Messages;
 
-public interface IBreedingRequestProcessor
+namespace TripleDerby.Services.Breeding;
+
+public interface IBreedingRequestProcessor : IMessageProcessor<BreedingRequested>
 {
-    Task ProcessAsync(BreedingRequested request, CancellationToken cancellationToken);
 }

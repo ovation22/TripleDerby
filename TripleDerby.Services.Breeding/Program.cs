@@ -11,6 +11,7 @@ using TripleDerby.Infrastructure.Messaging;
 using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Breeding;
+using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -33,8 +34,11 @@ builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 builder.Services.AddScoped<IBreedingExecutor, BreedingExecutor>();
 builder.Services.AddScoped<IBreedingRequestProcessor, BreedingRequestProcessor>();
 
+// Register generic message consumer with RabbitMQ adapter
+builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
+builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<BreedingRequested, IBreedingRequestProcessor>>();
+
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddSingleton<RabbitMqBreedingConsumer>();
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 builder.Services.AddSingleton<IHorseNameGenerator, HorseNameGenerator>();
