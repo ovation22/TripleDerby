@@ -13,6 +13,7 @@ using TripleDerby.Infrastructure.Messaging;
 using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Racing;
+using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -47,10 +48,11 @@ builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
 
-// Messaging
+// Messaging - Generic message consumer with Azure Service Bus adapter
+builder.Services.AddSingleton<IMessageBrokerAdapter, ServiceBusBrokerAdapter>();
+builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceRequested, IRaceRequestProcessor>>();
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddSingleton<AzureServiceBusRaceConsumer>();
-builder.Services.AddKeyedSingleton<IMessagePublisher, AzureServiceBusPublisher>("servicebus");
+builder.Services.AddSingleton<IMessagePublisher, AzureServiceBusPublisher>();
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddAzureServiceBusClient(connectionName: "servicebus");

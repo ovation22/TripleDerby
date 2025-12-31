@@ -1,6 +1,6 @@
+using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Entities;
-using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
 
@@ -9,43 +9,36 @@ namespace TripleDerby.Services.Racing;
 /// <summary>
 /// Processes race requests by delegating to the RaceExecutor.
 /// </summary>
-public class RaceRequestProcessor : IRaceRequestProcessor
+public class RaceRequestProcessor(
+    IRaceExecutor raceExecutor,
+    ITripleDerbyRepository repository,
+    IMessagePublisher messagePublisher,
+    ILogger<RaceRequestProcessor> logger)
+    : IRaceRequestProcessor
 {
-    private readonly IRaceExecutor _raceExecutor;
-    private readonly ITripleDerbyRepository _repository;
-    private readonly ILogger<RaceRequestProcessor> _logger;
-
-    public RaceRequestProcessor(
-        IRaceExecutor raceExecutor,
-        ITripleDerbyRepository repository,
-        ILogger<RaceRequestProcessor> logger)
-    {
-        _raceExecutor = raceExecutor;
-        _repository = repository;
-        _logger = logger;
-    }
-
-    public async Task<RaceRunResult> ProcessAsync(
+    public async Task<MessageProcessingResult> ProcessAsync(
         RaceRequested request,
-        CancellationToken cancellationToken)
+        MessageContext context)
     {
-        _logger.LogInformation(
+        var cancellationToken = context.CancellationToken;
+
+        logger.LogInformation(
             "Processing race: RaceId={RaceId}, HorseId={HorseId}, CorrelationId={CorrelationId}",
             request.RaceId, request.HorseId, request.CorrelationId);
 
-        // Update RaceRequest status to InProgress
-        var raceRequest = await _repository.FindAsync<RaceRequest>(request.CorrelationId, cancellationToken);
-        if (raceRequest != null)
-        {
-            raceRequest.Status = RaceRequestStatus.InProgress;
-            raceRequest.UpdatedDate = DateTimeOffset.UtcNow;
-            await _repository.UpdateAsync(raceRequest, cancellationToken);
-        }
-
         try
         {
+            // Update RaceRequest status to InProgress
+            var raceRequest = await repository.FindAsync<RaceRequest>(request.CorrelationId, cancellationToken);
+            if (raceRequest != null)
+            {
+                raceRequest.Status = RaceRequestStatus.InProgress;
+                raceRequest.UpdatedDate = DateTimeOffset.UtcNow;
+                await repository.UpdateAsync(raceRequest, cancellationToken);
+            }
+
             // Delegate to RaceExecutor
-            var result = await _raceExecutor.Race(
+            var result = await raceExecutor.Race(
                 request.RaceId,
                 request.HorseId,
                 cancellationToken);
@@ -57,34 +50,54 @@ public class RaceRequestProcessor : IRaceRequestProcessor
                 raceRequest.RaceRunId = result.RaceRunId;
                 raceRequest.ProcessedDate = DateTimeOffset.UtcNow;
                 raceRequest.UpdatedDate = DateTimeOffset.UtcNow;
-                await _repository.UpdateAsync(raceRequest, cancellationToken);
+                await repository.UpdateAsync(raceRequest, cancellationToken);
             }
 
-            _logger.LogInformation(
+            // Publish completion message
+            var completion = new RaceCompleted
+            {
+                CorrelationId = request.CorrelationId,
+                RaceRunId = result.RaceRunId,
+                RaceId = request.RaceId,
+                RaceName = result.RaceName,
+                WinnerHorseId = result.HorseResults.First().HorseId,
+                WinnerName = result.HorseResults.First().HorseName,
+                WinnerTime = result.HorseResults.First().Time,
+                FieldSize = result.HorseResults.Count,
+                Result = result
+            };
+
+            await messagePublisher.PublishAsync(
+                completion,
+                new MessagePublishOptions { Destination = "race-completions" },
+                cancellationToken);
+
+            logger.LogInformation(
                 "Race completed: Winner={Winner}, Time={Time}, CorrelationId={CorrelationId}",
                 result.HorseResults.First().HorseName,
                 result.HorseResults.First().Time,
                 request.CorrelationId);
 
-            return result;
+            return MessageProcessingResult.Succeeded();
         }
         catch (Exception ex)
         {
             // Update RaceRequest with failure
+            var raceRequest = await repository.FindAsync<RaceRequest>(request.CorrelationId, cancellationToken);
             if (raceRequest != null)
             {
                 raceRequest.Status = RaceRequestStatus.Failed;
                 raceRequest.FailureReason = ex.Message;
                 raceRequest.ProcessedDate = DateTimeOffset.UtcNow;
                 raceRequest.UpdatedDate = DateTimeOffset.UtcNow;
-                await _repository.UpdateAsync(raceRequest, cancellationToken);
+                await repository.UpdateAsync(raceRequest, cancellationToken);
             }
 
-            _logger.LogError(ex,
+            logger.LogError(ex,
                 "Race processing failed: CorrelationId={CorrelationId}",
                 request.CorrelationId);
 
-            throw;
+            return MessageProcessingResult.FailedWithException(ex, requeue: false);
         }
     }
 }

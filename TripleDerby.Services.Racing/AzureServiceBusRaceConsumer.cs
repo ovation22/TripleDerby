@@ -83,36 +83,25 @@ public class AzureServiceBusRaceConsumer : IAsyncDisposable
             // Create a scope for this message processing to resolve scoped dependencies
             await using var scope = _serviceScopeFactory.CreateAsyncScope();
             var requestProcessor = scope.ServiceProvider.GetRequiredService<IRaceRequestProcessor>();
-            var publisher = scope.ServiceProvider.GetRequiredKeyedService<IMessagePublisher>("servicebus");
 
-            // Process the race (delegates to RaceService)
-            var result = await requestProcessor.ProcessAsync(request, args.CancellationToken);
-
-            // Publish completion message
-            var completion = new RaceCompleted
+            // Create message context
+            var context = new MessageContext
             {
-                CorrelationId = request.CorrelationId,
-                RaceRunId = result.RaceRunId,
-                RaceId = request.RaceId,
-                RaceName = result.RaceName,
-                WinnerHorseId = result.HorseResults.First().HorseId,
-                WinnerName = result.HorseResults.First().HorseName,
-                WinnerTime = result.HorseResults.First().Time,
-                FieldSize = result.HorseResults.Count,
-                Result = result
+                MessageId = args.Message.MessageId,
+                CorrelationId = args.Message.CorrelationId ?? request.CorrelationId.ToString(),
+                CancellationToken = args.CancellationToken
             };
 
-            await publisher.PublishAsync(
-                completion,
-                new MessagePublishOptions { Destination = "race-completions" },
-                args.CancellationToken);
+            // Process the race (delegates to RaceService and publishes completion)
+            var result = await requestProcessor.ProcessAsync(request, context);
+
+            if (!result.Success)
+            {
+                throw new InvalidOperationException(result.ErrorReason ?? "Processing failed");
+            }
 
             // Complete the message (remove from queue)
             await args.CompleteMessageAsync(args.Message);
-
-            _logger.LogInformation(
-                "Race completed successfully: CorrelationId={CorrelationId}, Winner={Winner}",
-                request.CorrelationId, completion.WinnerName);
         }
         catch (Exception ex)
         {
