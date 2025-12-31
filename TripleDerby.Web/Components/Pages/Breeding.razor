@@ -16,7 +16,9 @@
 
 <h1>Breeding</h1>
 
-<FluentGrid>
+@if (!_hasBreedingStarted)
+{
+    <FluentGrid>
     <FluentGridItem xs="12" sm="12" md="6">
         @if (_loadingDams)
         {
@@ -123,25 +125,33 @@
     </FluentGridItem>
 </FluentGrid>
 
-<div style="margin-top:1rem;">
-    <label ><strong>Owner</strong></label>
+    <div style="margin-top:1rem;">
+        <label><strong>Owner</strong> <span style="color: var(--error);">*</span></label>
 
-    <FluentAutocomplete TOption="UserResult"
-                        Width="320px"
-                        Placeholder="Search users by username"
-                        OptionText="@(u => $"{u.Username} ({u.Email})")"
-                        Multiple="false"
-                        OnOptionsSearch="OnOptionsSearchAsync"
-                        @bind-SelectedOption="_selectedOwner" />
-</div>
+        <FluentAutocomplete TOption="UserResult"
+                            Width="320px"
+                            Placeholder="Search users by username"
+                            OptionText="@(u => $"{u.Username} ({u.Email})")"
+                            Multiple="false"
+                            OnOptionsSearch="OnOptionsSearchAsync"
+                            @bind-SelectedOption="_selectedOwner" />
 
-<div style="margin-top:1rem;">
-    <FluentButton Appearance="Appearance.Accent"
-                  Disabled="@(_selectedDamId == null || _selectedSireId == null || _selectedOwner == null || _isSubmitting || _hasBreedingStarted)"
-                  @onclick="BreedAsync">
-        @(_isSubmitting ? "Submitting..." : "Breed selected pair")
-    </FluentButton>
-</div>
+        @if (_selectedOwner == null)
+        {
+            <div style="color: var(--neutral-foreground-hint); font-size: 0.875rem; margin-top: 0.25rem;">
+                Owner selection is required
+            </div>
+        }
+    </div>
+
+    <div style="margin-top:1rem;">
+        <FluentButton Appearance="Appearance.Accent"
+                      Disabled="@(_selectedDamId == null || _selectedSireId == null || _selectedOwner == null || _isSubmitting || _hasBreedingStarted)"
+                      @onclick="BreedAsync">
+            @(_isSubmitting ? "Submitting..." : "Breed selected pair")
+        </FluentButton>
+    </div>
+}
 
 @if (!string.IsNullOrEmpty(_errorMessage))
 {
@@ -150,6 +160,20 @@
                       Intent="MessageIntent.Error"
                       @bind-Hidden="_hideError">
         @_errorMessage
+
+        @if (_currentRequestId.HasValue && _breedingCompleted)
+        {
+            <div style="margin-top: 0.5rem;">
+                <FluentButton Appearance="Appearance.Stealth"
+                              @onclick="RetryBreedingAsync">
+                    Try Again
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Stealth"
+                              @onclick="BreedAnotherPair">
+                    Start New Breeding
+                </FluentButton>
+            </div>
+        }
     </FluentMessageBar>
 }
 
@@ -427,6 +451,20 @@
             _breedingCompleted = true;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private async Task RetryBreedingAsync()
+    {
+        if (_currentRequestId == null)
+            return;
+
+        // Clear error state
+        _errorMessage = null;
+        _hideError = true;
+        _breedingCompleted = false;
+
+        // Restart polling for the same request
+        await StartPollingAsync();
     }
 
     private void BreedAnotherPair()
