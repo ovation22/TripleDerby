@@ -1,0 +1,14 @@
+.play-by-play-container {
+    margin-top: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+    font-family: monospace;
+    white-space: pre-line;
+    border: 1px solid #ccc;
+    padding: 1rem;
+    line-height: 1.6;
+}
+
+.play-by-play-line {
+    margin-bottom: 0.5rem;
+}

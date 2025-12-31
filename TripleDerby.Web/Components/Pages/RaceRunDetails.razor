@@ -1,0 +1,133 @@
+@page "/races/{RaceId:int}/runs/{RunId:guid}"
+@rendermode InteractiveServer
+
+@using TripleDerby.SharedKernel
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IRaceRunApiClient RaceRunApi
+@inject NavigationManager Navigation
+
+<PageTitle>@(_result?.RaceName ?? "Loading...") - Race Run Details</PageTitle>
+
+@if (_loading)
+{
+    <FluentProgressRing />
+    <p>Loading race run details...</p>
+}
+else if (_result == null)
+{
+    <FluentMessageBar Title="Error" Intent="MessageIntent.Error">
+        Unable to load race run details. The race run may not exist.
+    </FluentMessageBar>
+}
+else
+{
+    <div style="margin-bottom: 2rem;">
+        <FluentButton Appearance="Appearance.Lightweight"
+                      IconStart="@(new Icons.Regular.Size16.ArrowLeft())"
+                      @onclick="NavigateBack">
+            Back to Race Runs
+        </FluentButton>
+    </div>
+
+    <div style="margin-bottom: 2rem;">
+        <h2>@_result.RaceName</h2>
+        <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+            <div><strong>Track:</strong> @_result.TrackName</div>
+            <div><strong>Distance:</strong> @_result.Furlongs furlongs</div>
+            <div><strong>Surface:</strong> @_result.SurfaceName</div>
+            <div><strong>Track Condition:</strong> @_result.ConditionName</div>
+        </div>
+    </div>
+
+    @if (_result.HorseResults.Any())
+    {
+        <div style="margin-bottom: 2rem;">
+            <h3>Results</h3>
+            <FluentDataGrid Items="@_result.HorseResults.AsQueryable()"
+                            TGridItem="RaceRunHorseResult"
+                            GridTemplateColumns="80px 1fr 120px 120px">
+                <PropertyColumn Property="@(h => h.Place)" Title="Place" Sortable="true" InitialSortDirection="Microsoft.FluentUI.AspNetCore.Components.SortDirection.Ascending" IsDefaultSortColumn="true" />
+                <PropertyColumn Property="@(h => h.HorseName)" Title="Horse" Sortable="true" />
+                <PropertyColumn Property="@(h => h.DisplayTime)" Title="Time" Align="Align.End" />
+                <PropertyColumn Property="@(h => h.Payout)" Title="Payout" Format="C" Align="Align.End" />
+            </FluentDataGrid>
+        </div>
+    }
+
+    @if (_result.PlayByPlay.Any())
+    {
+        <div style="margin-bottom: 2rem;">
+            <h3>Play-by-Play</h3>
+            <div class="play-by-play-container">
+                @for (int i = 0; i < _result.PlayByPlay.Count; i++)
+                {
+                    var entry = _result.PlayByPlay[i];
+                    var lines = entry.Split(';');
+
+                    foreach (var line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            var isFirstLine = i == 0 && line == lines.First(l => !string.IsNullOrWhiteSpace(l));
+                            <div class="play-by-play-line">
+                                @((MarkupString)(isFirstLine ? line.Trim() : BoldCapitalizedWords(line.Trim())))
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public int RaceId { get; set; }
+
+    [Parameter]
+    public Guid RunId { get; set; }
+
+    bool _loading = true;
+    RaceRunResult? _result;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRaceRunDetailsAsync();
+    }
+
+    private async Task LoadRaceRunDetailsAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            _result = await RaceRunApi.GetRaceRunResultAsync((byte)RaceId, RunId);
+        }
+        catch (Exception)
+        {
+            _result = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/races/{RaceId}/runs");
+    }
+
+    private string BoldCapitalizedWords(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return text;
+
+        // Match words that start with a capital letter followed by lowercase letters,
+        // including hyphenated words like "Black-and-white"
+        var pattern = @"\b([A-Z][a-z]+(?:-[a-z]+)*)\b";
+        var result = System.Text.RegularExpressions.Regex.Replace(text, pattern, "<strong>$1</strong>");
+        return result;
+    }
+}

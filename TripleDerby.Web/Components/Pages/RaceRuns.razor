@@ -149,6 +149,6 @@ else
 
     private void NavigateToRaceRunDetails(RaceRunSummary raceRun)
     {
-        Navigation.NavigateTo($"/race-run/{RaceId}/{raceRun.RaceRunId}");
+        Navigation.NavigateTo($"/races/{RaceId}/runs/{raceRun.RaceRunId}");
     }
 }
