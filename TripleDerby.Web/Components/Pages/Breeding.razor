@@ -133,10 +133,22 @@
 </div>
 
 <div style="margin-top:1rem;">
-    <button class="btn btn-primary" disabled="@(_selectedDamId == null || _selectedSireId == null)" @onclick="BreedAsync">
-        Breed selected pair
-    </button>
+    <FluentButton Appearance="Appearance.Accent"
+                  Disabled="@(_selectedDamId == null || _selectedSireId == null || _selectedOwner == null || _isSubmitting || _hasBreedingStarted)"
+                  @onclick="BreedAsync">
+        @(_isSubmitting ? "Submitting..." : "Breed selected pair")
+    </FluentButton>
 </div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <FluentMessageBar Style="margin-top: 2rem;"
+                      Title="Error"
+                      Intent="MessageIntent.Error"
+                      @bind-Hidden="_hideError">
+        @_errorMessage
+    </FluentMessageBar>
+}
 
 @if (_breedResult is not null)
 {
@@ -167,6 +179,18 @@
 
     // Autocomplete owner selection
     private UserResult? _selectedOwner;
+
+    // Breeding state management
+    private bool _hasBreedingStarted;
+    private bool _isSubmitting;
+    private bool _isPolling;
+    private bool _breedingCompleted;
+    private Guid? _currentRequestId;
+    private string _currentStatus = "";
+    private HorseResult? _foal;
+    private string? _errorMessage;
+    private bool _hideError = true;
+    private CancellationTokenSource? _pollCts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -231,21 +255,58 @@
         e.Items = resp?.Data ?? [];
     }
 
-    private Task BreedAsync()
+    private async Task BreedAsync()
     {
-        var dam = _dams.FirstOrDefault(d => d.Id == _selectedDamId);
-        var sire = _sires.FirstOrDefault(s => s.Id == _selectedSireId);
-
-        if (dam is null || sire is null)
+        // Validation
+        if (_selectedDamId == null || _selectedSireId == null || _selectedOwner == null)
         {
-            _breedResult = "Invalid selection.";
-        }
-        else
-        {
-            var ownerPart = _selectedOwner is not null ? $" (Owner: {_selectedOwner.Username})" : string.Empty;
-            _breedResult = $"Planned breeding: Dam '{dam.Name}' x Sire '{sire.Name}'{ownerPart}";
+            _errorMessage = "Please select a dam, sire, and owner.";
+            _hideError = false;
+            return;
         }
 
-        return Task.CompletedTask;
+        // Clear previous state
+        _foal = null;
+        _errorMessage = null;
+        _hideError = true;
+        _breedingCompleted = false;
+        _breedResult = null;
+
+        _isSubmitting = true;
+        _hasBreedingStarted = true;
+
+        try
+        {
+            // Submit breeding request
+            var result = await BreedingApi.SubmitBreedingAsync(
+                _selectedSireId.Value,
+                _selectedDamId.Value,
+                _selectedOwner.Id);
+
+            if (result == null)
+            {
+                _errorMessage = "Failed to submit breeding request.";
+                _hideError = false;
+                _hasBreedingStarted = false;
+                return;
+            }
+
+            _currentRequestId = result.Id;
+            _currentStatus = result.Status.ToString();
+
+            // Start polling (will be implemented in Phase 4)
+            // await StartPollingAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error submitting breeding request: {ex.Message}";
+            _hideError = false;
+            _hasBreedingStarted = false;
+        }
+        finally
+        {
+            _isSubmitting = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 }
