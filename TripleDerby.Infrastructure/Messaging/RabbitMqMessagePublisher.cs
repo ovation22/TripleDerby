@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using TripleDerby.Core.Abstractions.Messaging;
-using TripleDerby.SharedKernel.Messages;
 
 namespace TripleDerby.Infrastructure.Messaging;
 
@@ -15,11 +14,9 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
     private readonly ConnectionFactory _factory;
     private IConnection? _connection;
     private readonly ILogger<RabbitMqMessagePublisher> _logger;
-    private readonly IConfiguration _configuration;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly string _exchange;
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
-    private readonly TimeSpan _publisherConfirmTimeout;
     private readonly int _maxPublishRetries;
     private readonly TimeSpan _initialRetryDelay;
 
@@ -29,7 +26,6 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
     public RabbitMqMessagePublisher(IConfiguration configuration, ILogger<RabbitMqMessagePublisher> logger)
     {
-        _configuration = configuration;
         _logger = logger;
 
         // serialization options
@@ -62,7 +58,6 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
         // publish defaults - tune via config if desired
         _exchange = configuration["MessageBus:Exchange"] ?? configuration["MessageBus__Exchange"] ?? "triplederby.events";
-        _publisherConfirmTimeout = TimeSpan.FromSeconds(5);
         _maxPublishRetries = int.TryParse(configuration["MessageBus:Publish:MaxRetries"], out var mr) ? mr : 3;
         _initialRetryDelay = TimeSpan.FromMilliseconds(int.TryParse(configuration["MessageBus:Publish:InitialDelayMs"], out var id) ? id : 200);
 
@@ -73,7 +68,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
     {
         var factory = new ConnectionFactory();
 
-        if (Uri.TryCreate(connectionString, UriKind.Absolute, out var uri) && (uri.Scheme == "amqp" || uri.Scheme == "amqps"))
+        if (Uri.TryCreate(connectionString, UriKind.Absolute, out var uri) && uri.Scheme is "amqp" or "amqps")
         {
             factory.Uri = uri;
         }
@@ -86,10 +81,10 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
                 if (kv.Length != 2) continue;
                 var k = kv[0].Trim().ToLowerInvariant();
                 var v = kv[1].Trim();
-                if (k == "host" || k == "hostname") factory.HostName = v;
-                else if (k == "username" || k == "user") factory.UserName = v;
-                else if (k == "password" || k == "pwd") factory.Password = v;
-                else if (k == "virtualhost" || k == "vhost") factory.VirtualHost = v;
+                if (k is "host" or "hostname") factory.HostName = v;
+                else if (k is "username" or "user") factory.UserName = v;
+                else if (k is "password" or "pwd") factory.Password = v;
+                else if (k is "virtualhost" or "vhost") factory.VirtualHost = v;
                 else if (k == "port" && int.TryParse(v, out var p)) factory.Port = p;
             }
         }
@@ -99,19 +94,19 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
     private async Task EnsureConnectedAsync()
     {
-        if (_connection != null && _connection.IsOpen) return;
+        if (_connection is { IsOpen: true }) return;
 
         await _connectionLock.WaitAsync();
         try
         {
-            if (_connection != null && _connection.IsOpen) return;
+            if (_connection is { IsOpen: true }) return;
 
             _logger.LogInformation("Creating RabbitMQ connection...");
 
             // CreateConnectionAsync can throw; allow caller to handle/log and possibly retry.
             _connection = await _factory.CreateConnectionAsync();
 
-            _logger.LogInformation("RabbitMQ connection established (node: {Node})", _connection.Endpoint.HostName ?? "(unknown)");
+            _logger.LogInformation("RabbitMQ connection established (node: {Node})", _connection.Endpoint.HostName);
 
             // Ensure exchange exists using a short-lived channel
             var channel = await _connection.CreateChannelAsync();
@@ -138,7 +133,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
     private async Task EnsurePublishChannelAsync(CancellationToken cancellationToken = default)
     {
         // Fast path: channel exists and is open
-        if (_publishChannel != null && _publishChannel.IsOpen)
+        if (_publishChannel is { IsOpen: true })
             return;
 
         // Slow path: need to create channel (only happens once, or after connection loss)
@@ -146,7 +141,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
         try
         {
             // Double-check: another thread may have created while we waited
-            if (_publishChannel != null && _publishChannel.IsOpen)
+            if (_publishChannel is { IsOpen: true })
                 return;
 
             // Close existing channel if it exists but is not open
@@ -182,7 +177,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
 
         // Prepare message properties BEFORE acquiring lock
         var correlationId = Activity.Current?.Tags.FirstOrDefault(t => t.Key == "client.correlation_id").Value
-                            ?? Activity.Current?.Baggage?.FirstOrDefault(kv => kv.Key == "client.correlation_id").Value
+                            ?? Activity.Current?.Baggage.FirstOrDefault(kv => kv.Key == "client.correlation_id").Value
                             ?? Activity.Current?.TraceId.ToString()
                             ?? Activity.Current?.Id
                             ?? Guid.NewGuid().ToString();
@@ -192,7 +187,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
             ContentType = "application/json",
             DeliveryMode = DeliveryModes.Persistent,
             CorrelationId = correlationId,
-            Headers = new System.Collections.Generic.Dictionary<string, object?>
+            Headers = new Dictionary<string, object?>
             {
                 ["correlation-id"] = Encoding.UTF8.GetBytes(correlationId),
                 ["message-type"] = Encoding.UTF8.GetBytes(typeof(T).FullName ?? typeof(T).Name)
