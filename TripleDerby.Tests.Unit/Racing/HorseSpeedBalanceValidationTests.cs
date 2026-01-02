@@ -5,6 +5,7 @@ using TripleDerby.Core.Entities;
 using static TripleDerby.Services.Racing.Config.RaceModifierConfig;
 using TripleDerby.SharedKernel.Enums;
 using Xunit;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Services.Racing.Config;
 using TripleDerby.Services.Racing;
 

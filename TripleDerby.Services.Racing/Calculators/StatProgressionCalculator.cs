@@ -29,4 +29,26 @@ public class StatProgressionCalculator
 
         return RaceModifierConfig.OldHorseMultiplier;            // 0.20
     }
+
+    /// <summary>
+    /// Calculates stat growth for a single stat based on the gap between actual and genetic potential.
+    /// Uses the base formula: Growth = (DominantPotential - Actual) × BaseGrowthRate × CareerMultiplier
+    /// Returns 0 if the horse has already reached its genetic ceiling.
+    /// </summary>
+    /// <param name="actualStat">Current stat value</param>
+    /// <param name="dominantPotential">Genetic ceiling from breeding</param>
+    /// <param name="careerMultiplier">Career phase efficiency multiplier</param>
+    /// <returns>Stat growth amount (0 if at ceiling)</returns>
+    public double GrowStat(short actualStat, short dominantPotential, double careerMultiplier)
+    {
+        // No growth if already at genetic ceiling
+        if (actualStat >= dominantPotential)
+            return 0;
+
+        // Calculate gap-based growth: larger gaps = more growth per race
+        var gap = dominantPotential - actualStat;
+        var growth = gap * RaceModifierConfig.BaseStatGrowthRate * careerMultiplier;
+
+        return growth;
+    }
 }

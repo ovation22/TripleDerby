@@ -1,5 +1,5 @@
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Core.Services;
 using TripleDerby.SharedKernel.Enums;
 

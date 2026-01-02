@@ -3,7 +3,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel.Enums;

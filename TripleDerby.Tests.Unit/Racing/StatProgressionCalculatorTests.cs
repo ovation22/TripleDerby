@@ -1,4 +1,4 @@
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 
 namespace TripleDerby.Tests.Unit.Racing;
 
@@ -86,5 +86,134 @@ public class StatProgressionCalculatorTests
 
         // Assert
         Assert.Equal(expected, result);
+    }
+
+    // ============================================================================
+    // Phase 2: Core Stat Growth Formula Tests
+    // ============================================================================
+
+    [Fact]
+    public void GrowStat_WithBasicGrowth_ReturnsCorrectIncrease()
+    {
+        // Arrange - Prime horse (1.20x multiplier) with 50 actual, 100 potential
+        // Expected: (100 - 50) * 0.02 * 1.20 = 1.20
+        var calculator = new StatProgressionCalculator();
+        short actualStat = 50;
+        short dominantPotential = 100;
+        short raceStarts = 15; // Prime horse
+        double careerMultiplier = 1.20;
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(1.20, growth, precision: 2);
+    }
+
+    [Fact]
+    public void GrowStat_WithYoungHorse_ReturnsReducedGrowth()
+    {
+        // Arrange - Young horse (0.80x multiplier) with 50 actual, 100 potential
+        // Expected: (100 - 50) * 0.02 * 0.80 = 0.80
+        var calculator = new StatProgressionCalculator();
+        short actualStat = 50;
+        short dominantPotential = 100;
+        double careerMultiplier = 0.80;
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(0.80, growth, precision: 2);
+    }
+
+    [Fact]
+    public void GrowStat_WithVeteranHorse_ReturnsMinimalGrowth()
+    {
+        // Arrange - Veteran horse (0.60x multiplier) with 50 actual, 100 potential
+        // Expected: (100 - 50) * 0.02 * 0.60 = 0.60
+        var calculator = new StatProgressionCalculator();
+        short actualStat = 50;
+        short dominantPotential = 100;
+        double careerMultiplier = 0.60;
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(0.60, growth, precision: 2);
+    }
+
+    [Fact]
+    public void GrowStat_AtCeiling_ReturnsZeroGrowth()
+    {
+        // Arrange - Horse at genetic ceiling
+        var calculator = new StatProgressionCalculator();
+        short actualStat = 100;
+        short dominantPotential = 100;
+        double careerMultiplier = 1.20;
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(0, growth);
+    }
+
+    [Fact]
+    public void GrowStat_NearCeiling_ReturnsSmallGrowth()
+    {
+        // Arrange - Horse very close to ceiling (95/100)
+        // Expected: (100 - 95) * 0.02 * 1.20 = 0.12
+        var calculator = new StatProgressionCalculator();
+        short actualStat = 95;
+        short dominantPotential = 100;
+        double careerMultiplier = 1.20;
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(0.12, growth, precision: 2);
+    }
+
+    [Fact]
+    public void GrowStat_LargeGap_ReturnsProportionalGrowth()
+    {
+        // Arrange - Large gap between actual and potential (20/100)
+        // Expected: (100 - 20) * 0.02 * 1.20 = 1.92
+        var calculator = new StatProgressionCalculator();
+        short actualStat = 20;
+        short dominantPotential = 100;
+        double careerMultiplier = 1.20;
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(1.92, growth, precision: 2);
+    }
+
+    [Theory]
+    [InlineData(50, 100, 0.80, 0.80)]  // Young horse
+    [InlineData(50, 100, 1.20, 1.20)]  // Prime horse
+    [InlineData(50, 100, 0.60, 0.60)]  // Veteran horse
+    [InlineData(50, 100, 0.20, 0.20)]  // Old horse
+    [InlineData(100, 100, 1.20, 0)]    // At ceiling
+    [InlineData(99, 100, 1.20, 0.024)] // 1 point from ceiling
+    public void GrowStat_WithVariousScenarios_ReturnsCorrectGrowth(
+        short actualStat,
+        short dominantPotential,
+        double careerMultiplier,
+        double expectedGrowth)
+    {
+        // Arrange
+        var calculator = new StatProgressionCalculator();
+
+        // Act
+        var growth = calculator.GrowStat(actualStat, dominantPotential, careerMultiplier);
+
+        // Assert
+        Assert.Equal(expectedGrowth, growth, precision: 3);
     }
 }
