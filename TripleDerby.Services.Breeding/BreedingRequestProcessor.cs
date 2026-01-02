@@ -70,7 +70,13 @@ public class BreedingRequestProcessor(
                 logger.LogWarning(ex, "Failed to claim BreedingRequest {RequestId} for processing; another worker may have claimed it", request.RequestId);
                 // reload and re-check status
                 stored = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
-                if (stored is not null && stored.Status != BreedingRequestStatus.InProgress)
+                if (stored is null)
+                {
+                    logger.LogWarning("BreedingRequest {RequestId} not found after failed claim; skipping", request.RequestId);
+                    return MessageProcessingResult.Succeeded();
+                }
+
+                if (stored.Status != BreedingRequestStatus.InProgress)
                 {
                     logger.LogInformation("Request {RequestId} is no longer available for processing (status={Status}), skipping", request.RequestId, stored.Status);
                     return MessageProcessingResult.Succeeded();
@@ -79,7 +85,7 @@ public class BreedingRequestProcessor(
                 // if we couldn't claim, and it's still not in progress, proceed – a later duplicate check in DB will avoid double side effects in most cases.
             }
 
-            await Breed(request, cancellationToken);
+            await Breed(request, stored, cancellationToken);
 
             logger.LogInformation("Completed processing breeding request {RequestId}", request.RequestId);
             return MessageProcessingResult.Succeeded();
@@ -91,7 +97,7 @@ public class BreedingRequestProcessor(
         }
     }
 
-    private async Task Breed(BreedingRequested request, CancellationToken cancellationToken)
+    private async Task Breed(BreedingRequested request, BreedingRequest breedingRequestEntity, CancellationToken cancellationToken)
     {
         try
         {
@@ -109,15 +115,12 @@ public class BreedingRequestProcessor(
                 await repository.UpdateParentedAsync(request.SireId, request.DamId, cancellationToken);
 
                 // Update the persisted BreedingRequest with FoalId, status and processed date as part of the same transaction
-                var breedingRequestEntity = await repository.FindAsync<BreedingRequest>(request.RequestId, cancellationToken);
-                if (breedingRequestEntity != null)
-                {
-                    breedingRequestEntity.FoalId = breedingResult.FoalId;
-                    breedingRequestEntity.Status = BreedingRequestStatus.Completed;
-                    breedingRequestEntity.ProcessedDate = timeManager.OffsetUtcNow();
-                    breedingRequestEntity.UpdatedDate = timeManager.OffsetUtcNow();
-                    await repository.UpdateAsync(breedingRequestEntity, cancellationToken);
-                }
+                // Use the entity passed from ProcessAsync to avoid redundant DB query
+                breedingRequestEntity.FoalId = breedingResult.FoalId;
+                breedingRequestEntity.Status = BreedingRequestStatus.Completed;
+                breedingRequestEntity.ProcessedDate = timeManager.OffsetUtcNow();
+                breedingRequestEntity.UpdatedDate = timeManager.OffsetUtcNow();
+                await repository.UpdateAsync(breedingRequestEntity, cancellationToken);
 
                 return breedingResult;
             }, cancellationToken);

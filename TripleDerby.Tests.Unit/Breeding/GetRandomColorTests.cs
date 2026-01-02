@@ -5,6 +5,7 @@ using TripleDerby.Core.Abstractions.Generators;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Services;
 using TripleDerby.Services.Breeding;
 
 namespace TripleDerby.Tests.Unit.Breeding;
@@ -18,13 +19,16 @@ public class GetRandomColorTests
         var logger = new Mock<ILogger<BreedingExecutor>>();
         var horseNameGen = Mock.Of<IHorseNameGenerator>();
         var timeManager = Mock.Of<ITimeManager>();
+        var colorCacheLogger = new Mock<ILogger<ColorCache>>();
+        var colorCache = new ColorCache(colorCacheLogger.Object);
 
         return new BreedingExecutor(
             rnd.Object,
             repo.Object,
             horseNameGen,
             timeManager,
-            logger.Object);
+            logger.Object,
+            colorCache);
     }
 
     private static MethodInfo GetGetRandomColorMethod()

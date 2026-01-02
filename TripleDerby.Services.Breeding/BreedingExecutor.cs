@@ -2,6 +2,7 @@ using TripleDerby.Core.Abstractions.Generators;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Services;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
@@ -16,7 +17,8 @@ public class BreedingExecutor(
     ITripleDerbyRepository repository,
     IHorseNameGenerator horseNameGenerator,
     ITimeManager timeManager,
-    ILogger<BreedingExecutor> logger) : IBreedingExecutor
+    ILogger<BreedingExecutor> logger,
+    ColorCache colorCache) : IBreedingExecutor
 {
     public async Task<BreedingResult> Breed(Guid sireId, Guid damId, Guid ownerId, CancellationToken cancellationToken = default)
     {
@@ -91,7 +93,8 @@ public class BreedingExecutor(
 
     private async Task<Color> GetRandomColor(bool isSireSpecial, bool isDamSpecial, bool includeSpecialColors, CancellationToken cancellationToken)
     {
-        var colors = (await repository.GetAllAsync<Color>(cancellationToken)).ToList();
+        // Use ColorCache instead of querying repository directly (performance optimization)
+        var colors = await colorCache.GetColorsAsync(repository, cancellationToken);
 
         var candidates = colors
             .Where(x => includeSpecialColors || !x.IsSpecial)
