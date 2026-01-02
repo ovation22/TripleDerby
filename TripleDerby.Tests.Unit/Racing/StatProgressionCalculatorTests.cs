@@ -216,4 +216,110 @@ public class StatProgressionCalculatorTests
         // Assert
         Assert.Equal(expectedGrowth, growth, precision: 3);
     }
+
+    // ============================================================================
+    // Phase 3: Performance Bonus System Tests
+    // ============================================================================
+
+    [Fact]
+    public void CalculatePerformanceMultiplier_WithWin_Returns1Point50()
+    {
+        // Arrange - Horse wins race (1st place)
+        var calculator = new StatProgressionCalculator();
+        byte finishPosition = 1;
+        byte fieldSize = 10;
+
+        // Act
+        var multiplier = calculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+        // Assert
+        Assert.Equal(1.50, multiplier);
+    }
+
+    [Fact]
+    public void CalculatePerformanceMultiplier_WithPlace_Returns1Point25()
+    {
+        // Arrange - Horse places (2nd)
+        var calculator = new StatProgressionCalculator();
+        byte finishPosition = 2;
+        byte fieldSize = 10;
+
+        // Act
+        var multiplier = calculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+        // Assert
+        Assert.Equal(1.25, multiplier);
+    }
+
+    [Fact]
+    public void CalculatePerformanceMultiplier_WithShow_Returns1Point10()
+    {
+        // Arrange - Horse shows (3rd)
+        var calculator = new StatProgressionCalculator();
+        byte finishPosition = 3;
+        byte fieldSize = 10;
+
+        // Act
+        var multiplier = calculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+        // Assert
+        Assert.Equal(1.10, multiplier);
+    }
+
+    [Fact]
+    public void CalculatePerformanceMultiplier_WithMidPack_Returns1Point00()
+    {
+        // Arrange - Horse finishes mid-pack (5th in 10-horse field)
+        var calculator = new StatProgressionCalculator();
+        byte finishPosition = 5;
+        byte fieldSize = 10;
+
+        // Act
+        var multiplier = calculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+        // Assert
+        Assert.Equal(1.00, multiplier);
+    }
+
+    [Fact]
+    public void CalculatePerformanceMultiplier_WithBackOfPack_Returns0Point75()
+    {
+        // Arrange - Horse finishes back of pack (8th in 10-horse field)
+        var calculator = new StatProgressionCalculator();
+        byte finishPosition = 8;
+        byte fieldSize = 10;
+
+        // Act
+        var multiplier = calculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+        // Assert
+        Assert.Equal(0.75, multiplier);
+    }
+
+    [Theory]
+    [InlineData(1, 8, 1.50)]   // Win
+    [InlineData(2, 8, 1.25)]   // Place
+    [InlineData(3, 8, 1.10)]   // Show
+    [InlineData(4, 8, 1.00)]   // Mid-pack (4th in 8-horse field)
+    [InlineData(5, 8, 1.00)]   // Mid-pack (5th in 8-horse field)
+    [InlineData(6, 8, 1.00)]   // Mid-pack boundary
+    [InlineData(7, 8, 0.75)]   // Back of pack (7th in 8-horse field)
+    [InlineData(8, 8, 0.75)]   // Last place
+    [InlineData(1, 3, 1.50)]   // Win in small field
+    [InlineData(2, 3, 1.25)]   // Place in small field
+    [InlineData(3, 3, 1.10)]   // Show in small field
+    public void CalculatePerformanceMultiplier_WithVariousPositions_ReturnsCorrectMultiplier(
+        byte finishPosition,
+        byte fieldSize,
+        double expected)
+    {
+        // Arrange
+        var calculator = new StatProgressionCalculator();
+
+        // Act
+        var multiplier = calculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+        // Assert
+        Assert.Equal(expected, multiplier);
+    }
 }

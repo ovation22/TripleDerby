@@ -51,4 +51,34 @@ public class StatProgressionCalculator
 
         return growth;
     }
+
+    /// <summary>
+    /// Calculates performance-based growth multiplier from race finishing position.
+    /// Winning horses learn more, back-of-pack horses learn less.
+    /// Win: 1.50x, Place: 1.25x, Show: 1.10x, Mid-pack: 1.00x, Back of pack: 0.75x
+    /// </summary>
+    /// <param name="finishPosition">Final position in race (1 = first)</param>
+    /// <param name="fieldSize">Total horses in race</param>
+    /// <returns>Performance multiplier (0.75 to 1.50)</returns>
+    public double CalculatePerformanceMultiplier(byte finishPosition, byte fieldSize)
+    {
+        // Win: 1.50x bonus
+        if (finishPosition == 1)
+            return RaceModifierConfig.WinBonus;
+
+        // Place: 1.25x bonus
+        if (finishPosition == 2)
+            return RaceModifierConfig.PlaceBonus;
+
+        // Show: 1.10x bonus
+        if (finishPosition == 3)
+            return RaceModifierConfig.ShowBonus;
+
+        // Back of pack (7th or later): 0.75x penalty
+        if (finishPosition >= 7)
+            return RaceModifierConfig.BackOfPackPenalty;
+
+        // Mid-pack (4th-6th): no modifier
+        return RaceModifierConfig.MidPackMultiplier;
+    }
 }
