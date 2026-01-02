@@ -322,4 +322,87 @@ public class StatProgressionCalculatorTests
         // Assert
         Assert.Equal(expected, multiplier);
     }
+
+    // ============================================================================
+    // Phase 4: Race-Type Stat Focus Tests
+    // ============================================================================
+
+    [Fact]
+    public void CalculateRaceTypeFocusMultipliers_WithSprint_FavorsSpeedAndAgility()
+    {
+        // Arrange - Sprint race (5 furlongs)
+        var calculator = new StatProgressionCalculator();
+        decimal raceDistance = 5m;
+
+        // Act
+        var multipliers = calculator.CalculateRaceTypeFocusMultipliers(raceDistance);
+
+        // Assert - Sprint emphasizes Speed and Agility
+        Assert.Equal(1.50, multipliers.Speed);
+        Assert.Equal(1.25, multipliers.Agility);
+        Assert.Equal(0.75, multipliers.Stamina);
+        Assert.Equal(0.75, multipliers.Durability);
+    }
+
+    [Fact]
+    public void CalculateRaceTypeFocusMultipliers_WithDistance_FavorsStaminaAndDurability()
+    {
+        // Arrange - Distance race (12 furlongs)
+        var calculator = new StatProgressionCalculator();
+        decimal raceDistance = 12m;
+
+        // Act
+        var multipliers = calculator.CalculateRaceTypeFocusMultipliers(raceDistance);
+
+        // Assert - Distance emphasizes Stamina and Durability
+        Assert.Equal(0.75, multipliers.Speed);
+        Assert.Equal(0.75, multipliers.Agility);
+        Assert.Equal(1.50, multipliers.Stamina);
+        Assert.Equal(1.25, multipliers.Durability);
+    }
+
+    [Fact]
+    public void CalculateRaceTypeFocusMultipliers_WithClassic_BalancedGrowth()
+    {
+        // Arrange - Classic race (8 furlongs)
+        var calculator = new StatProgressionCalculator();
+        decimal raceDistance = 8m;
+
+        // Act
+        var multipliers = calculator.CalculateRaceTypeFocusMultipliers(raceDistance);
+
+        // Assert - Classic provides balanced growth
+        Assert.Equal(1.00, multipliers.Speed);
+        Assert.Equal(1.00, multipliers.Agility);
+        Assert.Equal(1.00, multipliers.Stamina);
+        Assert.Equal(1.00, multipliers.Durability);
+    }
+
+    [Theory]
+    [InlineData(5, 1.50, 1.25, 0.75, 0.75)]   // Sprint (5f)
+    [InlineData(6, 1.50, 1.25, 0.75, 0.75)]   // Sprint boundary (6f)
+    [InlineData(7, 1.00, 1.00, 1.00, 1.00)]   // Classic lower (7f)
+    [InlineData(8, 1.00, 1.00, 1.00, 1.00)]   // Classic mid (8f)
+    [InlineData(10, 1.00, 1.00, 1.00, 1.00)]  // Classic upper (10f)
+    [InlineData(11, 0.75, 0.75, 1.50, 1.25)]  // Distance boundary (11f)
+    [InlineData(12, 0.75, 0.75, 1.50, 1.25)]  // Distance (12f)
+    public void CalculateRaceTypeFocusMultipliers_WithVariousDistances_ReturnsCorrectMultipliers(
+        decimal distance,
+        double expectedSpeed,
+        double expectedAgility,
+        double expectedStamina,
+        double expectedDurability)
+    {
+        // Arrange
+        var calculator = new StatProgressionCalculator();
+
+        // Act
+        var multipliers = calculator.CalculateRaceTypeFocusMultipliers(distance);
+
+        // Assert
+        Assert.Equal(expectedSpeed, multipliers.Speed);
+        Assert.Equal(expectedAgility, multipliers.Agility);
+        Assert.Equal(expectedStamina, multipliers.Stamina);
+        Assert.Equal(expectedDurability, multipliers.Durability);
+    }
 }

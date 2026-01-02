@@ -3,6 +3,15 @@ using TripleDerby.Services.Racing.Config;
 namespace TripleDerby.Services.Racing.Calculators;
 
 /// <summary>
+/// Holds stat-specific growth multipliers for race-type focus.
+/// </summary>
+public record struct RaceTypeFocusMultipliers(
+    double Speed,
+    double Agility,
+    double Stamina,
+    double Durability);
+
+/// <summary>
 /// Calculates stat progression multipliers and growth for horses after races.
 /// Implements career phase system, race-type focus, performance bonuses, and happiness changes.
 /// Part of Feature 018: Race Outcome Stat Progression System.
@@ -80,5 +89,45 @@ public class StatProgressionCalculator
 
         // Mid-pack (4th-6th): no modifier
         return RaceModifierConfig.MidPackMultiplier;
+    }
+
+    /// <summary>
+    /// Calculates stat-specific growth multipliers based on race distance type.
+    /// Sprints develop Speed/Agility, distance races develop Stamina/Durability,
+    /// classic races provide balanced growth.
+    /// </summary>
+    /// <param name="raceDistance">Race distance in furlongs</param>
+    /// <returns>Multipliers for each stat based on race type</returns>
+    public RaceTypeFocusMultipliers CalculateRaceTypeFocusMultipliers(decimal raceDistance)
+    {
+        // Sprint races (≤6f): Emphasize Speed and Agility
+        if (raceDistance <= RaceModifierConfig.SprintDistanceThreshold)
+        {
+            return new RaceTypeFocusMultipliers(
+                Speed: RaceModifierConfig.SprintSpeedMultiplier,      // 1.50
+                Agility: RaceModifierConfig.SprintAgilityMultiplier,  // 1.25
+                Stamina: RaceModifierConfig.SprintOtherMultiplier,    // 0.75
+                Durability: RaceModifierConfig.SprintOtherMultiplier  // 0.75
+            );
+        }
+
+        // Distance races (≥11f): Emphasize Stamina and Durability
+        if (raceDistance >= RaceModifierConfig.DistanceRaceThreshold)
+        {
+            return new RaceTypeFocusMultipliers(
+                Speed: RaceModifierConfig.DistanceOtherMultiplier,         // 0.75
+                Agility: RaceModifierConfig.DistanceOtherMultiplier,       // 0.75
+                Stamina: RaceModifierConfig.DistanceStaminaMultiplier,     // 1.50
+                Durability: RaceModifierConfig.DistanceDurabilityMultiplier // 1.25
+            );
+        }
+
+        // Classic races (7-10f): Balanced growth
+        return new RaceTypeFocusMultipliers(
+            Speed: RaceModifierConfig.ClassicRaceMultiplier,      // 1.00
+            Agility: RaceModifierConfig.ClassicRaceMultiplier,    // 1.00
+            Stamina: RaceModifierConfig.ClassicRaceMultiplier,    // 1.00
+            Durability: RaceModifierConfig.ClassicRaceMultiplier  // 1.00
+        );
     }
 }
