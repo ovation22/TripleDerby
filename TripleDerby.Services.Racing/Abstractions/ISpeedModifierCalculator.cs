@@ -1,6 +1,7 @@
 using TripleDerby.Core.Entities;
+using TripleDerby.Services.Racing.Racing;
 
-namespace TripleDerby.Core.Abstractions.Racing;
+namespace TripleDerby.Services.Racing.Abstractions;
 
 /// <summary>
 /// Calculates speed modifiers for horse racing simulation.
@@ -15,7 +16,7 @@ public interface ISpeedModifierCalculator
     /// </summary>
     /// <param name="context">Race context with horse stats</param>
     /// <returns>Combined stat modifier (Speed × Agility multipliers)</returns>
-    double CalculateStatModifiers(Core.Racing.ModifierContext context);
+    double CalculateStatModifiers(ModifierContext context);
 
     /// <summary>
     /// Calculates environmental speed modifiers (Surface and Condition).
@@ -23,7 +24,7 @@ public interface ISpeedModifierCalculator
     /// </summary>
     /// <param name="context">Race context with surface and condition</param>
     /// <returns>Combined environmental modifier</returns>
-    double CalculateEnvironmentalModifiers(Core.Racing.ModifierContext context);
+    double CalculateEnvironmentalModifiers(ModifierContext context);
 
     /// <summary>
     /// Calculates phase-based speed modifiers (LegType timing).
@@ -33,7 +34,7 @@ public interface ISpeedModifierCalculator
     /// <param name="context">Race context with tick progress and leg type</param>
     /// <param name="raceRun">Current race run with all horses (for traffic detection)</param>
     /// <returns>Phase modifier based on race progress and leg type (1.0 = neutral)</returns>
-    double CalculatePhaseModifiers(Core.Racing.ModifierContext context, RaceRun raceRun);
+    double CalculatePhaseModifiers(ModifierContext context, RaceRun raceRun);
 
     /// <summary>
     /// Calculates stamina-based speed modifier.

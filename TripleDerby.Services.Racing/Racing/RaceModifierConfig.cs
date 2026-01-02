@@ -1,7 +1,6 @@
-using TripleDerby.Core.Racing;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Core.Configuration;
+namespace TripleDerby.Services.Racing.Racing;
 
 /// <summary>
 /// Configuration constants for race speed modifiers.

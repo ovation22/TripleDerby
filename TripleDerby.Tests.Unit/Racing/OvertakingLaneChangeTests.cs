@@ -1,6 +1,6 @@
 using Moq;
 using TripleDerby.Core.Abstractions.Utilities;
-using TripleDerby.Core.Configuration;
+using TripleDerby.Services.Racing.Racing;
 using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel.Enums;
 

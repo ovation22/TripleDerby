@@ -1,10 +1,10 @@
-using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Configuration;
 using TripleDerby.Core.Entities;
-using TripleDerby.Core.Racing;
 using TripleDerby.Core.Specifications;
+using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.Services.Racing.Racing;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 

@@ -1,7 +1,6 @@
 using TripleDerby.Core.Entities;
-using TripleDerby.Core.Racing;
 
-namespace TripleDerby.Services.Racing;
+namespace TripleDerby.Services.Racing.Abstractions;
 
 /// <summary>
 /// Detects notable race events for commentary generation.

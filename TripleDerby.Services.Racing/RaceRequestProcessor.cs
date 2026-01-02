@@ -1,6 +1,7 @@
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Entities;
+using TripleDerby.Services.Racing.Abstractions;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
 

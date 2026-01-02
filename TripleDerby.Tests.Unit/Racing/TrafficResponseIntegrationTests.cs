@@ -1,9 +1,10 @@
 using Moq;
-using TripleDerby.Core.Abstractions.Racing;
+using TripleDerby.Services.Racing.Abstractions;
 using TripleDerby.Core.Abstractions.Utilities;
-using TripleDerby.Core.Configuration;
+using TripleDerby.Services.Racing.Racing;
 using TripleDerby.Core.Entities;
-using TripleDerby.Core.Racing;
+using TripleDerby.Services.Racing.Racing;
+using static TripleDerby.Services.Racing.Racing.RaceModifierConfig;
 using TripleDerby.SharedKernel.Enums;
 using Xunit;
 

@@ -1,6 +1,6 @@
 using TripleDerby.Core.Entities;
 
-namespace TripleDerby.Core.Abstractions.Racing;
+namespace TripleDerby.Services.Racing.Abstractions;
 
 /// <summary>
 /// Calculates stamina depletion for horses during races.

@@ -1,6 +1,6 @@
 using TripleDerby.SharedKernel;
 
-namespace TripleDerby.Services.Racing;
+namespace TripleDerby.Services.Racing.Abstractions;
 
 /// <summary>
 /// Interface for executing race simulations.

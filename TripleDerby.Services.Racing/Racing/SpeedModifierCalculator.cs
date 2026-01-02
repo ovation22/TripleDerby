@@ -1,7 +1,9 @@
-using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Utilities;
+using TripleDerby.Core.Entities;
+using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Core.Racing;
+namespace TripleDerby.Services.Racing.Racing;
 
 /// <summary>
 /// Calculates speed modifiers for horse racing simulation.
@@ -44,7 +46,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// </summary>
     private static double CalculateSpeedMultiplier(int speed)
     {
-        return 1.0 + ((speed - 50) * Configuration.RaceModifierConfig.SpeedModifierPerPoint);
+        return 1.0 + ((speed - 50) * RaceModifierConfig.SpeedModifierPerPoint);
     }
 
     /// <summary>
@@ -54,7 +56,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// </summary>
     private static double CalculateAgilityMultiplier(int agility)
     {
-        return 1.0 + ((agility - 50) * Configuration.RaceModifierConfig.AgilityModifierPerPoint);
+        return 1.0 + ((agility - 50) * RaceModifierConfig.AgilityModifierPerPoint);
     }
 
     /// <summary>
@@ -88,7 +90,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
 
             // log10(1 + x) provides smooth diminishing returns curve
             // Divided by 20 to scale to ~2.5% bonus at happiness=100
-            double modifier = Math.Log10(1.0 + excess) / Configuration.RaceModifierConfig.HappinessSpeedBonusDivisor;
+            double modifier = Math.Log10(1.0 + excess) / RaceModifierConfig.HappinessSpeedBonusDivisor;
             return 1.0 + modifier;
         }
         else
@@ -100,7 +102,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
 
             // Divided by 15 instead of 20 for steeper penalty curve
             // Creates asymmetry: happiness=0 penalty > happiness=100 bonus
-            double modifier = Math.Log10(1.0 + deficit) / Configuration.RaceModifierConfig.HappinessSpeedPenaltyDivisor;
+            double modifier = Math.Log10(1.0 + deficit) / RaceModifierConfig.HappinessSpeedPenaltyDivisor;
             return 1.0 - modifier;
         }
     }
@@ -114,11 +116,11 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     public double CalculateEnvironmentalModifiers(ModifierContext context)
     {
         var surfaceModifier = GetModifierOrDefault(
-            Configuration.RaceModifierConfig.SurfaceModifiers,
+            RaceModifierConfig.SurfaceModifiers,
             context.RaceSurface);
 
         var conditionModifier = GetModifierOrDefault(
-            Configuration.RaceModifierConfig.ConditionModifiers,
+            RaceModifierConfig.ConditionModifiers,
             context.RaceCondition);
 
         return surfaceModifier * conditionModifier;
@@ -141,10 +143,10 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// <param name="context">Race context with tick progress and leg type</param>
     /// <param name="raceRun">Current race run with all horses (for traffic detection)</param>
     /// <returns>Phase modifier based on race progress and leg type (1.0 = neutral)</returns>
-    public double CalculatePhaseModifiers(ModifierContext context, Entities.RaceRun raceRun)
+    public double CalculatePhaseModifiers(ModifierContext context, RaceRun raceRun)
     {
         // Special case: RailRunner uses conditional lane/traffic bonus
-        if (context.Horse.LegTypeId == SharedKernel.Enums.LegTypeId.RailRunner)
+        if (context.Horse.LegTypeId == LegTypeId.RailRunner)
         {
             return CalculateRailRunnerBonus(context, raceRun);
         }
@@ -152,7 +154,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
         // All other leg types use phase-based timing
         var raceProgress = (double)context.CurrentTick / context.TotalTicks;
 
-        if (!Configuration.RaceModifierConfig.LegTypePhaseModifiers.TryGetValue(context.Horse.LegTypeId, out var phaseModifier))
+        if (!RaceModifierConfig.LegTypePhaseModifiers.TryGetValue(context.Horse.LegTypeId, out var phaseModifier))
         {
             return 1.0; // No modifier found for this leg type
         }
@@ -173,7 +175,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// <param name="context">Race context with horse information</param>
     /// <param name="raceRun">Current race run with all horses</param>
     /// <returns>1.03x bonus if conditions met, 1.0x otherwise</returns>
-    private static double CalculateRailRunnerBonus(ModifierContext context, Entities.RaceRun raceRun)
+    private static double CalculateRailRunnerBonus(ModifierContext context, RaceRun raceRun)
     {
         // Find the RaceRunHorse entity for this horse
         var raceRunHorse = raceRun.Horses.FirstOrDefault(h => h.Horse.Id == context.Horse.Id);
@@ -193,13 +195,13 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
         if (!HasClearPathAhead(
             raceRunHorse,
             raceRun.Horses,
-            Configuration.RaceModifierConfig.RailRunnerClearPathDistance))
+            RaceModifierConfig.RailRunnerClearPathDistance))
         {
             return 1.0; // Traffic ahead, no bonus
         }
 
         // All conditions met: apply rail position bonus
-        return Configuration.RaceModifierConfig.RailRunnerBonusMultiplier;
+        return RaceModifierConfig.RailRunnerBonusMultiplier;
     }
 
     /// <summary>
@@ -211,8 +213,8 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// <param name="clearDistance">Required clear distance (furlongs)</param>
     /// <returns>True if path is clear, false if blocked by traffic</returns>
     private static bool HasClearPathAhead(
-        Entities.RaceRunHorse horse,
-        IEnumerable<Entities.RaceRunHorse> allHorses,
+        RaceRunHorse horse,
+        IEnumerable<RaceRunHorse> allHorses,
         decimal clearDistance)
     {
         // Check for horses in same lane ahead within clearDistance
@@ -230,7 +232,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// </summary>
     /// <param name="raceRunHorse">Race run horse with current stamina state</param>
     /// <returns>Stamina modifier (1.0 = no penalty, lower = speed penalty)</returns>
-    public double CalculateStaminaModifier(Entities.RaceRunHorse raceRunHorse)
+    public double CalculateStaminaModifier(RaceRunHorse raceRunHorse)
     {
         // Edge case: if initial stamina is zero, treat as no stamina system (neutral modifier)
         if (raceRunHorse.InitialStamina == 0)
@@ -277,8 +279,8 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     public double ApplyRandomVariance()
     {
         // Generate random value in range [-0.01, +0.01]
-        var variance = _randomGenerator.NextDouble() * 2 * Configuration.RaceModifierConfig.RandomVarianceRange
-                       - Configuration.RaceModifierConfig.RandomVarianceRange;
+        var variance = _randomGenerator.NextDouble() * 2 * RaceModifierConfig.RandomVarianceRange
+                       - RaceModifierConfig.RandomVarianceRange;
 
         return 1.0 + variance;
     }

@@ -1,9 +1,8 @@
-using TripleDerby.Core.Abstractions.Racing;
-using TripleDerby.Core.Configuration;
 using TripleDerby.Core.Entities;
+using TripleDerby.Services.Racing.Abstractions;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Core.Racing;
+namespace TripleDerby.Services.Racing.Racing;
 
 /// <summary>
 /// Calculates stamina depletion for horses during races.
@@ -85,7 +84,7 @@ public class StaminaCalculator : IStaminaCalculator
                 return 1.0; // Neutral efficiency
 
             // Efficiency improvement: lower multiplier = less depletion
-            double efficiency = Math.Log10(1.0 + excess) / Configuration.RaceModifierConfig.HappinessStaminaBonusDivisor;
+            double efficiency = Math.Log10(1.0 + excess) / RaceModifierConfig.HappinessStaminaBonusDivisor;
             return 1.0 - efficiency;
         }
         else
@@ -94,7 +93,7 @@ public class StaminaCalculator : IStaminaCalculator
             double deficit = 50.0 - happiness;
 
             // Efficiency penalty: higher multiplier = more depletion
-            double efficiency = Math.Log10(1.0 + deficit) / Configuration.RaceModifierConfig.HappinessStaminaPenaltyDivisor;
+            double efficiency = Math.Log10(1.0 + deficit) / RaceModifierConfig.HappinessStaminaPenaltyDivisor;
             return 1.0 + efficiency;
         }
     }

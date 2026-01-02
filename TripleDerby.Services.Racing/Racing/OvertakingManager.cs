@@ -1,10 +1,9 @@
-using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Utilities;
-using TripleDerby.Core.Configuration;
 using TripleDerby.Core.Entities;
+using TripleDerby.Services.Racing.Abstractions;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Core.Racing;
+namespace TripleDerby.Services.Racing.Racing;
 
 /// <summary>
 /// Manages overtaking detection, lane changes, and traffic response during race simulation.

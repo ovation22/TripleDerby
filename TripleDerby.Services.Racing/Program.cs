@@ -1,11 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TripleDerby.Core.Abstractions.Messaging;
-using TripleDerby.Core.Abstractions.Racing;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
-using TripleDerby.Core.Racing;
 using TripleDerby.Core.Services;
 using TripleDerby.Infrastructure.Data;
 using TripleDerby.Infrastructure.Data.Repositories;
@@ -13,6 +11,8 @@ using TripleDerby.Infrastructure.Messaging;
 using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Racing;
+using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.Services.Racing.Racing;
 using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);
