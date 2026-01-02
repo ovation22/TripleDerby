@@ -1,3 +1,4 @@
+using TripleDerby.Services.Racing.Abstractions;
 using TripleDerby.Services.Racing.Config;
 
 namespace TripleDerby.Services.Racing.Calculators;
@@ -16,7 +17,7 @@ public record struct RaceTypeFocusMultipliers(
 /// Implements career phase system, race-type focus, performance bonuses, and happiness changes.
 /// Part of Feature 018: Race Outcome Stat Progression System.
 /// </summary>
-public class StatProgressionCalculator
+public class StatProgressionCalculator : IStatProgressionCalculator
 {
     /// <summary>
     /// Calculates development efficiency multiplier based on career stage.

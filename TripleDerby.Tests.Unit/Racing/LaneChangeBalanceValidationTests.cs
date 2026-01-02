@@ -440,8 +440,11 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
 
         var timeManager = new Mock<ITimeManager>();
 
+        // Feature 021: Stat Progression Tracking
+        var mockStatProgression = new StatProgressionCalculator();
+
         // Create race executor and run simulation
-        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, mockStatProgression, NullLogger<RaceExecutor>.Instance);
         var result = await raceExecutor.Race(1, testHorse.Id, CancellationToken.None);
 
         // Extract lane change metrics from captured RaceRun

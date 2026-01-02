@@ -3,6 +3,7 @@ using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Services.Racing.Config;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
@@ -22,6 +23,7 @@ public class RaceExecutor(
     IOvertakingManager overtakingManager,
     IEventDetector eventDetector,
     ITimeManager timeManager,
+    IStatProgressionCalculator statProgressionCalculator,
     ILogger<RaceExecutor> logger) : IRaceExecutor
 {
     public async Task<RaceRunResult> Race(byte raceId, Guid horseId, CancellationToken cancellationToken)
@@ -308,7 +310,7 @@ public class RaceExecutor(
         raceRunHorse.CurrentStamina = Math.Max(0, raceRunHorse.CurrentStamina - depletionAmount);
     }
 
-    private static void DetermineRaceResults(RaceRun raceRun)
+    private void DetermineRaceResults(RaceRun raceRun)
     {
         // Sort horses by time and assign places
         var sortedHorses = raceRun.Horses.OrderBy(h => h.Time).ToList();
@@ -338,6 +340,9 @@ public class RaceExecutor(
 
             place++;
         }
+
+        // Apply stat progression and happiness changes for all horses
+        ApplyStatProgression(raceRun);
     }
 
     private static short CalculateTotalTicks(decimal furlongs)
@@ -351,5 +356,106 @@ public class RaceExecutor(
     {
         var values = Enum.GetValues(typeof(ConditionId));
         return (ConditionId)values.GetValue(randomGenerator.Next(values.Length))!;
+    }
+
+    /// <summary>
+    /// Applies stat progression and happiness changes to all horses based on race performance.
+    /// Combines career phase, performance bonuses, and race-type focus for realistic development.
+    /// Part of Feature 018: Race Outcome Stat Progression System (Phases 5 & 6).
+    /// </summary>
+    private void ApplyStatProgression(RaceRun raceRun)
+    {
+        var fieldSize = (byte)raceRun.Horses.Count;
+        var raceDistance = raceRun.Race.Furlongs;
+
+        // Get race-type focus multipliers (same for all horses in this race)
+        var raceTypeFocus = statProgressionCalculator.CalculateRaceTypeFocusMultipliers(raceDistance);
+
+        foreach (var raceRunHorse in raceRun.Horses)
+        {
+            var horse = raceRunHorse.Horse;
+            var finishPosition = raceRunHorse.Place;
+
+            // Calculate multipliers
+            var careerMultiplier = statProgressionCalculator.CalculateAgeMultiplier(horse.RaceStarts);
+            var performanceMultiplier = statProgressionCalculator.CalculatePerformanceMultiplier(finishPosition, fieldSize);
+
+            // Apply stat growth for each racing stat
+            ApplyStatGrowth(horse, StatisticId.Speed, careerMultiplier, performanceMultiplier, raceTypeFocus.Speed);
+            ApplyStatGrowth(horse, StatisticId.Agility, careerMultiplier, performanceMultiplier, raceTypeFocus.Agility);
+            ApplyStatGrowth(horse, StatisticId.Stamina, careerMultiplier, performanceMultiplier, raceTypeFocus.Stamina);
+            ApplyStatGrowth(horse, StatisticId.Durability, careerMultiplier, performanceMultiplier, raceTypeFocus.Durability);
+
+            // Apply happiness changes based on performance (Phase 6)
+            ApplyHappinessChange(horse, raceRunHorse);
+        }
+    }
+
+    /// <summary>
+    /// Applies growth to a single stat, respecting genetic ceiling.
+    /// </summary>
+    private void ApplyStatGrowth(
+        Horse horse,
+        StatisticId statisticId,
+        double careerMultiplier,
+        double performanceMultiplier,
+        double raceTypeFocusMultiplier)
+    {
+        var stat = horse.Statistics.FirstOrDefault(s => s.StatisticId == statisticId);
+        if (stat == null) return;
+
+        // Calculate combined multiplier
+        var combinedMultiplier = careerMultiplier * performanceMultiplier * raceTypeFocusMultiplier;
+
+        // Calculate growth
+        var growth = statProgressionCalculator.GrowStat(stat.Actual, stat.DominantPotential, combinedMultiplier);
+
+        // Apply growth with ceiling enforcement
+        var newValue = stat.Actual + growth;
+        stat.Actual = (byte)Math.Min(newValue, stat.DominantPotential);
+    }
+
+    /// <summary>
+    /// Applies happiness changes based on race performance and exhaustion.
+    /// Part of Phase 6: Happiness System.
+    /// </summary>
+    private void ApplyHappinessChange(Horse horse, RaceRunHorse raceRunHorse)
+    {
+        var happinessStat = horse.Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Happiness);
+        if (happinessStat == null) return;
+
+        int happinessChange = 0;
+
+        // Performance-based happiness changes
+        switch (raceRunHorse.Place)
+        {
+            case 1:
+                happinessChange = RaceModifierConfig.WinHappinessBonus;
+                break;
+            case 2:
+                happinessChange = RaceModifierConfig.PlaceHappinessBonus;
+                break;
+            case 3:
+                happinessChange = RaceModifierConfig.ShowHappinessBonus;
+                break;
+            case >= 7:
+                happinessChange = RaceModifierConfig.BackOfPackHappinessPenalty;
+                break;
+            default:
+                // Mid-pack (4th-6th)
+                happinessChange = RaceModifierConfig.MidPackHappinessChange;
+                break;
+        }
+
+        // Check for exhaustion (stamina depleted below threshold)
+        var staminaPercentage = raceRunHorse.CurrentStamina / (double)raceRunHorse.InitialStamina;
+        if (staminaPercentage <= RaceModifierConfig.ExhaustionStaminaThreshold)
+        {
+            happinessChange += RaceModifierConfig.ExhaustionHappinessPenalty;
+        }
+
+        // Apply happiness change with bounds (0-100)
+        var newHappiness = happinessStat.Actual + happinessChange;
+        happinessStat.Actual = (byte)Math.Clamp(newHappiness, 0, 100);
     }
 }

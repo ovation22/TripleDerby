@@ -44,6 +44,7 @@ builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>();
 builder.Services.AddScoped<IPurseCalculator, PurseCalculator>();
 builder.Services.AddScoped<IOvertakingManager, OvertakingManager>();
 builder.Services.AddScoped<IEventDetector, EventDetector>();
+builder.Services.AddScoped<IStatProgressionCalculator, StatProgressionCalculator>();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
