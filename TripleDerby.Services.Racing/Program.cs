@@ -12,7 +12,7 @@ using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Racing;
 using TripleDerby.Services.Racing.Abstractions;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);

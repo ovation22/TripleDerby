@@ -1,7 +1,7 @@
 using TripleDerby.Core.Entities;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Services.Racing.Racing;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Immutable context containing all race state needed for modifier calculations.

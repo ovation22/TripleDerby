@@ -1,4 +1,4 @@
-namespace TripleDerby.Services.Racing.Racing;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Defines a phase-based speed modifier for leg types.

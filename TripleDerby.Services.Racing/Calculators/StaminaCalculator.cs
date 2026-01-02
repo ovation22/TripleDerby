@@ -1,8 +1,9 @@
 using TripleDerby.Core.Entities;
 using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.Services.Racing.Config;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Services.Racing.Racing;
+namespace TripleDerby.Services.Racing.Calculators;
 
 /// <summary>
 /// Calculates stamina depletion for horses during races.
