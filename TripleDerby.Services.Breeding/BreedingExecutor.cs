@@ -167,8 +167,8 @@ public class BreedingExecutor(
         int punnettQuadrant = randomGenerator.Next(1, 5);
         int whichGeneToPick = randomGenerator.Next(1, 3);
 
-        byte dominantPotential;
-        byte recessivePotential;
+        double dominantPotential;
+        double recessivePotential;
 
         HorseStatistic sireStatistic = sireStats.Single(x => x.StatisticId == statistic);
         HorseStatistic damStatistic = damStats.Single(x => x.StatisticId == statistic);
@@ -214,9 +214,9 @@ public class BreedingExecutor(
         dominantPotential = MutatePotentialGene(dominantPotential);
         recessivePotential = MutatePotentialGene(recessivePotential);
 
-        int min = Math.Max(1, dominantPotential / 3);
-        int maxExclusive = Math.Max(min + 1, dominantPotential / 2 + 1);
-        byte actual = (byte)randomGenerator.Next(min, maxExclusive);
+        int min = Math.Max(1, (int)(dominantPotential / 3.0));
+        int maxExclusive = Math.Max(min + 1, (int)(dominantPotential / 2.0) + 1);
+        double actual = randomGenerator.Next(min, maxExclusive);
 
         var foalStatistic = new HorseStatistic
         {
@@ -229,11 +229,11 @@ public class BreedingExecutor(
         return foalStatistic;
     }
 
-    private byte MutatePotentialGene(byte potential)
+    private double MutatePotentialGene(double potential)
     {
-        byte mutationMultiplier = (byte)randomGenerator.Next(1, 101);
+        int mutationMultiplier = randomGenerator.Next(1, 101);
         int mutationLowerBound;
-        byte mutationUpperBound;
+        int mutationUpperBound;
 
         switch (mutationMultiplier)
         {
@@ -251,9 +251,9 @@ public class BreedingExecutor(
                 break;
         }
 
-        potential = (byte)(potential + randomGenerator.Next(mutationLowerBound, mutationUpperBound));
+        potential = potential + randomGenerator.Next(mutationLowerBound, mutationUpperBound);
 
-        potential = (byte)(potential is < 30 or > 95 ? 50 : potential);
+        potential = potential is < 30 or > 95 ? 50 : potential;
 
         return potential;
     }

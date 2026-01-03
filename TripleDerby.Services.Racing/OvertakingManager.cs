@@ -1,27 +1,20 @@
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.Services.Racing.Config;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Services.Racing.Racing;
+namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Manages overtaking detection, lane changes, and traffic response during race simulation.
 /// Handles leg-type-specific strategies and risky squeeze play mechanics.
 /// </summary>
-public class OvertakingManager : IOvertakingManager
+public class OvertakingManager(
+    IRandomGenerator randomGenerator,
+    ISpeedModifierCalculator speedModifierCalculator)
+    : IOvertakingManager
 {
-    private readonly IRandomGenerator _randomGenerator;
-    private readonly ISpeedModifierCalculator _speedModifierCalculator;
-
-    public OvertakingManager(
-        IRandomGenerator randomGenerator,
-        ISpeedModifierCalculator speedModifierCalculator)
-    {
-        _randomGenerator = randomGenerator;
-        _speedModifierCalculator = speedModifierCalculator;
-    }
-
     /// <summary>
     /// Handles overtaking detection and lane change logic for a horse.
     /// Called once per tick per horse during race simulation.
@@ -310,7 +303,7 @@ public class OvertakingManager : IOvertakingManager
         // Calculate success probability from agility (0% to 50%)
         var squeezeSuccessChance = horse.Horse.Agility / RaceModifierConfig.RiskySqueezeAgilityDivisor;
 
-        if (_randomGenerator.NextDouble() < squeezeSuccessChance)
+        if (randomGenerator.NextDouble() < squeezeSuccessChance)
         {
             // Success! Thread the needle
             horse.Lane = (byte)targetLane;
@@ -391,10 +384,10 @@ public class OvertakingManager : IOvertakingManager
 
         // Apply modifier pipeline (same order as UpdateHorsePosition)
         // Stats → Environment → Phase → Stamina
-        baseSpeed *= _speedModifierCalculator.CalculateStatModifiers(context);
-        baseSpeed *= _speedModifierCalculator.CalculateEnvironmentalModifiers(context);
-        baseSpeed *= _speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
-        baseSpeed *= _speedModifierCalculator.CalculateStaminaModifier(horse);
+        baseSpeed *= speedModifierCalculator.CalculateStatModifiers(context);
+        baseSpeed *= speedModifierCalculator.CalculateEnvironmentalModifiers(context);
+        baseSpeed *= speedModifierCalculator.CalculatePhaseModifiers(context, raceRun);
+        baseSpeed *= speedModifierCalculator.CalculateStaminaModifier(horse);
 
         // Note: We intentionally skip:
         // - Risky lane change penalty (temporary state, not inherent speed)

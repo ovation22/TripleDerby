@@ -1,9 +1,10 @@
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Services.Racing.Abstractions;
+using TripleDerby.Services.Racing.Config;
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Services.Racing.Racing;
+namespace TripleDerby.Services.Racing.Calculators;
 
 /// <summary>
 /// Calculates speed modifiers for horse racing simulation.
@@ -44,7 +45,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// Formula: 1.0 + ((speed - 50) * SpeedModifierPerPoint)
     /// Range: Speed 0 = 0.90x, Speed 50 = 1.0x, Speed 100 = 1.10x
     /// </summary>
-    private static double CalculateSpeedMultiplier(int speed)
+    private static double CalculateSpeedMultiplier(double speed)
     {
         return 1.0 + ((speed - 50) * RaceModifierConfig.SpeedModifierPerPoint);
     }
@@ -54,7 +55,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// Formula: 1.0 + ((agility - 50) * AgilityModifierPerPoint)
     /// Range: Agility 0 = 0.95x, Agility 50 = 1.0x, Agility 100 = 1.05x
     /// </summary>
-    private static double CalculateAgilityMultiplier(int agility)
+    private static double CalculateAgilityMultiplier(double agility)
     {
         return 1.0 + ((agility - 50) * RaceModifierConfig.AgilityModifierPerPoint);
     }
@@ -75,7 +76,7 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     /// impact at extremes (0→25) than when already content (75→100). Happy horses run more
     /// enthusiastically, unhappy horses are reluctant.
     /// </summary>
-    private static double CalculateHappinessSpeedModifier(int happiness)
+    private static double CalculateHappinessSpeedModifier(double happiness)
     {
         // Clamp happiness to valid range [0, 100]
         happiness = Math.Clamp(happiness, 0, 100);

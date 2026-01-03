@@ -38,6 +38,7 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
         modelBuilder.Entity<HorseStatistic>()
              .HasKey(hs => new { hs.HorseId, hs.StatisticId });
 
+
         modelBuilder.Entity<HorseStatistic>()
             .Ignore(h => h.Speed)
             .Ignore(h => h.Stamina)

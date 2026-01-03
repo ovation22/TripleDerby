@@ -1,5 +1,4 @@
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
 
 namespace TripleDerby.Services.Racing.Abstractions;
 

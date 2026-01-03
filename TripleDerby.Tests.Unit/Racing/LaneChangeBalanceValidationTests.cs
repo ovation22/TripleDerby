@@ -3,9 +3,9 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.SharedKernel.Enums;
 using Xunit.Abstractions;
 
@@ -387,11 +387,11 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
             RaceStarts = 0,
             Statistics = new List<HorseStatistic>
             {
-                new() { StatisticId = StatisticId.Speed, Actual = (byte)h.Speed },
-                new() { StatisticId = StatisticId.Agility, Actual = (byte)h.Agility },
-                new() { StatisticId = StatisticId.Stamina, Actual = (byte)h.Stamina },
-                new() { StatisticId = StatisticId.Durability, Actual = (byte)h.Durability },
-                new() { StatisticId = StatisticId.Happiness, Actual = (byte)h.Happiness }
+                new() { StatisticId = StatisticId.Speed, Actual = h.Speed, DominantPotential = 100},
+                new() { StatisticId = StatisticId.Agility, Actual = h.Agility, DominantPotential = 100 },
+                new() { StatisticId = StatisticId.Stamina, Actual = h.Stamina, DominantPotential = 100 },
+                new() { StatisticId = StatisticId.Durability, Actual = h.Durability, DominantPotential = 100 },
+                new() { StatisticId = StatisticId.Happiness, Actual = h.Happiness, DominantPotential = 100 }
             }
         }).ToList();
 
@@ -440,8 +440,11 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
 
         var timeManager = new Mock<ITimeManager>();
 
+        // Feature 021: Stat Progression Tracking
+        var mockStatProgression = new StatProgressionCalculator();
+
         // Create race executor and run simulation
-        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, mockStatProgression, NullLogger<RaceExecutor>.Instance);
         var result = await raceExecutor.Race(1, testHorse.Id, CancellationToken.None);
 
         // Extract lane change metrics from captured RaceRun
@@ -535,10 +538,10 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         var allParticipants = results.SelectMany(r => r.AllHorseResults).ToList();
 
         var finishTimes = allParticipants.Select(h => h.FinishTime).ToList();
-        var speeds = allParticipants.Select(h => (double)h.Speed).ToList();
-        var agilities = allParticipants.Select(h => (double)h.Agility).ToList();
-        var durabilities = allParticipants.Select(h => (double)h.Durability).ToList();
-        var staminas = allParticipants.Select(h => (double)h.Stamina).ToList();
+        var speeds = allParticipants.Select(h => h.Speed).ToList();
+        var agilities = allParticipants.Select(h => h.Agility).ToList();
+        var durabilities = allParticipants.Select(h => h.Durability).ToList();
+        var staminas = allParticipants.Select(h => h.Stamina).ToList();
 
         var laneChangeCounts = results.Select(r => r.LaneChangeMetrics.TotalLaneChanges).ToList();
 
@@ -645,11 +648,11 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
 
     private class HorseConfig
     {
-        public int Speed { get; set; }
-        public int Agility { get; set; }
-        public int Stamina { get; set; }
-        public int Durability { get; set; }
-        public int Happiness { get; set; }
+        public double Speed { get; set; }
+        public double Agility { get; set; }
+        public double Stamina { get; set; }
+        public double Durability { get; set; }
+        public double Happiness { get; set; }
         public LegTypeId LegType { get; set; }
     }
 
@@ -658,10 +661,10 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         public RaceConfig Config { get; set; } = null!;
         public double FinishTime { get; set; }
         public double WinnerFinishTime { get; set; }
-        public byte WinnerSpeed { get; set; }
-        public byte WinnerAgility { get; set; }
-        public byte WinnerDurability { get; set; }
-        public byte WinnerStamina { get; set; }
+        public double WinnerSpeed { get; set; }
+        public double WinnerAgility { get; set; }
+        public double WinnerDurability { get; set; }
+        public double WinnerStamina { get; set; }
         public LegTypeId WinnerLegType { get; set; }
         public LaneChangeMetrics LaneChangeMetrics { get; set; } = new();
         public List<HorseResult> AllHorseResults { get; set; } = new();
@@ -669,10 +672,10 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
 
     private class HorseResult
     {
-        public byte Speed { get; set; }
-        public byte Agility { get; set; }
-        public byte Durability { get; set; }
-        public byte Stamina { get; set; }
+        public double Speed { get; set; }
+        public double Agility { get; set; }
+        public double Durability { get; set; }
+        public double Stamina { get; set; }
         public double FinishTime { get; set; }
         public LegTypeId LegType { get; set; }
     }

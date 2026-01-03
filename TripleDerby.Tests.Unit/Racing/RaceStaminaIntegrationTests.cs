@@ -1,6 +1,6 @@
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
-using TripleDerby.Core.Services;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Tests.Unit.Racing;
@@ -326,7 +326,7 @@ public class RaceStaminaIntegrationTests
     /// <summary>
     /// Test random generator that returns predictable values.
     /// </summary>
-    private class TestRandomGenerator : Core.Abstractions.Utilities.IRandomGenerator
+    private class TestRandomGenerator : IRandomGenerator
     {
         public int Next() => 0;
         public int Next(int maxValue) => 0;

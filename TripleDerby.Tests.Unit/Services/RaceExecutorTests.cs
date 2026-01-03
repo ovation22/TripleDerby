@@ -3,7 +3,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel.Enums;
@@ -43,7 +43,10 @@ public class RaceExecutorTests
 
         var timeManager = new Mock<ITimeManager>();
 
-        _sut = new RaceExecutor(_repositoryMock.Object, randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
+        // Feature 021: Stat Progression Tracking
+        var mockStatProgression = new StatProgressionCalculator();
+
+        _sut = new RaceExecutor(_repositoryMock.Object, randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, mockStatProgression, NullLogger<RaceExecutor>.Instance);
     }
 
     [Fact]

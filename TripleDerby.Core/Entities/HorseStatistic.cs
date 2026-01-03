@@ -8,41 +8,41 @@ public class HorseStatistic
 
     public virtual Horse Horse { get; set; } = null!;
 
-    public byte Actual { get; set; }
+    public double Actual { get; set; }
 
-    public byte DominantPotential { get; set; }
+    public double DominantPotential { get; set; }
 
-    public byte RecessivePotential { get; set; }
+    public double RecessivePotential { get; set; }
 
     public virtual StatisticId StatisticId { get; set; } = default!;
 
-    public byte Speed
+    public double Speed
     {
-        get => (byte)(StatisticId == StatisticId.Speed ? Actual : 0);
+        get => StatisticId == StatisticId.Speed ? Actual : 0;
         set { if (StatisticId == StatisticId.Speed) Actual = value; }
     }
 
-    public byte Stamina
+    public double Stamina
     {
-        get => (byte)(StatisticId == StatisticId.Stamina ? Actual : 0);
+        get => StatisticId == StatisticId.Stamina ? Actual : 0;
         set { if (StatisticId == StatisticId.Stamina) Actual = value; }
     }
 
-    public byte Agility
+    public double Agility
     {
-        get => (byte)(StatisticId == StatisticId.Agility ? Actual : 0);
+        get => StatisticId == StatisticId.Agility ? Actual : 0;
         set { if (StatisticId == StatisticId.Agility) Actual = value; }
     }
 
-    public byte Durability
+    public double Durability
     {
-        get => (byte)(StatisticId == StatisticId.Durability ? Actual : 0);
+        get => StatisticId == StatisticId.Durability ? Actual : 0;
         set { if (StatisticId == StatisticId.Durability) Actual = value; }
     }
 
-    public byte Happiness
+    public double Happiness
     {
-        get => (byte)(StatisticId == StatisticId.Happiness ? Actual : 0);
+        get => StatisticId == StatisticId.Happiness ? Actual : 0;
         set { if (StatisticId == StatisticId.Happiness) Actual = value; }
     }
 }

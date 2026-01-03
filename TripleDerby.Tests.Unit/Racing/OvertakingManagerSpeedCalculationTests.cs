@@ -1,12 +1,12 @@
 using Moq;
 using TripleDerby.Services.Racing.Abstractions;
 using TripleDerby.Core.Abstractions.Utilities;
-using TripleDerby.Services.Racing.Racing;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
-using static TripleDerby.Services.Racing.Racing.RaceModifierConfig;
+using static TripleDerby.Services.Racing.Config.RaceModifierConfig;
 using TripleDerby.SharedKernel.Enums;
 using Xunit;
+using TripleDerby.Services.Racing.Config;
+using TripleDerby.Services.Racing;
 
 namespace TripleDerby.Tests.Unit.Racing;
 
@@ -133,7 +133,7 @@ public class OvertakingManagerSpeedCalculationTests
     {
         // Arrange - create fresh mock with speed calculation
         var statModifierCallCount = 0;
-        var lastHorseSpeed = 0;
+        double lastHorseSpeed = 0;
         var lastReturnValue = 0.0;
         var mockSpeedCalc = new Mock<ISpeedModifierCalculator>();
         mockSpeedCalc

@@ -3,7 +3,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel.Enums;
@@ -414,8 +414,11 @@ public class RaceBalanceValidationTests(ITestOutputHelper output)
 
         var timeManager = new Mock<ITimeManager>();
 
+        // Feature 021: Stat Progression Tracking
+        var mockStatProgression = new StatProgressionCalculator();
+
         // Create race executor and run simulation
-        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, mockStatProgression, NullLogger<RaceExecutor>.Instance);
         var result = await raceExecutor.Race(1, horse.Id, CancellationToken.None);
 
         // Extract results

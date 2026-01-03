@@ -59,7 +59,7 @@ public class Horse
     
     public virtual ICollection<FeedingSession> FeedingSessions { get; set; } = new Collection<FeedingSession>();
 
-    public byte Speed
+    public double Speed
     {
         get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Speed)?.Actual ?? 0;
         set
@@ -69,7 +69,7 @@ public class Horse
         }
     }
 
-    public byte Stamina
+    public double Stamina
     {
         get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Stamina)?.Actual ?? 0;
         set
@@ -79,7 +79,7 @@ public class Horse
         }
     }
 
-    public byte Agility
+    public double Agility
     {
         get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Agility)?.Actual ?? 0;
         set
@@ -89,7 +89,7 @@ public class Horse
         }
     }
 
-    public byte Durability
+    public double Durability
     {
         get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Durability)?.Actual ?? 0;
         set
@@ -99,7 +99,7 @@ public class Horse
         }
     }
 
-    public byte Happiness
+    public double Happiness
     {
         get => Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Happiness)?.Actual ?? 0;
         set
