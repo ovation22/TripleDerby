@@ -27,7 +27,7 @@ public interface IStatProgressionCalculator
     /// <param name="dominantPotential">Genetic ceiling from breeding</param>
     /// <param name="careerMultiplier">Career phase efficiency multiplier</param>
     /// <returns>Stat growth amount (0 if at ceiling)</returns>
-    double GrowStat(short actualStat, short dominantPotential, double careerMultiplier);
+    double GrowStat(double actualStat, double dominantPotential, double careerMultiplier);
 
     /// <summary>
     /// Calculates performance-based growth multiplier from race finishing position.

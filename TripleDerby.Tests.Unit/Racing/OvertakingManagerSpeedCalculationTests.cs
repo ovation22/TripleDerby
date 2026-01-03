@@ -133,7 +133,7 @@ public class OvertakingManagerSpeedCalculationTests
     {
         // Arrange - create fresh mock with speed calculation
         var statModifierCallCount = 0;
-        var lastHorseSpeed = 0;
+        double lastHorseSpeed = 0;
         var lastReturnValue = 0.0;
         var mockSpeedCalc = new Mock<ISpeedModifierCalculator>();
         mockSpeedCalc

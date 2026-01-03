@@ -249,6 +249,6 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         public RaceConfig Config { get; set; } = null!;
         public double FinishTime { get; set; }
         public decimal DistanceCovered { get; set; }
-        public byte HorseSpeed { get; set; }
+        public double HorseSpeed { get; set; }
     }
 }

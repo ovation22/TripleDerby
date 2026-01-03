@@ -73,7 +73,7 @@ public class StaminaCalculator : IStaminaCalculator
     ///
     /// Range: Happiness 0 = 1.0854x (8.54% more depletion), Happiness 100 = 0.9318x (6.82% less depletion)
     /// </summary>
-    private static double CalculateHappinessStaminaModifier(int happiness)
+    private static double CalculateHappinessStaminaModifier(double happiness)
     {
         happiness = Math.Clamp(happiness, 0, 100);
 

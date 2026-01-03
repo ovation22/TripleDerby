@@ -3,7 +3,6 @@ using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing.Abstractions;
-using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Services.Racing.Config;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
@@ -45,7 +44,7 @@ public class RaceExecutor(
         var fieldSize = randomGenerator.Next(race.MinFieldSize, race.MaxFieldSize + 1);
         var cpuHorseSpec = new SimilarRaceStartsSpecification(
             targetRaceStarts: myHorse.RaceStarts,
-            tolerance: 8,
+            tolerance: 2,
             limit: fieldSize - 1); // -1 for player's horse
         var cpuHorses = await repository.ListAsync(cpuHorseSpec, cancellationToken);
 
@@ -228,7 +227,7 @@ public class RaceExecutor(
             var raceRunHorse = new RaceRunHorse
             {
                 Horse = horseList[i],
-                InitialStamina = horseList[i].Stamina,
+                InitialStamina = (byte)horseList[i].Stamina,
                 CurrentStamina = horseList[i].Stamina,
                 Lane = (byte)shuffledLanes[i],          // Random lane assignment
                 TicksSinceLastLaneChange = 10           // Start with full cooldown elapsed
@@ -412,7 +411,7 @@ public class RaceExecutor(
 
         // Apply growth with ceiling enforcement
         var newValue = stat.Actual + growth;
-        stat.Actual = (byte)Math.Min(newValue, stat.DominantPotential);
+        stat.Actual = Math.Min(newValue, stat.DominantPotential);
     }
 
     /// <summary>
@@ -424,7 +423,7 @@ public class RaceExecutor(
         var happinessStat = horse.Statistics.FirstOrDefault(s => s.StatisticId == StatisticId.Happiness);
         if (happinessStat == null) return;
 
-        int happinessChange = 0;
+        int happinessChange;
 
         // Performance-based happiness changes
         switch (raceRunHorse.Place)
@@ -438,9 +437,9 @@ public class RaceExecutor(
             case 3:
                 happinessChange = RaceModifierConfig.ShowHappinessBonus;
                 break;
-            case >= 7:
+            /*case >= 7:
                 happinessChange = RaceModifierConfig.BackOfPackHappinessPenalty;
-                break;
+                break;*/
             default:
                 // Mid-pack (4th-6th)
                 happinessChange = RaceModifierConfig.MidPackHappinessChange;
@@ -448,7 +447,7 @@ public class RaceExecutor(
         }
 
         // Check for exhaustion (stamina depleted below threshold)
-        var staminaPercentage = raceRunHorse.CurrentStamina / (double)raceRunHorse.InitialStamina;
+        var staminaPercentage = raceRunHorse.CurrentStamina / raceRunHorse.InitialStamina;
         if (staminaPercentage <= RaceModifierConfig.ExhaustionStaminaThreshold)
         {
             happinessChange += RaceModifierConfig.ExhaustionHappinessPenalty;
@@ -456,6 +455,6 @@ public class RaceExecutor(
 
         // Apply happiness change with bounds (0-100)
         var newHappiness = happinessStat.Actual + happinessChange;
-        happinessStat.Actual = (byte)Math.Clamp(newHappiness, 0, 100);
+        happinessStat.Actual = Math.Clamp(newHappiness, 0, 100);
     }
 }

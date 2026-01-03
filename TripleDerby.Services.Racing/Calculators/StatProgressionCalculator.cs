@@ -49,7 +49,7 @@ public class StatProgressionCalculator : IStatProgressionCalculator
     /// <param name="dominantPotential">Genetic ceiling from breeding</param>
     /// <param name="careerMultiplier">Career phase efficiency multiplier</param>
     /// <returns>Stat growth amount (0 if at ceiling)</returns>
-    public double GrowStat(short actualStat, short dominantPotential, double careerMultiplier)
+    public double GrowStat(double actualStat, double dominantPotential, double careerMultiplier)
     {
         // No growth if already at genetic ceiling
         if (actualStat >= dominantPotential)

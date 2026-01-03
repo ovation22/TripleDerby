@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.SharedKernel.Enums;
@@ -186,7 +187,7 @@ public class StaminaSpeedModifierTests
     /// Test random generator that returns predictable values.
     /// Required for SpeedModifierCalculator constructor.
     /// </summary>
-    private class TestRandomGenerator : Core.Abstractions.Utilities.IRandomGenerator
+    private class TestRandomGenerator : IRandomGenerator
     {
         public int Next() => 0;
         public int Next(int maxValue) => 0;
