@@ -3,7 +3,7 @@ using Moq;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Racing;
 using TripleDerby.SharedKernel.Enums;
@@ -202,8 +202,11 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
 
         var timeManager = new Mock<ITimeManager>();
 
+        // Feature 021: Stat Progression Tracking
+        var mockStatProgression = new StatProgressionCalculator();
+
         // Create race executor and run simulation
-        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, NullLogger<RaceExecutor>.Instance);
+        var raceExecutor = new RaceExecutor(mockRepo.Object, mockRandom.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, mockStatProgression, NullLogger<RaceExecutor>.Instance);
 
         // We need to set the condition BEFORE the race runs
         // The issue is that RaceExecutor.Race() calls GenerateRandomConditionId()
@@ -246,6 +249,6 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         public RaceConfig Config { get; set; } = null!;
         public double FinishTime { get; set; }
         public decimal DistanceCovered { get; set; }
-        public byte HorseSpeed { get; set; }
+        public double HorseSpeed { get; set; }
     }
 }

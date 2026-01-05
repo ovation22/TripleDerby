@@ -12,7 +12,7 @@ using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Racing;
 using TripleDerby.Services.Racing.Abstractions;
-using TripleDerby.Services.Racing.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -44,6 +44,7 @@ builder.Services.AddScoped<IRaceCommentaryGenerator, RaceCommentaryGenerator>();
 builder.Services.AddScoped<IPurseCalculator, PurseCalculator>();
 builder.Services.AddScoped<IOvertakingManager, OvertakingManager>();
 builder.Services.AddScoped<IEventDetector, EventDetector>();
+builder.Services.AddScoped<IStatProgressionCalculator, StatProgressionCalculator>();
 builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();

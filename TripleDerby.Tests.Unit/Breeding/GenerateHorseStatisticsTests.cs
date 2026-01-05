@@ -180,8 +180,8 @@ public class GenerateHorseStatisticsTests
 
             // Because our mock returns 'min' for actual selection,
             // expectedActual = Math.Max(1, dominantPotential / 3)
-            byte expectedDominant = hs.DominantPotential;
-            int expectedMin = Math.Max(1, expectedDominant / 3);
+            double expectedDominant = hs.DominantPotential;
+            double expectedMin = Math.Max(1, expectedDominant / 3);
             Assert.Equal((byte)expectedMin, hs.Actual);
         }
     }

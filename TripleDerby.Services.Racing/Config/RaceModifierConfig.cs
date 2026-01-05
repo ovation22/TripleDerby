@@ -1,6 +1,6 @@
 using TripleDerby.SharedKernel.Enums;
 
-namespace TripleDerby.Services.Racing.Racing;
+namespace TripleDerby.Services.Racing.Config;
 
 /// <summary>
 /// Configuration constants for race speed modifiers.
@@ -387,4 +387,218 @@ public static class RaceModifierConfig
     /// Checks for horses ahead within this distance to find least congested lane.
     /// </summary>
     public const decimal StartDashLookAheadDistance = 0.5m;
+
+    // ============================================================================
+    // Stat Progression Configuration (Feature 018)
+    // ============================================================================
+
+    /// <summary>
+    /// Base stat growth rate per race as percentage of remaining gap to genetic ceiling.
+    /// Formula: baseGain = (DominantPotential - Actual) × BaseStatGrowthRate
+    /// Value of 0.02 means 2% of gap closed per race.
+    /// </summary>
+    public const double BaseStatGrowthRate = 0.02;
+
+    // Career Phase Multipliers
+
+    /// <summary>
+    /// Development efficiency multiplier for young horses (0-9 races).
+    /// Young horses are still learning, develop slower than prime career horses.
+    /// Applied to base stat growth: finalGain = baseGain × YoungHorseMultiplier
+    /// </summary>
+    public const double YoungHorseMultiplier = 0.80;
+
+    /// <summary>
+    /// Development efficiency multiplier for prime career horses (10-29 races).
+    /// Peak development phase - horses learn fastest during these years.
+    /// Applied to base stat growth: finalGain = baseGain × PrimeHorseMultiplier
+    /// </summary>
+    public const double PrimeHorseMultiplier = 1.20;
+
+    /// <summary>
+    /// Development efficiency multiplier for veteran horses (30-49 races).
+    /// Experienced horses still learn but growth slows down significantly.
+    /// Applied to base stat growth: finalGain = baseGain × VeteranHorseMultiplier
+    /// </summary>
+    public const double VeteranHorseMultiplier = 0.60;
+
+    /// <summary>
+    /// Development efficiency multiplier for old horses (50+ races).
+    /// Minimal development gains - signals retirement time.
+    /// Applied to base stat growth: finalGain = baseGain × OldHorseMultiplier
+    /// </summary>
+    public const double OldHorseMultiplier = 0.20;
+
+    // Career Phase Boundaries
+
+    /// <summary>
+    /// Race count when horse transitions from young to prime career phase.
+    /// Prime phase (10-29 races) has highest development efficiency.
+    /// </summary>
+    public const short PrimeCareerStartRace = 10;
+
+    /// <summary>
+    /// Race count when horse transitions from prime to veteran career phase.
+    /// Veteran phase (30-49 races) shows slowing development.
+    /// </summary>
+    public const short VeteranCareerStartRace = 30;
+
+    /// <summary>
+    /// Race count when horse transitions from veteran to old career phase.
+    /// Old phase (50+ races) shows minimal development, retirement recommended.
+    /// </summary>
+    public const short OldCareerStartRace = 50;
+
+    // Race-Type Focus Multipliers
+
+    /// <summary>
+    /// Distance threshold for sprint races (≤6 furlongs).
+    /// Sprint races develop Speed and Agility stats faster.
+    /// </summary>
+    public const decimal SprintDistanceThreshold = 6m;
+
+    /// <summary>
+    /// Distance threshold for distance races (≥11 furlongs).
+    /// Distance races develop Stamina and Durability stats faster.
+    /// </summary>
+    public const decimal DistanceRaceThreshold = 11m;
+
+    /// <summary>
+    /// Speed stat development multiplier for sprint races (≤6f).
+    /// Sprint races favor Speed development.
+    /// </summary>
+    public const double SprintSpeedMultiplier = 1.50;
+
+    /// <summary>
+    /// Agility stat development multiplier for sprint races (≤6f).
+    /// Sprint races favor Agility development (quick turns, acceleration).
+    /// </summary>
+    public const double SprintAgilityMultiplier = 1.25;
+
+    /// <summary>
+    /// Non-sprint-focused stat development multiplier for sprint races.
+    /// Stamina and Durability develop slower in sprint races.
+    /// </summary>
+    public const double SprintOtherMultiplier = 0.75;
+
+    /// <summary>
+    /// Stamina stat development multiplier for distance races (≥11f).
+    /// Distance races favor Stamina development.
+    /// </summary>
+    public const double DistanceStaminaMultiplier = 1.50;
+
+    /// <summary>
+    /// Durability stat development multiplier for distance races (≥11f).
+    /// Distance races favor Durability development (endurance, wear resistance).
+    /// </summary>
+    public const double DistanceDurabilityMultiplier = 1.25;
+
+    /// <summary>
+    /// Non-distance-focused stat development multiplier for distance races.
+    /// Speed and Agility develop slower in distance races.
+    /// </summary>
+    public const double DistanceOtherMultiplier = 0.75;
+
+    /// <summary>
+    /// Classic race (7-10f) stat development multiplier.
+    /// All stats develop equally in classic races.
+    /// </summary>
+    public const double ClassicRaceMultiplier = 1.00;
+
+    // Performance Bonuses
+
+    /// <summary>
+    /// Stat growth bonus multiplier for winning (1st place).
+    /// Winners develop 50% faster than baseline.
+    /// Applied to base growth: finalGain = baseGain × WinBonus
+    /// </summary>
+    public const double WinBonus = 1.50;
+
+    /// <summary>
+    /// Stat growth bonus multiplier for placing (2nd place).
+    /// Place finishers develop 25% faster than baseline.
+    /// Applied to base growth: finalGain = baseGain × PlaceBonus
+    /// </summary>
+    public const double PlaceBonus = 1.25;
+
+    /// <summary>
+    /// Stat growth bonus multiplier for showing (3rd place).
+    /// Show finishers develop 10% faster than baseline.
+    /// Applied to base growth: finalGain = baseGain × ShowBonus
+    /// </summary>
+    public const double ShowBonus = 1.10;
+
+    /// <summary>
+    /// Stat growth multiplier for mid-pack finishers (4th to 50th percentile).
+    /// Mid-pack horses develop at baseline rate (neutral).
+    /// </summary>
+    public const double MidPackMultiplier = 1.00;
+
+    /// <summary>
+    /// Stat growth penalty multiplier for back of pack finishers (bottom 50%).
+    /// Back of pack horses still learn but 25% slower than baseline.
+    /// Applied to base growth: finalGain = baseGain × BackOfPackPenalty
+    /// </summary>
+    public const double BackOfPackPenalty = 0.75;
+
+    // Happiness Changes
+
+    /// <summary>
+    /// Happiness increase for winning a race (1st place).
+    /// Winning significantly boosts horse morale.
+    /// </summary>
+    public const int WinHappinessBonus = 8;
+
+    /// <summary>
+    /// Happiness increase for placing in a race (2nd place).
+    /// Good performance moderately boosts morale.
+    /// </summary>
+    public const int PlaceHappinessBonus = 4;
+
+    /// <summary>
+    /// Happiness increase for showing in a race (3rd place).
+    /// Solid performance provides small morale boost.
+    /// </summary>
+    public const int ShowHappinessBonus = 2;
+
+    /// <summary>
+    /// Happiness change for mid-pack finishers (4th to 50th percentile).
+    /// Mid-pack finishes are neutral - no happiness change.
+    /// </summary>
+    public const int MidPackHappinessChange = 0;
+
+    /// <summary>
+    /// Happiness decrease for back of pack finishers (bottom 50%).
+    /// Poor performance damages morale.
+    /// </summary>
+    public const int BackOfPackHappinessPenalty = -3;
+
+    /// <summary>
+    /// Happiness penalty for finishing race in exhausted state (<10% stamina).
+    /// Physical trauma from exhaustion compounds frustration.
+    /// Applied in addition to finish-position happiness change.
+    /// </summary>
+    public const int ExhaustionHappinessPenalty = -5;
+
+    /// <summary>
+    /// Stamina percentage threshold for exhaustion detection.
+    /// Finishing with less than 10% stamina remaining triggers exhaustion penalty.
+    /// </summary>
+    public const double ExhaustionStaminaThreshold = 0.10;
+
+    // Happiness Decay (Future - not implemented in Phase 6)
+
+    /// <summary>
+    /// Happiness decay rate toward neutral point per time period.
+    /// Value of 0.10 means 10% of distance to neutral (50) decays per period.
+    /// Prevents permanent extreme happiness/unhappiness states.
+    /// Note: Decay scheduler not implemented yet - reserved for future feature.
+    /// </summary>
+    public const double HappinessDecayRate = 0.10;
+
+    /// <summary>
+    /// Neutral happiness point that happiness decays toward over time.
+    /// Happiness naturally drifts back to 50 (neutral) without maintenance.
+    /// </summary>
+    public const int HappinessNeutralPoint = 50;
 }

@@ -18,7 +18,7 @@ public class RaceRunHorse
 
     public byte Lane { get; set; }
 
-    public byte InitialStamina { get; set; }
+    public double InitialStamina { get; set; }
 
     public double CurrentStamina { get; set; }
 
