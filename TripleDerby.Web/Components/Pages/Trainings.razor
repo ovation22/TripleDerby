@@ -1,7 +1,51 @@
-﻿@page "/trainings"
+@page "/trainings"
 @rendermode InteractiveServer
+
+@using TripleDerby.SharedKernel
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject ITrainingsApiClient TrainingsApi
 
 <PageTitle>Trainings</PageTitle>
 
-<h1>Trainings</h1>
+<h1>Training Types</h1>
 
+@if (loading)
+{
+    <FluentProgressRing />
+    <p>Loading trainings...</p>
+}
+else if (trainings == null || !trainings.Any())
+{
+    <FluentMessageBar Intent="@MessageIntent.Info">
+        No training types available.
+    </FluentMessageBar>
+}
+else
+{
+    <FluentDataGrid Items="@trainings.AsQueryable()"
+                    TGridItem="TrainingsResult"
+                    GridTemplateColumns="80px 1fr 2fr">
+        <PropertyColumn Property="@(t => t.Id)" Title="ID" Sortable="true" Align="Align.Center" />
+        <PropertyColumn Property="@(t => t.Name)" Title="Name" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+        <PropertyColumn Property="@(t => t.Description)" Title="Description" Sortable="true" />
+    </FluentDataGrid>
+}
+
+@code {
+    private List<TrainingsResult>? trainings;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        trainings = await TrainingsApi.GetAllAsync();
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

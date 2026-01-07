@@ -9,6 +9,7 @@
 @using TripleDerby.Web.ApiClients.Abstractions
 
 @inject IHorseApiClient HorseApi
+@inject NavigationManager Navigation
 
 @implements IDisposable
 
@@ -74,6 +75,12 @@
             <div>@context.Created.ToLocalTime().ToString("MM/dd/yyyy HH:mm:ss")</div>
         </TemplateColumn>
         <TemplateColumn Title="Actions" Align="@Align.End">
+            <FluentButton aria-label="Train horse"
+                          IconEnd="@(new Icons.Regular.Size16.Dumbbell())"
+                          @onclick="@(() => NavigateToTraining(context))" />
+            <FluentButton aria-label="View training history"
+                          IconEnd="@(new Icons.Regular.Size16.History())"
+                          @onclick="@(() => NavigateToTrainingHistory(context))" />
             <FluentButton aria-label="Edit item" IconEnd="@(new Icons.Regular.Size16.Edit())" />
             <FluentButton aria-label="Delete item" IconEnd="@(new Icons.Regular.Size16.Delete())" />
         </TemplateColumn>
@@ -365,6 +372,16 @@
 
         loading = false;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void NavigateToTraining(HorseResult horse)
+    {
+        Navigation.NavigateTo($"/horses/{horse.Id}/train");
+    }
+
+    private void NavigateToTrainingHistory(HorseResult horse)
+    {
+        Navigation.NavigateTo($"/horses/{horse.Id}/training-history");
     }
 
     public void Dispose()

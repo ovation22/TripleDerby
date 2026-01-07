@@ -19,7 +19,7 @@ using TripleDerby.SharedKernel.Messages;
 
 namespace TripleDerby.Core.Services;
 
-public partial class BreedingService(
+public class BreedingService(
     IDistributedCacheAdapter cache,
     ITripleDerbyRepository repository,
     IOptions<CacheConfig> cacheOptions,

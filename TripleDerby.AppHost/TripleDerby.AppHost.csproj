@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TripleDerby.Api\TripleDerby.Api.csproj" />
     <ProjectReference Include="..\TripleDerby.Services.Breeding\TripleDerby.Services.Breeding.csproj" />
+    <ProjectReference Include="..\TripleDerby.Services.Training\TripleDerby.Services.Training.csproj" />
     <ProjectReference Include="..\TripleDerby.Services.Racing\TripleDerby.Services.Racing.csproj" />
     <ProjectReference Include="..\TripleDerby.Web\TripleDerby.Web.csproj" />
   </ItemGroup>

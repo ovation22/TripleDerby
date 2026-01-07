@@ -26,6 +26,7 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
     public virtual DbSet<TrainingSession> TrainingSessions { get; set; } = null!;
     public virtual DbSet<BreedingRequest> BreedingRequests { get; set; } = null!;
     public virtual DbSet<RaceRequest> RaceRequests { get; set; } = null!;
+    public virtual DbSet<TrainingRequest> TrainingRequests { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -145,6 +146,28 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
 
         modelBuilder.Entity<RaceRequest>()
             .Property(e => e.RaceId).IsRequired();
+
+        // TrainingRequest configuration (Feature 020 - Horse Training System)
+        // Uses 'trn' schema (following Breeding/Racing pattern)
+        modelBuilder.Entity<TrainingRequest>()
+            .ToTable("TrainingRequests", schema: "trn")
+            .HasKey(e => e.Id);
+
+        modelBuilder.Entity<TrainingRequest>()
+            .Property(e => e.Status)
+            .HasConversion<byte>()
+            .HasDefaultValue(TrainingRequestStatus.Pending)
+            .IsRequired();
+
+        modelBuilder.Entity<TrainingRequest>()
+            .Property(e => e.FailureReason)
+            .HasMaxLength(1024);
+
+        modelBuilder.Entity<TrainingRequest>()
+            .Property(e => e.HorseId).IsRequired();
+
+        modelBuilder.Entity<TrainingRequest>()
+            .Property(e => e.TrainingId).IsRequired();
 
         modelBuilder.Entity<RaceRequest>()
             .Property(e => e.HorseId).IsRequired();

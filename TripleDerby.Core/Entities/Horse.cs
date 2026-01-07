@@ -32,10 +32,12 @@ public class Horse
     public short RaceShow { get; set; }
     
     public int Earnings { get; set; }
-    
+
     public bool IsRetired { get; set; }
-    
+
     public int Parented { get; set; }
+
+    public bool HasTrainedSinceLastRace { get; set; }
     
     public Guid OwnerId { get; set; }
 

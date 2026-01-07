@@ -407,6 +407,86 @@ public class RaceExecutorTests
             $"Time difference should be noticeable (>0.1 ticks). Actual: {timeDifference:F2}");
     }
 
+    // ============================================================================
+    // Feature 020 Phase 6: Training Integration Tests
+    // ============================================================================
+
+    [Fact]
+    public async Task Race_ResetsHasTrainedSinceLastRaceFlag()
+    {
+        // Arrange
+        var raceId = (byte)1;
+        var horseId = Guid.NewGuid();
+        var race = CreateRace(raceId, furlongs: 6);
+        var horse = CreateHorse(horseId, "Test Horse");
+
+        // Set the horse as having trained since last race
+        horse.HasTrainedSinceLastRace = true;
+
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<RaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(race);
+
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<HorseForRaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(horse);
+
+        _repositoryMock
+            .Setup(r => r.CreateAsync(It.IsAny<RaceRun>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RaceRun rr, CancellationToken _) => rr);
+
+        // Act
+        await _sut.Race(raceId, horseId, CancellationToken.None);
+
+        // Assert - The horse should have HasTrainedSinceLastRace reset to false
+        Assert.False(horse.HasTrainedSinceLastRace);
+    }
+
+    [Fact]
+    public async Task Race_ResetsHasTrainedSinceLastRaceForAllHorses()
+    {
+        // Arrange
+        var raceId = (byte)1;
+        var playerHorseId = Guid.NewGuid();
+        var race = CreateRace(raceId, furlongs: 6);
+        var playerHorse = CreateHorse(playerHorseId, "Player Horse");
+        var cpuHorse1 = CreateHorse(Guid.NewGuid(), "CPU Horse 1");
+        var cpuHorse2 = CreateHorse(Guid.NewGuid(), "CPU Horse 2");
+
+        // All horses have trained
+        playerHorse.HasTrainedSinceLastRace = true;
+        cpuHorse1.HasTrainedSinceLastRace = true;
+        cpuHorse2.HasTrainedSinceLastRace = true;
+
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<RaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(race);
+
+        _repositoryMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<HorseForRaceSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(playerHorse);
+
+        _repositoryMock
+            .Setup(r => r.ListAsync(It.IsAny<SimilarRaceStartsSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Horse> { cpuHorse1, cpuHorse2 });
+
+        _repositoryMock
+            .Setup(r => r.CreateAsync(It.IsAny<RaceRun>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RaceRun rr, CancellationToken _) => rr);
+
+        // Act
+        await _sut.Race(raceId, playerHorseId, CancellationToken.None);
+
+        // Assert - All horses should have the flag reset
+        Assert.False(playerHorse.HasTrainedSinceLastRace);
+        Assert.False(cpuHorse1.HasTrainedSinceLastRace);
+        Assert.False(cpuHorse2.HasTrainedSinceLastRace);
+    }
+
+    // ============================================================================
+    // Helper Methods
+    // ============================================================================
+
     private static Race CreateRaceWithDetails(byte id, string raceName, string trackName, string surfaceName)
     {
         return new Race
