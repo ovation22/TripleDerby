@@ -62,12 +62,16 @@ public static class ModelBuilderExtensions
         );
 
         modelBuilder.Entity<Training>().HasData(
-            new Training { Id = 1, Name = "Sprint", Description = "Short-distance speed work. Focuses on explosive acceleration and top speed development." },
-            new Training { Id = 2, Name = "Endurance Run", Description = "Long-distance conditioning. Builds stamina and cardiovascular fitness for extended races." },
-            new Training { Id = 3, Name = "Jump Training", Description = "Obstacle work developing power and coordination. Improves agility and muscle strength." },
-            new Training { Id = 4, Name = "Hill Climbing", Description = "Incline training for leg strength. Builds power, stamina, and durability." },
-            new Training { Id = 5, Name = "Obstacle Course", Description = "Complex navigation training. Enhances agility, decision-making, and overall athleticism." },
-            new Training { Id = 6, Name = "Swimming", Description = "Low-impact conditioning. Builds endurance and muscle without joint strain, improves durability." }
+            new Training { Id = 1, Name = "Sprint Drills", Description = "High-intensity sprint training to improve speed", SpeedModifier = 1.0, StaminaModifier = 0.2, AgilityModifier = 0.3, DurabilityModifier = 0.1, HappinessCost = 8.0, OverworkRisk = 0.15, IsRecovery = false },
+            new Training { Id = 2, Name = "Distance Gallops", Description = "Long-distance running to build stamina", SpeedModifier = 0.2, StaminaModifier = 1.0, AgilityModifier = 0.1, DurabilityModifier = 0.3, HappinessCost = 9.0, OverworkRisk = 0.12, IsRecovery = false },
+            new Training { Id = 3, Name = "Agility Course", Description = "Weaving through obstacles to enhance agility", SpeedModifier = 0.3, StaminaModifier = 0.2, AgilityModifier = 1.0, DurabilityModifier = 0.2, HappinessCost = 7.0, OverworkRisk = 0.10, IsRecovery = false },
+            new Training { Id = 4, Name = "Weight Pulling", Description = "Pulling heavy loads to build durability", SpeedModifier = 0.1, StaminaModifier = 0.3, AgilityModifier = 0.2, DurabilityModifier = 1.0, HappinessCost = 12.0, OverworkRisk = 0.25, IsRecovery = false },
+            new Training { Id = 5, Name = "Hill Climbing", Description = "Climbing steep inclines to build power and endurance", SpeedModifier = 0.4, StaminaModifier = 0.6, AgilityModifier = 0.2, DurabilityModifier = 0.8, HappinessCost = 10.0, OverworkRisk = 0.20, IsRecovery = false },
+            new Training { Id = 6, Name = "Interval Training", Description = "Alternating speed and rest to balance all stats", SpeedModifier = 0.5, StaminaModifier = 0.5, AgilityModifier = 0.4, DurabilityModifier = 0.4, HappinessCost = 6.0, OverworkRisk = 0.08, IsRecovery = false },
+            new Training { Id = 7, Name = "Dressage", Description = "Precision movements to improve agility and focus", SpeedModifier = 0.2, StaminaModifier = 0.1, AgilityModifier = 0.7, DurabilityModifier = 0.3, HappinessCost = 5.0, OverworkRisk = 0.05, IsRecovery = false },
+            new Training { Id = 8, Name = "Swimming", Description = "Low-impact swimming to build stamina and durability", SpeedModifier = 0.1, StaminaModifier = 0.4, AgilityModifier = 0.2, DurabilityModifier = 0.5, HappinessCost = 4.0, OverworkRisk = 0.05, IsRecovery = false },
+            new Training { Id = 9, Name = "Pasture Rest", Description = "Light grazing and rest to restore happiness", SpeedModifier = 0.0, StaminaModifier = 0.0, AgilityModifier = 0.0, DurabilityModifier = 0.0, HappinessCost = -15.0, OverworkRisk = 0.0, IsRecovery = true },
+            new Training { Id = 10, Name = "Spa Treatment", Description = "Massage, hydrotherapy, and pampering to restore morale", SpeedModifier = 0.0, StaminaModifier = 0.0, AgilityModifier = 0.0, DurabilityModifier = 0.0, HappinessCost = -20.0, OverworkRisk = 0.0, IsRecovery = true }
         );
 
         modelBuilder.Entity<Condition>().HasData(
