@@ -342,6 +342,12 @@ public class RaceExecutor(
 
         // Apply stat progression and happiness changes for all horses
         ApplyStatProgression(raceRun);
+
+        // Feature 020 Phase 6: Reset training flag so horses can train again
+        foreach (var raceRunHorse in raceRun.Horses)
+        {
+            raceRunHorse.Horse.HasTrainedSinceLastRace = false;
+        }
     }
 
     private static short CalculateTotalTicks(decimal furlongs)

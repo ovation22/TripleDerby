@@ -1,5 +1,6 @@
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Specifications;
 using TripleDerby.Services.Training.Abstractions;
 using TripleDerby.Services.Training.Config;
 using TripleDerby.Services.Training.DTOs;
@@ -9,110 +10,55 @@ using TrainingEntity = TripleDerby.Core.Entities.Training;
 namespace TripleDerby.Services.Training;
 
 /// <summary>
-/// Service for managing horse training sessions.
-/// Orchestrates training execution following clean architecture principles.
-/// Part of Feature 020: Horse Training System.
+/// Executor for horse training business logic.
 /// </summary>
-public class TrainingService : ITrainingService
+public class TrainingExecutor(
+    ITrainingCalculator calculator,
+    ITripleDerbyRepository repository)
+    : ITrainingExecutor
 {
-    private readonly ITrainingCalculator _calculator;
-    private readonly ITripleDerbyRepository _repository;
-
-    public TrainingService(
-        ITrainingCalculator calculator,
-        ITripleDerbyRepository repository)
-    {
-        _calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-    }
+    private readonly ITrainingCalculator _calculator = calculator ?? throw new ArgumentNullException(nameof(calculator));
+    private readonly ITripleDerbyRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     /// <summary>
     /// Executes a training session for a horse.
     /// </summary>
-    public async Task<TrainingSessionResult> TrainAsync(
+    public async Task<TrainingSessionResult> ExecuteTrainingAsync(
         Guid horseId,
         byte trainingId,
         CancellationToken cancellationToken = default)
     {
-        // 1. Load horse with statistics
         var horse = await LoadHorseWithStatisticsAsync(horseId, cancellationToken);
-
-        // 2. Validate eligibility
         ValidateCanTrain(horse);
 
-        // 3. Load training type
         var training = await LoadTrainingAsync(trainingId, cancellationToken);
 
-        // 4. Calculate multipliers
         var careerMultiplier = _calculator.CalculateTrainingCareerMultiplier(horse.RaceStarts);
         var happinessModifier = _calculator.CalculateHappinessEffectivenessModifier(horse.Happiness);
         var legTypeBonus = _calculator.CalculateLegTypeBonus(horse.LegTypeId, training.Id);
 
-        // 5. Calculate stat gains
         var statGains = CalculateStatGains(horse, training, careerMultiplier, happinessModifier, legTypeBonus);
 
-        // 6. Calculate happiness impact
         var (happinessChange, overworkOccurred) = _calculator.CalculateHappinessImpact(
             training.HappinessCost,
             horse.Happiness,
             training.OverworkRisk);
 
-        // 7. Apply changes to horse
         ApplyStatChanges(horse, statGains, happinessChange);
         horse.HasTrainedSinceLastRace = true;
 
-        // 8. Create training session record
         var session = CreateTrainingSession(horse, training, statGains, happinessChange, overworkOccurred);
 
-        // 9. Persist changes
         await _repository.UpdateAsync(horse, cancellationToken);
         await _repository.CreateAsync(session, cancellationToken);
 
-        // 10. Return result
         return CreateResult(session, training, horse, statGains);
     }
 
-    /// <summary>
-    /// Retrieves training history for a horse.
-    /// </summary>
-    public async Task<List<TrainingSession>> GetTrainingHistoryAsync(
-        Guid horseId,
-        int limit = 20,
-        CancellationToken cancellationToken = default)
-    {
-        var sessions = await _repository.ListAsync<TrainingSession>(
-            s => s.HorseId == horseId,
-            cancellationToken);
-
-        return sessions
-            .OrderByDescending(s => s.SessionDate)
-            .Take(limit)
-            .ToList();
-    }
-
-    /// <summary>
-    /// Checks whether a horse is eligible to train.
-    /// </summary>
-    public bool CanTrain(Horse horse)
-    {
-        if (horse.HasTrainedSinceLastRace)
-            return false;
-
-        if (horse.Happiness < TrainingConfig.MinimumHappinessToTrain)
-            return false;
-
-        return true;
-    }
-
-    // ============================================================================
-    // Private Helper Methods
-    // ============================================================================
-
     private async Task<Horse> LoadHorseWithStatisticsAsync(Guid horseId, CancellationToken cancellationToken)
     {
-        var horse = await _repository.SingleOrDefaultAsync<Horse>(
-            h => h.Id == horseId,
-            cancellationToken);
+        var spec = new HorseWithStatsSpecification(horseId);
+        var horse = await _repository.SingleOrDefaultAsync(spec, cancellationToken);
 
         if (horse == null)
             throw new KeyNotFoundException($"Horse with ID {horseId} not found");
@@ -122,14 +68,11 @@ public class TrainingService : ITrainingService
 
     private void ValidateCanTrain(Horse horse)
     {
-        if (!CanTrain(horse))
-        {
-            if (horse.HasTrainedSinceLastRace)
-                throw new InvalidOperationException($"Horse {horse.Name} has already trained since last race");
+        if (horse.HasTrainedSinceLastRace)
+            throw new InvalidOperationException($"Horse {horse.Name} has already trained since last race");
 
-            if (horse.Happiness < TrainingConfig.MinimumHappinessToTrain)
-                throw new InvalidOperationException($"Horse {horse.Name} happiness ({horse.Happiness:F1}) is below minimum ({TrainingConfig.MinimumHappinessToTrain})");
-        }
+        if (horse.Happiness < TrainingConfig.MinimumHappinessToTrain)
+            throw new InvalidOperationException($"Horse {horse.Name} happiness ({horse.Happiness:F1}) is below minimum ({TrainingConfig.MinimumHappinessToTrain})");
     }
 
     private async Task<TrainingEntity> LoadTrainingAsync(byte trainingId, CancellationToken cancellationToken)
@@ -267,9 +210,6 @@ public class TrainingService : ITrainingService
         return $"Successfully completed {training.Name}. Total stat gain: {totalGain:F2}";
     }
 
-    /// <summary>
-    /// Internal DTO for passing stat gains around.
-    /// </summary>
     private record StatGains
     {
         public double SpeedGain { get; init; }

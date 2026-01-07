@@ -1,0 +1,244 @@
+@page "/horses/{HorseId:guid}/train"
+@rendermode InteractiveServer
+
+@using TripleDerby.Services.Training.DTOs
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Enums
+
+@inject ITrainingsApiClient TrainingsApi
+@inject IHorseApiClient HorseApi
+@inject NavigationManager Navigation
+
+<PageTitle>Train Horse</PageTitle>
+
+@if (loading)
+{
+    <FluentProgressRing />
+    <p>Loading training options...</p>
+}
+else if (horse == null)
+{
+    <FluentMessageBar Intent="@MessageIntent.Error">
+        Horse not found.
+    </FluentMessageBar>
+    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+        Back to Horses
+    </FluentButton>
+}
+else if (trainingInProgress)
+{
+    <h1>Training @horse.Name</h1>
+
+    <FluentMessageBar Intent="@MessageIntent.Info">
+        Training in progress... This may take a few moments.
+    </FluentMessageBar>
+
+    <FluentProgressRing />
+
+    <p>Status: @trainingStatus</p>
+}
+else if (trainingCompleted)
+{
+    <h1>Training Complete!</h1>
+
+    <FluentMessageBar Intent="@MessageIntent.Success">
+        @horse.Name has completed training!
+    </FluentMessageBar>
+
+    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+            Back to Horses
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Navigation.NavigateTo($"/horses/{HorseId}/training-history"))">
+            View Training History
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@ResetAndLoadOptions">
+            Train Again
+        </FluentButton>
+    </FluentStack>
+}
+else
+{
+    <h1>Train @horse.Name</h1>
+
+    @if (trainingOptions != null && trainingOptions.Any())
+    {
+        <p>Choose a training option for @horse.Name:</p>
+
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+            @foreach (var training in trainingOptions)
+            {
+                <FluentCard>
+                    <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+                        <h3>@training.Name</h3>
+                        <p>@training.Description</p>
+
+                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="20">
+                            @if (training.SpeedModifier > 0)
+                            {
+                                <div>
+                                    <strong>Speed:</strong> +@training.SpeedModifier.ToString("F1")x
+                                </div>
+                            }
+                            @if (training.StaminaModifier > 0)
+                            {
+                                <div>
+                                    <strong>Stamina:</strong> +@training.StaminaModifier.ToString("F1")x
+                                </div>
+                            }
+                            @if (training.AgilityModifier > 0)
+                            {
+                                <div>
+                                    <strong>Agility:</strong> +@training.AgilityModifier.ToString("F1")x
+                                </div>
+                            }
+                            @if (training.DurabilityModifier > 0)
+                            {
+                                <div>
+                                    <strong>Durability:</strong> +@training.DurabilityModifier.ToString("F1")x
+                                </div>
+                            }
+                        </FluentStack>
+
+                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="20">
+                            <div>
+                                <strong>Happiness Cost:</strong> @training.HappinessCost.ToString("F1")
+                            </div>
+                            <div>
+                                <strong>Overwork Risk:</strong> @((training.OverworkRisk * 100).ToString("F0"))%
+                            </div>
+                            @if (training.IsRecovery)
+                            {
+                                <FluentBadge Appearance="Appearance.Accent">Recovery</FluentBadge>
+                            }
+                        </FluentStack>
+
+                        <FluentButton Appearance="Appearance.Accent"
+                                      OnClick="@(() => SelectTraining(training.Id))"
+                                      Disabled="@isTraining">
+                            Select This Training
+                        </FluentButton>
+                    </FluentStack>
+                </FluentCard>
+            }
+        </FluentStack>
+
+        <FluentDivider />
+
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+            Cancel
+        </FluentButton>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid HorseId { get; set; }
+
+    private HorseResult? horse;
+    private List<TrainingOptionResult>? trainingOptions;
+    private Guid sessionId = Guid.NewGuid();
+
+    private bool loading = true;
+    private bool isTraining = false;
+    private bool trainingInProgress = false;
+    private bool trainingCompleted = false;
+    private string trainingStatus = "Pending";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHorseAndOptions();
+    }
+
+    private async Task LoadHorseAndOptions()
+    {
+        loading = true;
+
+        // Load horse details
+        horse = await HorseApi.GetByIdAsync(HorseId);
+
+        if (horse != null)
+        {
+            // Load training options
+            trainingOptions = await TrainingsApi.GetTrainingOptionsAsync(HorseId, sessionId);
+        }
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectTraining(byte trainingId)
+    {
+        isTraining = true;
+        await InvokeAsync(StateHasChanged);
+
+        // Initiate training request
+        var response = await TrainingsApi.CreateRequestAsync(HorseId, trainingId, sessionId);
+
+        if (response != null)
+        {
+            trainingInProgress = true;
+            isTraining = false;
+            await InvokeAsync(StateHasChanged);
+
+            // Poll for completion
+            await PollTrainingStatus();
+        }
+        else
+        {
+            isTraining = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task PollTrainingStatus()
+    {
+        var maxAttempts = 30; // 30 seconds max
+        var attempt = 0;
+
+        while (attempt < maxAttempts)
+        {
+            await Task.Delay(1000); // Poll every second
+
+            var request = await TrainingsApi.GetRequestStatusAsync(sessionId);
+
+            if (request != null)
+            {
+                trainingStatus = request.Status.ToString();
+
+                if (request.Status == TrainingRequestStatus.Completed)
+                {
+                    trainingInProgress = false;
+                    trainingCompleted = true;
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+                else if (request.Status == TrainingRequestStatus.Failed)
+                {
+                    trainingInProgress = false;
+                    trainingStatus = $"Failed: {request.FailureReason}";
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+            }
+
+            attempt++;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        // Timeout
+        trainingInProgress = false;
+        trainingStatus = "Timeout - please check training history";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ResetAndLoadOptions()
+    {
+        sessionId = Guid.NewGuid();
+        trainingCompleted = false;
+        trainingInProgress = false;
+        trainingStatus = "Pending";
+        await LoadHorseAndOptions();
+    }
+}
