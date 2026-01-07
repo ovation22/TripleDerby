@@ -1,4 +1,4 @@
-using TripleDerby.Core.Entities;
+using TrainingEntity = TripleDerby.Core.Entities.Training;
 
 namespace TripleDerby.Tests.Unit.Entities;
 
@@ -11,7 +11,7 @@ public class TrainingTests
     public void Training_SetBasicProperties_Succeeds()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 1,
             Name = "Sprint Drills",
@@ -28,7 +28,7 @@ public class TrainingTests
     public void Training_SetStatModifiers_Succeeds()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 1,
             Name = "Sprint Drills",
@@ -50,7 +50,7 @@ public class TrainingTests
     public void Training_SetHappinessCost_Succeeds()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 1,
             Name = "Sprint Drills",
@@ -66,7 +66,7 @@ public class TrainingTests
     public void Training_SetOverworkRisk_Succeeds()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 1,
             Name = "Sprint Drills",
@@ -82,7 +82,7 @@ public class TrainingTests
     public void Training_IsRecovery_DefaultsToFalse()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 1,
             Name = "Sprint Drills",
@@ -97,7 +97,7 @@ public class TrainingTests
     public void Training_IsRecovery_CanBeSetToTrue()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 9,
             Name = "Pasture Rest",
@@ -115,7 +115,7 @@ public class TrainingTests
     public void Training_AllProperties_CanBeSet()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 5,
             Name = "Hill Climbing",
@@ -146,7 +146,7 @@ public class TrainingTests
     public void Training_RecoveryType_HasNegativeHappinessCost()
     {
         // Arrange & Act
-        var training = new Training
+        var training = new TrainingEntity
         {
             Id = 10,
             Name = "Spa Treatment",
@@ -170,7 +170,7 @@ public class TrainingTests
     public void Training_HighIntensityTraining_HasHigherOverworkRisk()
     {
         // Arrange
-        var sprintDrills = new Training
+        var sprintDrills = new TrainingEntity
         {
             Id = 1,
             Name = "Sprint Drills",
@@ -178,7 +178,7 @@ public class TrainingTests
             OverworkRisk = 0.15
         };
 
-        var distanceGallops = new Training
+        var distanceGallops = new TrainingEntity
         {
             Id = 2,
             Name = "Distance Gallops",
@@ -195,7 +195,7 @@ public class TrainingTests
     public void Training_LowIntensityTraining_HasLowerOverworkRisk()
     {
         // Arrange & Act
-        var swimming = new Training
+        var swimming = new TrainingEntity
         {
             Id = 8,
             Name = "Swimming",
@@ -214,7 +214,7 @@ public class TrainingTests
     public void Training_BalancedTraining_HasModerateStats()
     {
         // Arrange & Act
-        var agilityDrills = new Training
+        var agilityDrills = new TrainingEntity
         {
             Id = 3,
             Name = "Agility Course",

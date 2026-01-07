@@ -1,3 +1,4 @@
+using TrainingEntity = TripleDerby.Core.Entities.Training;
 using TripleDerby.Core.Entities;
 
 namespace TripleDerby.Tests.Unit.Entities;
@@ -300,7 +301,7 @@ public class TrainingSessionTests
     {
         // Arrange
         var horse = new Horse { Id = Guid.NewGuid(), Name = "Thunder Bolt" };
-        var training = new Training { Id = 1, Name = "Sprint Drills" };
+        var training = new TrainingEntity { Id = 1, Name = "Sprint Drills" };
 
         // Act
         var session = new TrainingSession
