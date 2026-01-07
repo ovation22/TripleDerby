@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;

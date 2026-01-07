@@ -143,7 +143,7 @@ public class TrainingServiceTests
             }
         };
 
-        _mockRepository.Setup(r => r.SingleOrDefaultAsync<Horse>(It.IsAny<System.Linq.Expressions.Expression<Func<Horse, bool>>>(), default))
+        _mockRepository.Setup(r => r.SingleOrDefaultAsync(It.IsAny<Core.Specifications.HorseWithStatsSpecification>(), default))
             .ReturnsAsync(horse);
 
         // Act & Assert
@@ -166,7 +166,7 @@ public class TrainingServiceTests
             }
         };
 
-        _mockRepository.Setup(r => r.SingleOrDefaultAsync<Horse>(It.IsAny<System.Linq.Expressions.Expression<Func<Horse, bool>>>(), default))
+        _mockRepository.Setup(r => r.SingleOrDefaultAsync(It.IsAny<Core.Specifications.HorseWithStatsSpecification>(), default))
             .ReturnsAsync(horse);
 
         // Act & Assert
@@ -195,7 +195,7 @@ public class TrainingServiceTests
         var horseId = Guid.NewGuid();
         var horse = CreateValidHorse(horseId);
 
-        _mockRepository.Setup(r => r.SingleOrDefaultAsync<Horse>(It.IsAny<System.Linq.Expressions.Expression<Func<Horse, bool>>>(), default))
+        _mockRepository.Setup(r => r.SingleOrDefaultAsync(It.IsAny<Core.Specifications.HorseWithStatsSpecification>(), default))
             .ReturnsAsync(horse);
         _mockRepository.Setup(r => r.FindAsync<TrainingEntity>((byte)1, default))
             .ReturnsAsync((TrainingEntity?)null);
@@ -471,7 +471,7 @@ public class TrainingServiceTests
 
     private void SetupMocksForSuccessfulTraining(Horse horse, TrainingEntity training)
     {
-        _mockRepository.Setup(r => r.SingleOrDefaultAsync<Horse>(It.IsAny<System.Linq.Expressions.Expression<Func<Horse, bool>>>(), default))
+        _mockRepository.Setup(r => r.SingleOrDefaultAsync(It.IsAny<Core.Specifications.HorseWithStatsSpecification>(), default))
             .ReturnsAsync(horse);
         _mockRepository.Setup(r => r.FindAsync<TrainingEntity>((byte)1, default))
             .ReturnsAsync(training);
