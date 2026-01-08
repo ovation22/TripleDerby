@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Services.Training.Abstractions;
 using TripleDerby.Services.Training.Config;
 using TripleDerby.SharedKernel.Enums;
@@ -12,15 +13,15 @@ namespace TripleDerby.Services.Training.Calculators;
 /// </summary>
 public class TrainingCalculator : ITrainingCalculator
 {
-    private readonly Random _random;
+    private readonly IRandomGenerator _randomGenerator;
 
     /// <summary>
     /// Initializes a new instance of TrainingCalculator.
     /// </summary>
-    /// <param name="random">Optional Random instance for testing with seeded RNG</param>
-    public TrainingCalculator(Random? random = null)
+    /// <param name="randomGenerator">Random number generator for overwork probability</param>
+    public TrainingCalculator(IRandomGenerator randomGenerator)
     {
-        _random = random ?? new Random();
+        _randomGenerator = randomGenerator;
     }
 
     /// <summary>
@@ -114,7 +115,7 @@ public class TrainingCalculator : ITrainingCalculator
         var adjustedRisk = overworkRisk * riskMultiplier;
 
         // Roll for overwork
-        var overworkOccurred = _random.NextDouble() < adjustedRisk;
+        var overworkOccurred = _randomGenerator.NextDouble() < adjustedRisk;
 
         // Calculate final happiness change
         var happinessChange = -baseHappinessCost;
