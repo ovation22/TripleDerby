@@ -291,8 +291,8 @@ Race outcome depends on:
 ### **Prerequisites**
 
 - .NET 10 SDK
-- Docker Desktop (optional, for Aspire dependencies)
-- VS 2022 or VS Code + C# Dev Kit  
+- Docker Desktop (for Aspire dependencies)
+- VS 2026, or VS Code + C# Dev Kit  
 
 ### **Start the Full System via Aspire**
 
@@ -307,10 +307,16 @@ Aspire launches:
 - Database or other configured services  
 - Aspire dashboard with logs + health checks  
 
-### **Default Endpoints**
+### **Create Racers**
 
-- Admin UI → https://localhost:{port}/  
-- Swagger UI → https://localhost:{port}/swagger  
+Seed the database with Racers with the following command:
+
+```command
+cd .\tools\BreedingSeeder\
+dotnet run
+```
+
+Follow the on-screen prompts. Defaults are fine.
 
 ---
 

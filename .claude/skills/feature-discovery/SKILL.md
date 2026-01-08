@@ -110,6 +110,7 @@ This skill guides systematic feature discovery and planning to ensure requiremen
 - Include code examples or pseudocode for complex logic
 - Reference existing patterns to follow
 - Document open questions and areas needing future decisions
+- **Use Mermaid for all diagrams** (architecture, flow charts, sequence diagrams, etc.)
 
 ## Output Format
 
@@ -123,6 +124,48 @@ After conducting discovery and planning, create a feature specification document
 6. **Open Questions**: Items needing further clarification
 
 Use the PLANNING_TEMPLATE.md as a starting point for documentation.
+
+### Diagram Guidelines
+
+**ALWAYS use Mermaid for diagrams in feature specifications:**
+
+- **Architecture Diagrams**: Use `graph TB` (top-bottom) or `graph LR` (left-right)
+  ```mermaid
+  graph TB
+      A[Component A] --> B[Component B]
+      B --> C[Component C]
+  ```
+
+- **Sequence Diagrams**: Use `sequenceDiagram` for interaction flows
+  ```mermaid
+  sequenceDiagram
+      User->>API: Request
+      API->>Service: Process
+      Service-->>API: Response
+      API-->>User: Result
+  ```
+
+- **State Diagrams**: Use `stateDiagram-v2` for state machines
+  ```mermaid
+  stateDiagram-v2
+      [*] --> Pending
+      Pending --> InProgress
+      InProgress --> Completed
+      InProgress --> Failed
+  ```
+
+- **Entity Relationships**: Use `erDiagram` for data models
+  ```mermaid
+  erDiagram
+      HORSE ||--o{ RACE_RUN : participates
+      RACE ||--o{ RACE_RUN : contains
+  ```
+
+**Benefits of Mermaid:**
+- Renders directly in GitHub and markdown viewers
+- Version control friendly (text-based)
+- Easy to update and maintain
+- No external image files needed
 
 **Output Location**: All feature specification documents should be saved to `/docs/features/[feature-name].md`
 

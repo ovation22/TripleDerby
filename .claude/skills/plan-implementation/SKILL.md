@@ -61,6 +61,7 @@ For each phase, define:
 3. **Implementation Tasks**: What code to write to make tests pass (GREEN phase)
 4. **Refactoring Tasks**: What cleanup/improvements to make (REFACTOR phase)
 5. **Acceptance Criteria**: How to verify this phase is complete
+6. **Diagrams**: Use Mermaid for any architectural or flow diagrams
 
 ### Phase 4: Generate Task List
 1. **Create TodoWrite list**: Populate with first phase tasks
@@ -68,6 +69,7 @@ For each phase, define:
 3. **Add phase markers**: Clear separators between phases
 4. **Include estimates**: Flag complex/risky tasks
 5. **Link to spec**: Reference feature spec for context
+6. **Add diagrams**: Use Mermaid for visual clarity where helpful
 
 ## Phase Template
 

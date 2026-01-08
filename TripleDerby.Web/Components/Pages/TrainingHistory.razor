@@ -1,7 +1,6 @@
 @page "/horses/{HorseId:guid}/training-history"
 @rendermode InteractiveServer
 
-@using TripleDerby.Services.Training.DTOs
 @using TripleDerby.Web.ApiClients.Abstractions
 @using TripleDerby.SharedKernel
 
@@ -13,12 +12,12 @@
 
 <h1>Training History</h1>
 
-@if (loading)
+@if (_loading)
 {
     <FluentProgressRing />
     <p>Loading training history...</p>
 }
-else if (horse == null)
+else if (_horse == null)
 {
     <FluentMessageBar Intent="@MessageIntent.Error">
         Horse not found.
@@ -26,7 +25,7 @@ else if (horse == null)
 }
 else
 {
-    <h2>@horse.Name</h2>
+    <h2>@_horse.Name</h2>
 
     <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" style="margin-bottom: 20px;">
         <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/horses"))">
@@ -37,7 +36,7 @@ else
         </FluentButton>
     </FluentStack>
 
-    @if (trainingSessions == null || !trainingSessions.Any())
+    @if (_trainingSessions == null || !_trainingSessions.Any())
     {
         <FluentMessageBar Intent="@MessageIntent.Info">
             No training history available for this horse.
@@ -45,7 +44,7 @@ else
     }
     else
     {
-        <FluentDataGrid Items="@trainingSessions.AsQueryable()"
+        <FluentDataGrid Items="@_trainingSessions.AsQueryable()"
                         TGridItem="TrainingHistoryResult"
                         GridTemplateColumns="1fr 1fr 1fr 1fr 1fr 1fr 2fr">
             <TemplateColumn Title="Date" Sortable="true">
@@ -58,7 +57,7 @@ else
             <PropertyColumn Property="@(s => s.StaminaGain)" Title="Stamina" Sortable="true" Format="F2" Align="Align.End" />
             <PropertyColumn Property="@(s => s.AgilityGain)" Title="Agility" Sortable="true" Format="F2" Align="Align.End" />
             <PropertyColumn Property="@(s => s.DurabilityGain)" Title="Durability" Sortable="true" Format="F2" Align="Align.End" />
-            <TemplateColumn Title="Happiness" Sortable="true" SortBy="@sortByHappiness" Align="Align.End">
+            <TemplateColumn Title="Happiness" Sortable="true" SortBy="@_sortByHappiness" Align="Align.End">
                 <div style="color: @(context.HappinessChange >= 0 ? "green" : "red")">
                     @(context.HappinessChange >= 0 ? "+" : "")@context.HappinessChange.ToString("F1")
                 </div>
@@ -81,11 +80,11 @@ else
     [Parameter]
     public Guid HorseId { get; set; }
 
-    private HorseResult? horse;
-    private List<TrainingHistoryResult>? trainingSessions;
-    private bool loading = true;
+    private HorseResult? _horse;
+    private List<TrainingHistoryResult>? _trainingSessions;
+    private bool _loading = true;
 
-    GridSort<TrainingHistoryResult> sortByHappiness = GridSort<TrainingHistoryResult>
+    readonly GridSort<TrainingHistoryResult> _sortByHappiness = GridSort<TrainingHistoryResult>
         .ByDescending(s => s.HappinessChange);
 
     protected override async Task OnInitializedAsync()
@@ -95,15 +94,15 @@ else
 
     private async Task LoadData()
     {
-        loading = true;
+        _loading = true;
 
         // Load horse details
-        horse = await HorseApi.GetByIdAsync(HorseId);
+        _horse = await HorseApi.GetByIdAsync(HorseId);
 
         // Load training history (limit to 50 most recent)
-        trainingSessions = await TrainingsApi.GetTrainingHistoryAsync(HorseId, limit: 50);
+        _trainingSessions = await TrainingsApi.GetTrainingHistoryAsync(HorseId, limit: 50);
 
-        loading = false;
+        _loading = false;
         await InvokeAsync(StateHasChanged);
     }
 }
