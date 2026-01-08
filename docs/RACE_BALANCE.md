@@ -817,6 +817,112 @@ StartDashLookAheadDistance = 0.5m;  // 0.5 furlongs look-ahead
 
 ---
 
+## Happiness System Balance (Feature 020 Integration)
+
+### Overview
+
+Happiness is a critical stat that affects **both training and racing** performance. The system creates a strategic resource management loop where players must balance training intensity against racing readiness.
+
+### Happiness Impact on Racing
+
+**Speed Modifier (Primary Effect):**
+- **Happiness 0:** 0.93x speed (-7.0% penalty)
+- **Happiness 25:** 0.965x speed (-3.5% penalty)
+- **Happiness 46.5:** 0.9951x speed (-0.49% penalty) ← After typical training session
+- **Happiness 50:** 1.0x speed (neutral)
+- **Happiness 75:** ~1.018x speed (+1.8% bonus)
+- **Happiness 100:** 1.0255x speed (+2.55% bonus)
+- **Formula:**
+  - **Below 50:** Linear penalty (0.14% per happiness point)
+  - **Above 50:** Logarithmic bonus (diminishing returns)
+- Applied every tick during race
+
+**Stamina Depletion Rate (Secondary Effect):**
+- **Happiness 0:** 1.0854x depletion (+8.54% faster drain)
+- **Happiness 50:** 1.0x depletion (neutral)
+- **Happiness 100:** 0.9318x depletion (-6.82% slower drain)
+- Compounds throughout race, especially in longer distances
+
+**Combined Impact:** A horse at 0 happiness runs ~3.4% slower AND depletes stamina ~8.5% faster, creating significant performance degradation.
+
+### Training Happiness Costs (Balanced 2026-01-07)
+
+Training depletes happiness but builds stats. Costs are balanced to allow 2-3 training sessions between races:
+
+| Training Type | Happiness Cost | Intensity | Notes |
+|---------------|----------------|-----------|-------|
+| Swimming | -1.5 | Low | Gentlest option, minimal stress |
+| Dressage | -2.0 | Low | Precision work, low physical toll |
+| Interval Training | -2.5 | Moderate | Balanced intensity |
+| Agility Course | -3.0 | Moderate | Moderate physical demand |
+| Sprint Drills | -3.5 | High | Speed-focused, moderately taxing |
+| Distance Gallops | -4.0 | High | Endurance work, significant effort |
+| Hill Climbing | -4.5 | High | Power training, demanding |
+| Weight Pulling | -5.5 | Very High | Most physically demanding |
+
+**Recovery Options:**
+- **Pasture Rest:** +15.0 happiness (no stat gains)
+- **Spa Treatment:** +20.0 happiness (no stat gains)
+
+### Racing Happiness Rewards (Balanced 2026-01-07)
+
+Racing performance affects morale. Good performances restore happiness, poor performances damage it:
+
+| Finish Position | Happiness Change | Notes |
+|----------------|------------------|-------|
+| **1st (Win)** | +12 | Major morale boost |
+| **2nd (Place)** | +6 | Good performance reward |
+| **3rd (Show)** | +3 | Solid finish bonus |
+| **4th-50th percentile** | 0 | Neutral, no change |
+| **Bottom 50%** | -2 | Mild disappointment |
+| **Exhausted finish** | -5 (additional) | Stamina < 10% at finish |
+
+### Training Effectiveness Modifier
+
+Low happiness reduces training gains:
+- **Happiness 100:** 1.0x training effectiveness (100% gains)
+- **Happiness 50:** 0.75x training effectiveness (75% gains)
+- **Happiness 0:** 0.5x training effectiveness (50% gains)
+- Linear scaling: `0.5 + (happiness / 100) × 0.5`
+
+### Strategic Cycle (Balanced)
+
+**Optimal Training-Racing Loop:**
+
+1. **Start:** Horse at ~50 happiness (neutral)
+2. **Train 2-3 times:** Lose 6-12 happiness total → Now at 38-44 happiness
+3. **Race:** Performance slightly affected (-1% to -2% speed)
+4. **Good finish (Top 3):** Gain +3 to +12 happiness → Back to 41-56 happiness
+5. **Repeat cycle**
+
+**Recovery Path (if happiness drops too low):**
+- If happiness < 40: Choose recovery training (Pasture Rest/Spa)
+- Or: Race and win to restore morale (+12 happiness)
+- Avoid training at < 15 happiness (minimum threshold)
+
+### Balance Philosophy
+
+**Why These Values:**
+
+1. **Training costs reduced ~55%** from original (was 4-12, now 1.5-5.5)
+   - Allows sustainable training without constant recovery
+   - Prevents vicious cycle of low happiness → poor racing → lower happiness
+
+2. **Racing rewards increased ~50%** from original (win was +8, now +12)
+   - Racing success now meaningfully restores happiness
+   - Winning feels rewarding and enables more training
+   - Back-of-pack penalty reduced (-3 → -2) to be less punishing
+
+3. **Happiness speed penalty changed to linear below 50** (was logarithmic on both sides)
+   - **Old formula:** Logarithmic penalty caused -4.35% speed loss from just -3.5 happiness (too punishing)
+   - **New formula:** Linear penalty = 0.14% per point → -0.49% speed loss from -3.5 happiness (balanced)
+   - Above 50 still uses logarithmic curve for diminishing returns (prevents happiness stacking)
+   - Maximum penalty at 0 happiness is -7.0% (significant but survivable)
+
+**Result:** Players can train → race → train in a sustainable loop, with happiness acting as a strategic resource rather than a frustrating limitation. Training a horse once before racing now causes minimal performance impact (-0.49% speed), making the system balanced and playable.
+
+---
+
 ## Document History
 
 | Date | Phase | Changes |
@@ -825,6 +931,8 @@ StartDashLookAheadDistance = 0.5m;  // 0.5 furlongs look-ahead
 | 2025-12-22 | Phase 8 | Stamina depletion system integrated (Feature 004) |
 | 2025-12-22 | Phase 9 | Rail Runner conditional bonus system (Feature 005) |
 | 2025-12-23 | Phase 12 | Overtaking & lane changes complete (Feature 007) - balance tuning and validation |
+| 2026-01-07 | Balance Patch v1 | Happiness system rebalanced - training costs reduced 55%, racing rewards increased 50% |
+| 2026-01-07 | Balance Patch v2 | Happiness speed penalty changed to hybrid (linear below 50, logarithmic above 50) |
 
 ---
 

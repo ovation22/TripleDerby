@@ -101,15 +101,14 @@ public static class RaceModifierConfig
     public const double HappinessSpeedBonusDivisor = 20.0;
 
     /// <summary>
-    /// Divisor for happiness penalty calculation (below neutral).
-    /// Smaller value = stronger penalty effect.
-    /// Formula: modifier = log10(1 + deficit) / HappinessSpeedPenaltyDivisor
-    /// Current value (15) yields ~3.4% penalty at happiness=0.
-    /// Asymmetric design: penalty divisor < bonus divisor (unhappiness hurts more).
-    /// Range: Happiness 0 = 0.9661x (-3.39%), Happiness 50 = 1.0x, Happiness 100 = 1.0255x (+2.55%)
-    /// Total effect: ±3% (tertiary stat, weaker than Agility ±5%, stronger than Stamina at 10f)
+    /// Linear penalty rate per happiness point below neutral (50).
+    /// Replaces logarithmic penalty for predictable, sustainable training-racing cycles.
+    /// Formula: modifier = deficit × HappinessLinearPenaltyPerPoint
+    /// Current value (0.0014) yields 0.14% penalty per point below 50.
+    /// Range: Happiness 0 = 0.93x (-7%), Happiness 46.5 = 0.9951x (-0.49%), Happiness 50 = 1.0x
+    /// Design: Linear penalty below 50, logarithmic bonus above 50 for asymmetric balance.
     /// </summary>
-    public const double HappinessSpeedPenaltyDivisor = 15.0;
+    public const double HappinessLinearPenaltyPerPoint = 0.0014;
 
     /// <summary>
     /// Divisor for happiness stamina efficiency bonus (above neutral).
@@ -547,19 +546,19 @@ public static class RaceModifierConfig
     /// Happiness increase for winning a race (1st place).
     /// Winning significantly boosts horse morale.
     /// </summary>
-    public const int WinHappinessBonus = 8;
+    public const int WinHappinessBonus = 12;
 
     /// <summary>
     /// Happiness increase for placing in a race (2nd place).
     /// Good performance moderately boosts morale.
     /// </summary>
-    public const int PlaceHappinessBonus = 4;
+    public const int PlaceHappinessBonus = 6;
 
     /// <summary>
     /// Happiness increase for showing in a race (3rd place).
     /// Solid performance provides small morale boost.
     /// </summary>
-    public const int ShowHappinessBonus = 2;
+    public const int ShowHappinessBonus = 3;
 
     /// <summary>
     /// Happiness change for mid-pack finishers (4th to 50th percentile).
@@ -571,7 +570,7 @@ public static class RaceModifierConfig
     /// Happiness decrease for back of pack finishers (bottom 50%).
     /// Poor performance damages morale.
     /// </summary>
-    public const int BackOfPackHappinessPenalty = -3;
+    public const int BackOfPackHappinessPenalty = -2;
 
     /// <summary>
     /// Happiness penalty for finishing race in exhausted state (<10% stamina).

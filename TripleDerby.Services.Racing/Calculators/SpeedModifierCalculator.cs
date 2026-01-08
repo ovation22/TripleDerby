@@ -61,20 +61,21 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
     }
 
     /// <summary>
-    /// Calculates happiness stat multiplier using two-phase logarithmic scaling.
-    /// Uses logarithmic curves to create diminishing returns effect.
-    /// Asymmetric design: unhappiness penalty (3.39%) > happiness bonus (2.55%).
+    /// Calculates happiness stat multiplier using hybrid scaling.
+    /// Uses logarithmic curve above 50 (diminishing returns) and linear below 50 (predictable penalty).
+    /// Asymmetric design prevents high happiness from being overpowered while making low happiness more manageable.
     ///
     /// Formula:
     ///   If happiness >= 50: 1.0 + log10(1 + excess) / HappinessSpeedBonusDivisor
-    ///   If happiness < 50:  1.0 - log10(1 + deficit) / HappinessSpeedPenaltyDivisor
+    ///   If happiness < 50:  1.0 - (deficit × HappinessLinearPenaltyPerPoint)
     ///
-    /// Range: Happiness 0 = 0.9661x (-3.39%), Happiness 50 = 1.0x, Happiness 100 = 1.0255x (+2.55%)
-    /// Total effect: ±3% (tertiary stat, weaker than Agility ±5%)
+    /// Range: Happiness 0 = 0.95x (-5%), Happiness 50 = 1.0x, Happiness 100 = 1.0255x (+2.55%)
+    /// Total effect: Linear penalty below neutral, logarithmic bonus above
     ///
-    /// Rationale: Logarithmic curve reflects psychological reality - mood changes have bigger
-    /// impact at extremes (0→25) than when already content (75→100). Happy horses run more
-    /// enthusiastically, unhappy horses are reluctant.
+    /// Rationale:
+    /// - Above 50: Logarithmic diminishing returns prevent happiness stacking from being overpowered
+    /// - Below 50: Linear penalty is predictable and allows for sustainable training-racing cycles
+    /// - Training that costs 3.5 happiness results in -0.35% speed penalty (manageable)
     /// </summary>
     private static double CalculateHappinessSpeedModifier(double happiness)
     {
@@ -96,14 +97,13 @@ public class SpeedModifierCalculator : ISpeedModifierCalculator
         }
         else
         {
-            // Below neutral: logarithmic penalty with steeper curve
-            // Unhappiness has bigger impact than happiness (negative emotions stronger)
-            // Psychological realism: depression/frustration affects performance more than joy improves it
+            // Below neutral: linear penalty for predictability
+            // Each point below 50 costs a fixed percentage
+            // 0.001 per point = 0.1% penalty per happiness point
+            // At 0 happiness: 50 points × 0.001 = 0.05 (5% penalty)
+            // At 46.5 happiness (after training): 3.5 × 0.001 = 0.0035 (0.35% penalty)
             double deficit = 50.0 - happiness;
-
-            // Divided by 15 instead of 20 for steeper penalty curve
-            // Creates asymmetry: happiness=0 penalty > happiness=100 bonus
-            double modifier = Math.Log10(1.0 + deficit) / RaceModifierConfig.HappinessSpeedPenaltyDivisor;
+            double modifier = deficit * RaceModifierConfig.HappinessLinearPenaltyPerPoint;
             return 1.0 - modifier;
         }
     }
