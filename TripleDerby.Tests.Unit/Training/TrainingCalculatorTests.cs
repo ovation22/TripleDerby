@@ -314,7 +314,9 @@ public class TrainingCalculatorTests
     public void CalculateHappinessImpact_WithHighHappiness_NoOverwork()
     {
         // Arrange - 80% happiness, low overwork risk
-        var calculator = new TrainingCalculator();
+        // Use seeded RNG to ensure deterministic test (NextDouble() will return 0.7...)
+        var seededRandom = new Random(12345);
+        var calculator = new TrainingCalculator(seededRandom);
 
         // Act
         var (happinessChange, overwork) = calculator.CalculateHappinessImpact(
