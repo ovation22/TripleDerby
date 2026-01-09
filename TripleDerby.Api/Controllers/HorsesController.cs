@@ -10,17 +10,8 @@ namespace TripleDerby.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [ApiConventionType(typeof(DefaultApiConventions))]
-public class HorsesController : ControllerBase
+public class HorsesController(IHorseService horseService) : ControllerBase
 {
-    private readonly IHorseService _horseService;
-
-    public HorsesController(
-        IHorseService horseService
-    )
-    {
-        _horseService = horseService;
-    }
-
     /// <summary>
     /// Returns a paginated and optionally filtered list of horses.
     /// </summary>
@@ -44,7 +35,7 @@ public class HorsesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedList<HorseResult>>> Filter([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
     {
-        var result = await _horseService.Filter(request, cancellationToken);
+        var result = await horseService.Filter(request, cancellationToken);
 
         return Ok(result);
     }
@@ -62,7 +53,7 @@ public class HorsesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<HorseResult>> Get(Guid id)
     {
-        var result = await _horseService.Get(id);
+        var result = await horseService.Get(id);
 
         return Ok(result);
     }
@@ -90,7 +81,7 @@ public class HorsesController : ControllerBase
     {
         try
         {
-            await _horseService.Update(id, patch);
+            await horseService.Update(id, patch);
 
             return new NoContentResult();
         }

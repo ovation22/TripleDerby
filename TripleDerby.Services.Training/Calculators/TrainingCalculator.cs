@@ -5,15 +5,8 @@ using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Services.Training.Calculators;
 
-public class TrainingCalculator : ITrainingCalculator
+public class TrainingCalculator(IRandomGenerator randomGenerator) : ITrainingCalculator
 {
-    private readonly IRandomGenerator _randomGenerator;
-
-    public TrainingCalculator(IRandomGenerator randomGenerator)
-    {
-        _randomGenerator = randomGenerator;
-    }
-
     /// <summary>
     /// Calculates stat growth from a single training session.
     /// Formula: Gap × BaseGrowthRate × TrainingModifier × CareerMultiplier × HappinessModifier × LegTypeBonus
@@ -105,7 +98,7 @@ public class TrainingCalculator : ITrainingCalculator
         var adjustedRisk = overworkRisk * riskMultiplier;
 
         // Roll for overwork
-        var overworkOccurred = _randomGenerator.NextDouble() < adjustedRisk;
+        var overworkOccurred = randomGenerator.NextDouble() < adjustedRisk;
 
         // Calculate final happiness change
         var happinessChange = -baseHappinessCost;

@@ -7,17 +7,8 @@ namespace TripleDerby.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [ApiConventionType(typeof(DefaultApiConventions))]
-public class FeedingsController : ControllerBase
+public class FeedingsController(IFeedingService feedingService) : ControllerBase
 {
-    private readonly IFeedingService _feedingService;
-
-    public FeedingsController(
-        IFeedingService feedingService
-    )
-    {
-        _feedingService = feedingService;
-    }
-
     /// <summary>
     /// Returns a paged list of feeding definitions/results.
     /// </summary>
@@ -30,7 +21,7 @@ public class FeedingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<FeedingsResult>>> GetAll()
     {
-        var result = await _feedingService.GetAll();
+        var result = await feedingService.GetAll();
 
         return Ok(result);
     }
@@ -48,7 +39,7 @@ public class FeedingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FeedingResult>> Get(byte feedingId)
     {
-        var result = await _feedingService.Get(feedingId);
+        var result = await feedingService.Get(feedingId);
 
         return Ok(result);
     }
@@ -67,7 +58,7 @@ public class FeedingsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<FeedingSessionResult>> Feed(byte feedingId, Guid horseId)
     {
-        var result = await _feedingService.Feed(feedingId, horseId);
+        var result = await feedingService.Feed(feedingId, horseId);
 
         return Ok(result);
     }

@@ -15,19 +15,12 @@ public class TrainingCalculatorTests
     /// Test implementation of IRandomGenerator that returns a fixed value.
     /// Used for deterministic testing of probabilistic behavior.
     /// </summary>
-    private class TestRandomGenerator : IRandomGenerator
+    private class TestRandomGenerator(double fixedValue = 0.5) : IRandomGenerator
     {
-        private readonly double _fixedValue;
-
-        public TestRandomGenerator(double fixedValue = 0.5)
-        {
-            _fixedValue = fixedValue;
-        }
-
         public int Next() => throw new NotImplementedException();
         public int Next(int max) => throw new NotImplementedException();
         public int Next(int min, int max) => throw new NotImplementedException();
-        public double NextDouble() => _fixedValue;
+        public double NextDouble() => fixedValue;
     }
 
     private static TrainingCalculator CreateCalculator(double fixedRandomValue = 0.5)

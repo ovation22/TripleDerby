@@ -8,17 +8,8 @@ namespace TripleDerby.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [ApiConventionType(typeof(DefaultApiConventions))]
-public class UsersController : ControllerBase
+public class UsersController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService _userService;
-
-    public UsersController(
-        IUserService userService
-    )
-    {
-        _userService = userService;
-    }
-
     /// <summary>
     /// Returns a paginated and optionally filtered list of users.
     /// </summary>
@@ -32,7 +23,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedList<UserResult>>> Filter([FromQuery] PaginationRequest request, CancellationToken cancellationToken)
     {
-        var result = await _userService.Filter(request, cancellationToken);
+        var result = await userService.Filter(request, cancellationToken);
 
         return Ok(result);
     }
@@ -50,7 +41,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UserResult>> Get(Guid id)
     {
-        var result = await _userService.Get(id);
+        var result = await userService.Get(id);
 
         return Ok(result);
     }

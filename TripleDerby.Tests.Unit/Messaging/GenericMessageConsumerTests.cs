@@ -12,16 +12,9 @@ namespace TripleDerby.Tests.Unit.Messaging;
 /// </summary>
 public class GenericMessageConsumerTests
 {
-    private readonly Mock<IMessageBrokerAdapter> _mockAdapter;
-    private readonly IConfiguration _configuration;
-    private readonly ServiceCollection _services;
-
-    public GenericMessageConsumerTests()
-    {
-        _mockAdapter = new Mock<IMessageBrokerAdapter>();
-        _configuration = CreateTestConfiguration();
-        _services = new ServiceCollection();
-    }
+    private readonly Mock<IMessageBrokerAdapter> _mockAdapter = new();
+    private readonly IConfiguration _configuration = CreateTestConfiguration();
+    private readonly ServiceCollection _services = new();
 
     [Fact]
     public void Constructor_CreatesInstance()

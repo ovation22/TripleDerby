@@ -9,16 +9,11 @@ namespace TripleDerby.Core.Services;
 /// Colors are static game data that rarely change, making them ideal for in-memory caching.
 /// This cache eliminates database queries on every breeding operation, significantly improving performance.
 /// </summary>
-public class ColorCache
+public class ColorCache(ILogger<ColorCache> logger)
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
     private List<Color>? _colors;
-    private readonly ILogger<ColorCache> _logger;
-
-    public ColorCache(ILogger<ColorCache> logger)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly ILogger<ColorCache> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Gets all colors, loading from repository on first call and caching for subsequent calls.

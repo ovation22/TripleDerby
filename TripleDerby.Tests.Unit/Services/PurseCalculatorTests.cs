@@ -5,12 +5,7 @@ namespace TripleDerby.Tests.Unit.Services;
 
 public class PurseCalculatorTests
 {
-    private readonly PurseCalculator _sut;
-
-    public PurseCalculatorTests()
-    {
-        _sut = new PurseCalculator();
-    }
+    private readonly PurseCalculator _sut = new();
 
     [Theory]
     [InlineData(RaceClassId.Maiden, 10, 20000)]

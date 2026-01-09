@@ -8,14 +8,8 @@ namespace TripleDerby.Tests.Unit.Services;
 
 public class ColorCacheTests
 {
-    private readonly Mock<ILogger<ColorCache>> _loggerMock;
-    private readonly Mock<ITripleDerbyRepository> _repositoryMock;
-
-    public ColorCacheTests()
-    {
-        _loggerMock = new Mock<ILogger<ColorCache>>();
-        _repositoryMock = new Mock<ITripleDerbyRepository>();
-    }
+    private readonly Mock<ILogger<ColorCache>> _loggerMock = new();
+    private readonly Mock<ITripleDerbyRepository> _repositoryMock = new();
 
     [Fact]
     public async Task ColorCache_FirstCall_LoadsFromRepository()

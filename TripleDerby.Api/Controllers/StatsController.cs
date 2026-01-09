@@ -7,17 +7,8 @@ namespace TripleDerby.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [ApiConventionType(typeof(DefaultApiConventions))]
-public class StatsController : ControllerBase
+public class StatsController(IStatsService statsService) : ControllerBase
 {
-    private readonly IStatsService _statsService;
-
-    public StatsController(
-        IStatsService statsService
-    )
-    {
-        _statsService = statsService;
-    }
-
     /// <summary>
     /// Gets statistics for horses grouped by color.
     /// </summary>
@@ -33,7 +24,7 @@ public class StatsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyList<HorseColorStats>>> Get(CancellationToken cancellationToken)
     {
-        var result = await _statsService.GetHorseColorStats(cancellationToken);
+        var result = await statsService.GetHorseColorStats(cancellationToken);
         return Ok(result);
     }
 
@@ -52,7 +43,7 @@ public class StatsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyList<HorseLegTypeStats>>> GetLegTypeStats(CancellationToken cancellationToken)
     {
-        var result = await _statsService.GetHorseLegTypeStats(cancellationToken);
+        var result = await statsService.GetHorseLegTypeStats(cancellationToken);
         return Ok(result);
     }
 
@@ -71,7 +62,7 @@ public class StatsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyList<HorseGenderStats>>> GetGenderStats(CancellationToken cancellationToken)
     {
-        var result = await _statsService.GetHorseGenderStats(cancellationToken);
+        var result = await statsService.GetHorseGenderStats(cancellationToken);
         return Ok(result);
     }
 }

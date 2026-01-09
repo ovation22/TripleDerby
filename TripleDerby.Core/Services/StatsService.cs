@@ -4,32 +4,23 @@ using TripleDerby.SharedKernel.Horses;
 
 namespace TripleDerby.Core.Services;
 
-public class StatsService : IStatsService
+public class StatsService(ITripleDerbyRepository repository) : IStatsService
 {
-    private readonly ITripleDerbyRepository _repository;
-
-    public StatsService(
-        ITripleDerbyRepository repository
-    )
-    {
-        _repository = repository;
-    }
-
     /// <inheritdoc />
     public async Task<IReadOnlyList<HorseColorStats>> GetHorseColorStats(CancellationToken cancellationToken)
     {
-        return await _repository.GetColorStatisticsAsync(cancellationToken);
+        return await repository.GetColorStatisticsAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<HorseLegTypeStats>> GetHorseLegTypeStats(CancellationToken cancellationToken)
     {
-        return await _repository.GetLegTypeStatisticsAsync(cancellationToken);
+        return await repository.GetLegTypeStatisticsAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<HorseGenderStats>> GetHorseGenderStats(CancellationToken cancellationToken)
     {
-        return await _repository.GetGenderStatisticsAsync(cancellationToken);
+        return await repository.GetGenderStatisticsAsync(cancellationToken);
     }
 }

@@ -1,8 +1,6 @@
-using Moq;
-using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
-using TripleDerby.SharedKernel.Enums;
 using TripleDerby.Services.Racing.Config;
+using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Tests.Unit.Racing;
 

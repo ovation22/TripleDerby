@@ -2655,17 +2655,10 @@ zonked
 ";
     #endregion
 
-    private readonly List<string> _nouns;
-    private readonly List<string> _adverbs;
-    private readonly List<string> _adjectives;
+    private readonly List<string> _nouns = ProcessRawData(Nouns);
+    private readonly List<string> _adverbs = ProcessRawData(Adverbs);
+    private readonly List<string> _adjectives = ProcessRawData(Adjectives);
     private readonly Random _random = new();
-
-    public HorseNameGenerator()
-    {
-        _nouns = ProcessRawData(Nouns);
-        _adverbs = ProcessRawData(Adverbs);
-        _adjectives = ProcessRawData(Adjectives);
-    }
 
     public string Generate()
     {
