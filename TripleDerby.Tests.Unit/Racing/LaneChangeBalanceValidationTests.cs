@@ -102,13 +102,16 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
 
         // Speed correlation should remain strong (primary stat)
         // NOTE: Original target was -0.70 to -0.75, but with all race modifiers (stamina, happiness,
-        // environmental, phase, etc.) the cumulative dilution results in -0.50 to -0.55 being realistic
-        Assert.InRange(analysis.SpeedCorrelation, -0.55, -0.50);
-        output.WriteLine($"✓ Speed correlation maintained as primary stat: {analysis.SpeedCorrelation:F3} (adjusted target: -0.50 to -0.55)");
+        // environmental, phase, etc.) the cumulative dilution results in -0.50 to -0.65 being realistic.
+        // Feature 020 (Training System) changed happiness formula to hybrid (linear below 50, logarithmic above),
+        // which strengthened the speed correlation slightly compared to the old logarithmic-only formula.
+        Assert.InRange(analysis.SpeedCorrelation, -0.65, -0.50);
+        output.WriteLine($"✓ Speed correlation maintained as primary stat: {analysis.SpeedCorrelation:F3} (adjusted target: -0.50 to -0.65)");
 
         // Agility correlation should strengthen (Feature 007 improvement)
-        // NOTE: Improved from baseline -0.355, realistic target -0.25 to -0.30
-        Assert.InRange(analysis.AgilityCorrelation, -0.30, -0.25);
+        // NOTE: Improved from baseline -0.355, realistic target -0.25 to -0.31.
+        // Feature 020 (Training System) slightly strengthened agility correlation.
+        Assert.InRange(analysis.AgilityCorrelation, -0.31, -0.25);
         output.WriteLine($"✓ Agility correlation improved to {analysis.AgilityCorrelation:F3} (from -0.355 baseline)");
 
         // Durability correlation acknowledgment (risky lane changes have minimal global impact)

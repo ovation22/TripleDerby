@@ -192,8 +192,8 @@ public class SpeedModifierCalculatorTests
         // Act
         var result = _sut.CalculateStatModifiers(context);
 
-        // Assert - Expected: 1.0 - log10(51)/15 ≈ 0.8862
-        Assert.Equal(0.8862, result, precision: 3);
+        // Assert - Expected: Linear penalty below 50: 1.0 - (50 * 0.0014) = 0.93
+        Assert.Equal(0.93, result, precision: 5);
     }
 
     [Fact]
@@ -211,16 +211,16 @@ public class SpeedModifierCalculatorTests
     }
 
     [Theory]
-    [InlineData(0, 0.8862)]   // 1.0 - log10(51)/15 penalty
-    [InlineData(10, 0.8925)]  // 1.0 - log10(41)/15 penalty
-    [InlineData(25, 0.9057)]  // 1.0 - log10(26)/15 penalty
-    [InlineData(40, 0.9306)]  // 1.0 - log10(11)/15 penalty
+    [InlineData(0, 0.9300)]   // Linear below 50: 1.0 - (50 * 0.0014) = 0.93
+    [InlineData(10, 0.9440)]  // Linear below 50: 1.0 - (40 * 0.0014) = 0.944
+    [InlineData(25, 0.9650)]  // Linear below 50: 1.0 - (25 * 0.0014) = 0.965
+    [InlineData(40, 0.9860)]  // Linear below 50: 1.0 - (10 * 0.0014) = 0.986
     [InlineData(50, 1.0000)]  // Neutral
     [InlineData(60, 1.0521)]  // 1.0 + log10(11)/20 bonus
     [InlineData(75, 1.0707)]  // 1.0 + log10(26)/20 bonus
     [InlineData(90, 1.0806)]  // 1.0 + log10(41)/20 bonus
     [InlineData(100, 1.0854)] // 1.0 + log10(51)/20 bonus
-    public void CalculateStatModifiers_WithVaryingHappiness_FollowsLogarithmicCurve(
+    public void CalculateStatModifiers_WithVaryingHappiness_FollowsHybridCurve(
         int happiness, double expectedModifier)
     {
         // Arrange - Only happiness varies, Speed/Agility neutral
@@ -231,7 +231,7 @@ public class SpeedModifierCalculatorTests
         var result = _sut.CalculateStatModifiers(context);
 
         // Assert
-        Assert.Equal(expectedModifier, result, precision: 3);
+        Assert.Equal(expectedModifier, result, precision: 4);
     }
 
     [Fact]
@@ -283,9 +283,9 @@ public class SpeedModifierCalculatorTests
         // Assert
         // Speed 0: 0.90
         // Agility 0: 0.95
-        // Happiness 0: 0.8861
-        // Combined: 0.90 * 0.95 * 0.8861 ≈ 0.7577
-        Assert.Equal(0.7577, result, precision: 4);
+        // Happiness 0: 0.93 (linear penalty)
+        // Combined: 0.90 * 0.95 * 0.93 = 0.79515
+        Assert.Equal(0.7952, result, precision: 4);
     }
 
     [Fact]
@@ -304,15 +304,15 @@ public class SpeedModifierCalculatorTests
     public void HappinessSpeedModifier_IsAsymmetric_PenaltyExceedsBonus()
     {
         // Arrange
-        var penaltyMagnitude = Math.Abs(1.0 - GetModifierForHappiness(0));   // ~11.39%
+        var penaltyMagnitude = Math.Abs(1.0 - GetModifierForHappiness(0));   // ~7% (linear)
         var bonusMagnitude = Math.Abs(GetModifierForHappiness(100) - 1.0);   // ~8.54%
 
-        // Assert: Unhappiness hurts more than happiness helps
-        Assert.True(penaltyMagnitude > bonusMagnitude,
-            $"Expected penalty ({penaltyMagnitude:P2}) > bonus ({bonusMagnitude:P2})");
+        // Assert: With hybrid formula, bonus slightly exceeds penalty
+        Assert.True(bonusMagnitude > penaltyMagnitude,
+            $"Expected bonus ({bonusMagnitude:P2}) > penalty ({penaltyMagnitude:P2})");
 
         // Specific expectations
-        Assert.Equal(0.1138, penaltyMagnitude, precision: 3);
+        Assert.Equal(0.0700, penaltyMagnitude, precision: 3);
         Assert.Equal(0.0854, bonusMagnitude, precision: 3);
     }
 

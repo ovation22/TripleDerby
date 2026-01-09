@@ -497,6 +497,7 @@ public class OvertakingLaneChangeTests
         return horse.Horse.LegTypeId switch
         {
             LegTypeId.RailRunner => 1,  // Always seek the rail
+            _ => horse.Lane  // Other leg types stay in current lane
         };
     }
 
