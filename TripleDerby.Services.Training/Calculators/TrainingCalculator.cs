@@ -5,20 +5,10 @@ using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Services.Training.Calculators;
 
-/// <summary>
-/// Pure domain calculator for horse training mechanics.
-/// All methods are deterministic functions with no infrastructure dependencies.
-/// Follows the same architectural pattern as StatProgressionCalculator.
-/// Part of Feature 020: Horse Training System.
-/// </summary>
 public class TrainingCalculator : ITrainingCalculator
 {
     private readonly IRandomGenerator _randomGenerator;
 
-    /// <summary>
-    /// Initializes a new instance of TrainingCalculator.
-    /// </summary>
-    /// <param name="randomGenerator">Random number generator for overwork probability</param>
     public TrainingCalculator(IRandomGenerator randomGenerator)
     {
         _randomGenerator = randomGenerator;

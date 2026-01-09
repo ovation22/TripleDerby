@@ -3,15 +3,11 @@ using TripleDerby.Services.Racing.Calculators;
 namespace TripleDerby.Tests.Unit.Racing;
 
 /// <summary>
-/// Tests for StatProgressionCalculator (Feature 018: Race Outcome Stat Progression).
 /// Validates career phase multipliers, stat growth formulas, race-type focus,
 /// performance bonuses, and happiness changes.
 /// </summary>
 public class StatProgressionCalculatorTests
 {
-    // ============================================================================
-    // Phase 1: Career Phase System Tests
-    // ============================================================================
 
     [Fact]
     public void CalculateAgeMultiplier_WithYoungHorse_Returns0Point80()
@@ -88,9 +84,6 @@ public class StatProgressionCalculatorTests
         Assert.Equal(expected, result);
     }
 
-    // ============================================================================
-    // Phase 2: Core Stat Growth Formula Tests
-    // ============================================================================
 
     [Fact]
     public void GrowStat_WithBasicGrowth_ReturnsCorrectIncrease()
@@ -216,9 +209,6 @@ public class StatProgressionCalculatorTests
         Assert.Equal(expectedGrowth, growth, 3);
     }
 
-    // ============================================================================
-    // Phase 3: Performance Bonus System Tests
-    // ============================================================================
 
     [Fact]
     public void CalculatePerformanceMultiplier_WithWin_Returns1Point50()
@@ -322,9 +312,6 @@ public class StatProgressionCalculatorTests
         Assert.Equal(expected, multiplier);
     }
 
-    // ============================================================================
-    // Phase 4: Race-Type Stat Focus Tests
-    // ============================================================================
 
     [Fact]
     public void CalculateRaceTypeFocusMultipliers_WithSprint_FavorsSpeedAndAgility()

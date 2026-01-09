@@ -75,7 +75,6 @@ public class RaceModifierConfigTests
         Assert.NotNull(legTypeModifiers);
     }
 
-    // Phase 3: Environmental Modifier Tests
 
     [Fact]
     public void SurfaceModifiers_ShouldContainAllSurfaceTypes()
@@ -162,7 +161,6 @@ public class RaceModifierConfigTests
         Assert.Equal(expectedModifier, modifier);
     }
 
-    // Phase 4: Phase Modifier Tests
 
     [Fact]
     public void LegTypePhaseModifiers_ShouldContain4PhaseBasedLegTypes()

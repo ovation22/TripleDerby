@@ -4,7 +4,6 @@ namespace TripleDerby.Services.Training.Config;
 
 /// <summary>
 /// Configuration constants for the horse training system
-/// Feature 020: Horse Training System
 /// </summary>
 public static class TrainingConfig
 {

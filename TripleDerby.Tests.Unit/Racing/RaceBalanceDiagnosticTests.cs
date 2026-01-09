@@ -186,23 +186,18 @@ public class RaceBalanceDiagnosticTests(ITestOutputHelper output)
         mockRandom.Setup(r => r.Next(It.IsAny<int>())).Returns(0);
         mockRandom.Setup(r => r.NextDouble()).Returns(0.5); // Exactly neutral (0% variance)
 
-        // Feature 005: Phase 4 - DI Refactor
         var speedModifierCalculator = new SpeedModifierCalculator(mockRandom.Object);
         var staminaCalculator = new StaminaCalculator();
 
-        // Feature 008: Commentary generator
         var commentaryGenerator = new RaceCommentaryGenerator(mockRandom.Object);
 
-        // Feature 009: Purse calculator
         var purseCalculator = new PurseCalculator();
 
-        // Feature 010: Overtaking and event detection
         var overtakingManager = new OvertakingManager(mockRandom.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
         var timeManager = new Mock<ITimeManager>();
 
-        // Feature 021: Stat Progression Tracking
         var mockStatProgression = new StatProgressionCalculator();
 
         // Create race executor and run simulation

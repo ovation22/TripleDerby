@@ -33,9 +33,6 @@ public class SpeedModifierCalculatorTests
         Assert.NotNull(calculator);
     }
 
-    // ============================================================================
-    // Phase 2: Stat Modifier Tests
-    // ============================================================================
 
     [Fact]
     public void CalculateStatModifiers_WithSpeed50_ShouldReturnNeutral()
@@ -169,9 +166,7 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(0.9604, result, precision: 4);
     }
 
-    // ============================================================================
     // Happiness Modifier Tests
-    // ============================================================================
 
     [Fact]
     public void CalculateStatModifiers_WithHappiness50_ShouldReturnNeutral()
@@ -328,9 +323,6 @@ public class SpeedModifierCalculatorTests
         return _sut.CalculateStatModifiers(context);
     }
 
-    // ============================================================================
-    // Phase 3: Environmental Modifier Tests
-    // ============================================================================
 
     [Fact]
     public void CalculateEnvironmentalModifiers_WithDirtAndGood_ShouldReturn1Point0()
@@ -416,9 +408,6 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(0.90, result, precision: 5);
     }
 
-    // ============================================================================
-    // Phase 4: Phase Modifier Tests
-    // ============================================================================
 
     [Fact]
     public void CalculatePhaseModifiers_StartDashInPhase_ShouldReturn1Point04()
@@ -558,9 +547,6 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(1.03, result, precision: 5);
     }
 
-    // ============================================================================
-    // Feature 005: Rail Runner Lane Position Tests
-    // ============================================================================
 
     [Fact]
     public void RailRunner_InLane2_WithClearPath_ShouldReturn1Point0()
@@ -940,9 +926,6 @@ public class SpeedModifierCalculatorTests
         Assert.Equal(1.03, result, precision: 5);
     }
 
-    // ============================================================================
-    // Phase 5: Random Variance Tests
-    // ============================================================================
 
     [Fact]
     public void ApplyRandomVariance_WithMockedRandom0Point5_ShouldReturnNeutral()

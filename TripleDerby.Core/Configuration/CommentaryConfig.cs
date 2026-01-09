@@ -6,9 +6,7 @@ namespace TripleDerby.Core.Configuration;
 /// </summary>
 public static class CommentaryConfig
 {
-    // ============================================================================
     // Synonym Pools - Action Verbs
-    // ============================================================================
 
     /// <summary>
     /// Verbs for horses accelerating or moving forward aggressively.
@@ -71,9 +69,7 @@ public static class CommentaryConfig
         "powers through the gap"
     ];
 
-    // ============================================================================
     // Synonym Pools - Positioning Phrases
-    // ============================================================================
 
     /// <summary>
     /// Phrases for taking the lead position.
@@ -132,9 +128,7 @@ public static class CommentaryConfig
         "Here comes the run to the finish!"
     ];
 
-    // ============================================================================
     // Commentary Templates
-    // ============================================================================
 
     /// <summary>
     /// Templates for clean lane changes.
@@ -182,9 +176,7 @@ public static class CommentaryConfig
         "{place} place: {horse}"
     ];
 
-    // ============================================================================
     // Event Detection Thresholds
-    // ============================================================================
 
     /// <summary>
     /// Time margin (in ticks) to consider a finish a "photo finish".

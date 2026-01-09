@@ -2,7 +2,6 @@ namespace TripleDerby.SharedKernel;
 
 /// <summary>
 /// DTO for a training option available to a horse.
-/// Part of Feature 020: Horse Training System.
 /// </summary>
 public record TrainingOptionResult
 {

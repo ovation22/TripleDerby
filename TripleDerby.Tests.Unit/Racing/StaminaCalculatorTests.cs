@@ -313,9 +313,7 @@ public class StaminaCalculatorTests
         };
     }
 
-    // ============================================================================
     // Happiness Stamina Efficiency Tests (Phase 2)
-    // ============================================================================
 
     [Trait("Category", "StaminaEfficiency")]
     [Fact]

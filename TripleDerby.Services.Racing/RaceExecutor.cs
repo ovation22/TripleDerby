@@ -343,7 +343,6 @@ public class RaceExecutor(
         // Apply stat progression and happiness changes for all horses
         ApplyStatProgression(raceRun);
 
-        // Feature 020 Phase 6: Reset training flag so horses can train again
         foreach (var raceRunHorse in raceRun.Horses)
         {
             raceRunHorse.Horse.HasTrainedSinceLastRace = false;
@@ -366,7 +365,6 @@ public class RaceExecutor(
     /// <summary>
     /// Applies stat progression and happiness changes to all horses based on race performance.
     /// Combines career phase, performance bonuses, and race-type focus for realistic development.
-    /// Part of Feature 018: Race Outcome Stat Progression System (Phases 5 & 6).
     /// </summary>
     private void ApplyStatProgression(RaceRun raceRun)
     {

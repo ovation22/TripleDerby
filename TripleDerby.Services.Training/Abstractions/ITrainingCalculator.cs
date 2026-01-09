@@ -5,7 +5,6 @@ namespace TripleDerby.Services.Training.Abstractions;
 /// <summary>
 /// Pure domain calculator for horse training mechanics.
 /// Contains zero infrastructure dependencies - all calculations are deterministic functions.
-/// Part of Feature 020: Horse Training System.
 /// </summary>
 public interface ITrainingCalculator
 {

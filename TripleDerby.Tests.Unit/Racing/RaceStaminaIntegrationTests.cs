@@ -271,9 +271,7 @@ public class RaceStaminaIntegrationTests
             "Late-race speed should be equal or less than early-race speed due to stamina depletion");
     }
 
-    // ========================================================================
     // Test Helper Methods
-    // ========================================================================
 
     private static RaceRunHorse CreateTestRaceRunHorse(
         int stamina = 50,

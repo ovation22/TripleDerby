@@ -25,9 +25,7 @@ namespace TripleDerby.Services.Racing.Config;
 /// </summary>
 public static class RaceModifierConfig
 {
-    // ============================================================================
     // Base Speed Configuration
-    // ============================================================================
 
     /// <summary>
     /// Target number of ticks for a standard 10-furlong race.
@@ -35,9 +33,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double TargetTicksFor10Furlongs = 237.0;
 
-    // ============================================================================
     // Race Simulation Configuration (consolidated from RaceService)
-    // ============================================================================
 
     /// <summary>
     /// Average horse speed in miles per hour.
@@ -74,9 +70,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double AverageBaseSpeed = 10.0 / TargetTicksFor10Furlongs;
 
-    // ============================================================================
     // Stat Modifier Configuration
-    // ============================================================================
 
     /// <summary>
     /// Speed stat modifier per point from neutral (50).
@@ -130,9 +124,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double HappinessStaminaPenaltyDivisor = 20.0;
 
-    // ============================================================================
     // Random Variance Configuration
-    // ============================================================================
 
     /// <summary>
     /// Random variance range applied per tick.
@@ -140,9 +132,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double RandomVarianceRange = 0.01;
 
-    // ============================================================================
     // Environmental Modifiers
-    // ============================================================================
 
     /// <summary>
     /// Speed modifiers by track surface type.
@@ -183,9 +173,7 @@ public static class RaceModifierConfig
             { ConditionId.Slow, 0.90 }       // Slowest condition
         };
 
-    // ============================================================================
     // Phase Modifiers
-    // ============================================================================
 
     /// <summary>
     /// Phase-based modifiers for each leg type (running style).
@@ -203,9 +191,7 @@ public static class RaceModifierConfig
             // RailRunner: Uses conditional lane/traffic bonus (see RailRunner configuration below)
         };
 
-    // ============================================================================
     // Rail Runner Configuration
-    // ============================================================================
 
     /// <summary>
     /// Rail runner speed bonus multiplier when positioned in lane 1 with clear path ahead.
@@ -221,9 +207,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal RailRunnerClearPathDistance = 0.5m;
 
-    // ============================================================================
     // Stamina Configuration
-    // ============================================================================
 
     /// <summary>
     /// Base stamina depletion rates by race distance category.
@@ -258,9 +242,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double MaxStaminaSpeedPenalty = 0.10;  // 10% max penalty (mild)
 
-    // ============================================================================
     // Overtaking & Lane Change Configuration
-    // ============================================================================
 
     /// <summary>
     /// Base threshold distance for detecting overtaking opportunities (in furlongs).
@@ -307,9 +289,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal LaneChangeMinClearanceAhead = 0.2m;
 
-    // ============================================================================
     // Risky Lane Change Configuration
-    // ============================================================================
 
     /// <summary>
     /// Base penalty duration for successful risky lane changes at 0 durability (in ticks).
@@ -337,9 +317,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double RiskySqueezeAgilityDivisor = 250.0;
 
-    // ============================================================================
     // Traffic Response Configuration
-    // ============================================================================
 
     /// <summary>
     /// FrontRunner frustration penalty magnitude when blocked with no clear lanes.
@@ -377,9 +355,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal TrafficBlockingDistance = 0.2m;
 
-    // ============================================================================
     // Lane Finding Configuration
-    // ============================================================================
 
     /// <summary>
     /// Look-ahead distance for StartDash to evaluate lane congestion (in furlongs).
@@ -387,9 +363,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal StartDashLookAheadDistance = 0.5m;
 
-    // ============================================================================
     // Stat Progression Configuration (Feature 018)
-    // ============================================================================
 
     /// <summary>
     /// Base stat growth rate per race as percentage of remaining gap to genetic ceiling.

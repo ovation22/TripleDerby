@@ -4,7 +4,6 @@ namespace TripleDerby.SharedKernel;
 
 /// <summary>
 /// DTO for training request status polling.
-/// Part of Feature 020: Horse Training System.
 /// </summary>
 public record TrainingRequestStatusResult
 {

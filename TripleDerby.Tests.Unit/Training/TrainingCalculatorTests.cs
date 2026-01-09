@@ -6,7 +6,6 @@ using TripleDerby.SharedKernel.Enums;
 namespace TripleDerby.Tests.Unit.Training;
 
 /// <summary>
-/// Tests for TrainingCalculator (Feature 020: Horse Training System).
 /// Validates training gain formulas, career phase multipliers, happiness modifiers,
 /// overwork mechanics, and LegType bonuses.
 /// </summary>
@@ -35,11 +34,9 @@ public class TrainingCalculatorTests
     {
         return new TrainingCalculator(new TestRandomGenerator(fixedRandomValue));
     }
-    // ============================================================================
-    // Phase 1: Training Gain Formula Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WhenAtCeiling_ReturnsZero()
     {
         // Arrange - Horse at genetic ceiling
@@ -61,6 +58,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WhenAboveCeiling_ReturnsZero()
     {
         // Arrange - Horse somehow above ceiling
@@ -82,6 +80,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithYoungHorse_Returns1Point20xMultiplier()
     {
         // Arrange - Young horse (1.20x training multiplier)
@@ -102,6 +101,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithPrimeHorse_Returns1Point40xMultiplier()
     {
         // Arrange - Prime horse (1.40x training multiplier)
@@ -122,6 +122,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithVeteranHorse_Returns0Point80xMultiplier()
     {
         // Arrange - Veteran horse (0.80x training multiplier)
@@ -142,6 +143,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithOldHorse_Returns0Point40xMultiplier()
     {
         // Arrange - Old horse (0.40x training multiplier)
@@ -162,6 +164,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithFullHappiness_Returns1Point0Modifier()
     {
         // Arrange - 100% happiness = 1.0x multiplier
@@ -181,6 +184,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithZeroHappiness_Returns0Point5Modifier()
     {
         // Arrange - 0% happiness = 0.5x multiplier
@@ -200,6 +204,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_EnforcesCeiling_DoesNotExceedPotential()
     {
         // Arrange - Close to ceiling, gain would exceed
@@ -220,6 +225,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithLargeGap_ReturnsLargerGain()
     {
         // Arrange - Large gap between actual and potential
@@ -238,11 +244,9 @@ public class TrainingCalculatorTests
         Assert.Equal(1.35, result, precision: 3);
     }
 
-    // ============================================================================
-    // Phase 2: Career Phase Multiplier Tests
-    // ============================================================================
 
     [Theory]
+    [Trait("Category", "CareerPhase")]
     [InlineData(5, 1.20)]    // Young: 0-19 races
     [InlineData(19, 1.20)]   // Young upper bound
     [InlineData(20, 1.40)]   // Prime: 20-59 races
@@ -267,11 +271,9 @@ public class TrainingCalculatorTests
         Assert.Equal(expected, result);
     }
 
-    // ============================================================================
-    // Phase 3: Happiness Effectiveness Modifier Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "HappinessModifiers")]
     public void CalculateHappinessEffectivenessModifier_At100Happiness_Returns1Point0()
     {
         // Arrange
@@ -285,6 +287,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "HappinessModifiers")]
     public void CalculateHappinessEffectivenessModifier_At0Happiness_Returns0Point5()
     {
         // Arrange
@@ -298,6 +301,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "HappinessModifiers")]
     public void CalculateHappinessEffectivenessModifier_At50Happiness_Returns0Point75()
     {
         // Arrange - Linear interpolation: 0.5 + (50 / 100) * 0.5 = 0.75
@@ -311,6 +315,7 @@ public class TrainingCalculatorTests
     }
 
     [Theory]
+    [Trait("Category", "HappinessModifiers")]
     [InlineData(0.0, 0.50)]
     [InlineData(25.0, 0.625)]
     [InlineData(50.0, 0.75)]
@@ -330,11 +335,9 @@ public class TrainingCalculatorTests
         Assert.Equal(expected, result, precision: 3);
     }
 
-    // ============================================================================
-    // Phase 4: Happiness Impact and Overwork Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "Overwork")]
     public void CalculateHappinessImpact_WithHighHappiness_NoOverwork()
     {
         // Arrange - 80% happiness, low overwork risk (15%)
@@ -353,6 +356,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "Overwork")]
     public void CalculateHappinessImpact_WithRecovery_PositiveHappinessChange()
     {
         // Arrange - Recovery training (negative cost = happiness gain)
@@ -370,6 +374,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "Overwork")]
     public void CalculateHappinessImpact_WithOverwork_AppliesExtraPenalty()
     {
         // Arrange - Simulated overwork (this test assumes deterministic overwork for testing)
@@ -385,11 +390,9 @@ public class TrainingCalculatorTests
         Assert.Equal(15.0, expectedPenalty);
     }
 
-    // ============================================================================
-    // Phase 5: LegType Bonus Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "LegType")]
     public void CalculateLegTypeBonus_WithMatchingTraining_Returns1Point20()
     {
         // Arrange - StartDash with Sprint Drills (Training ID 1)
@@ -405,6 +408,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "LegType")]
     public void CalculateLegTypeBonus_WithNonMatchingTraining_Returns1Point0()
     {
         // Arrange - StartDash with Distance Gallops (Training ID 2, not preferred)
@@ -420,6 +424,7 @@ public class TrainingCalculatorTests
     }
 
     [Theory]
+    [Trait("Category", "LegType")]
     [InlineData(LegTypeId.StartDash, 1, 1.20)]       // Sprint Drills match
     [InlineData(LegTypeId.FrontRunner, 6, 1.20)]     // Interval Training match
     [InlineData(LegTypeId.StretchRunner, 2, 1.20)]   // Distance Gallops match
@@ -442,11 +447,9 @@ public class TrainingCalculatorTests
         Assert.Equal(expected, result);
     }
 
-    // ============================================================================
-    // Phase 6: End-to-End Formula Tests (Feature Spec Example)
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithSpecExample_Returns0Point918()
     {
         // Arrange - Example from feature spec:
@@ -486,11 +489,9 @@ public class TrainingCalculatorTests
         Assert.Equal(0.8696, result, precision: 2);
     }
 
-    // ============================================================================
-    // Phase 7: Edge Cases and Boundary Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithAllMinimumMultipliers_ReturnsMinimalGain()
     {
         // Arrange - Worst case: old horse, zero happiness, no bonus
@@ -511,6 +512,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithAllMaximumMultipliers_ReturnsMaximalGain()
     {
         // Arrange - Best case: prime horse, full happiness, LegType bonus, large gap
@@ -530,6 +532,7 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithNegativeValues_HandlesGracefully()
     {
         // Arrange - Edge case: negative actual stat (shouldn't happen but test robustness)
