@@ -9,9 +9,7 @@ namespace TripleDerby.Core.Configuration;
 /// </summary>
 public static class PurseConfig
 {
-    // ============================================================================
     // Base Purse Amounts (10 furlong baseline)
-    // ============================================================================
 
     /// <summary>
     /// Base purse amounts by race class for 10 furlong baseline distance.
@@ -38,9 +36,7 @@ public static class PurseConfig
     /// </summary>
     public const decimal DistanceScalingFactor = 0.05m;  // +5% per furlong above 10f
 
-    // ============================================================================
     // Purse Distribution Patterns (Real-World Based)
-    // ============================================================================
 
     /// <summary>
     /// Purse distribution structure defining paid places and percentages.
@@ -136,9 +132,7 @@ public static class PurseConfig
             }
         };
 
-    // ============================================================================
     // Starter Stipend (Optional)
-    // ============================================================================
 
     /// <summary>
     /// Optional flat stipend for horses finishing outside the money.

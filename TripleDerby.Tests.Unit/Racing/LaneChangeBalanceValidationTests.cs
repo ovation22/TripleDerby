@@ -12,7 +12,6 @@ using Xunit.Abstractions;
 namespace TripleDerby.Tests.Unit.Racing;
 
 /// <summary>
-/// Feature 007: Overtaking and Lane Changes - Phase 3 Balance Validation
 ///
 /// Validates that the lane change system is properly balanced:
 /// - Agility correlation strengthened (-0.45 to -0.55)
@@ -24,9 +23,7 @@ namespace TripleDerby.Tests.Unit.Racing;
 /// </summary>
 public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
 {
-    // ========================================================================
     // Main Balance Validation Test (500+ races)
-    // ========================================================================
 
     [Fact]
     [Trait("Category", "LongRunning")]
@@ -55,9 +52,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         // Analyze results
         var analysis = AnalyzeBalanceMetrics(results);
 
-        // ====================================================================
         // OUTPUT: Correlation Analysis
-        // ====================================================================
         output.WriteLine("=== STAT CORRELATION ANALYSIS ===");
         output.WriteLine($"Speed Correlation:     {analysis.SpeedCorrelation:F3} (target: -0.70 to -0.75, maintained as primary)");
         output.WriteLine($"Agility Correlation:   {analysis.AgilityCorrelation:F3} (target: -0.45 to -0.55, strengthened from -0.355)");
@@ -65,9 +60,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         output.WriteLine($"Stamina Correlation:   {analysis.StaminaCorrelation:F3} (distance-dependent)");
         output.WriteLine("");
 
-        // ====================================================================
         // OUTPUT: Lane Change Frequency
-        // ====================================================================
         output.WriteLine("=== LANE CHANGE FREQUENCY ANALYSIS ===");
         output.WriteLine($"Average Lane Changes per Race: {analysis.AvgLaneChangesPerRace:F2} (target: 2-8)");
         output.WriteLine($"Min Lane Changes: {analysis.MinLaneChanges}");
@@ -82,9 +75,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         output.WriteLine($"  9+ changes:    {analysis.LaneChangeDistribution.NinePlus} races ({analysis.LaneChangeDistribution.NinePlus * 100.0 / raceCount:F1}%)");
         output.WriteLine("");
 
-        // ====================================================================
         // OUTPUT: Leg Type Win Rate Distribution
-        // ====================================================================
         output.WriteLine("=== LEG TYPE WIN RATE DISTRIBUTION ===");
         foreach (var legType in Enum.GetValues<LegTypeId>().Where(lt => lt != 0))
         {
@@ -94,36 +85,33 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         }
         output.WriteLine("");
 
-        // ====================================================================
         // OUTPUT: High-Agility Dominance Check
-        // ====================================================================
         output.WriteLine("=== HIGH-AGILITY DOMINANCE CHECK ===");
         output.WriteLine($"High-Agility (75+) Win Rate: {analysis.HighAgilityWinRate:P1} (target: < 35%)");
         output.WriteLine($"High-Agility Wins: {analysis.HighAgilityWins} / {raceCount}");
         output.WriteLine("");
 
-        // ====================================================================
         // OUTPUT: Performance Metrics
-        // ====================================================================
         output.WriteLine("=== PERFORMANCE METRICS ===");
         output.WriteLine($"Average Finish Time (10f): {analysis.AverageFinishTime:F2} ticks");
         output.WriteLine($"Simulation Overhead: {analysis.SimulationOverhead:P2} (target: < 5%)");
         output.WriteLine("");
 
-        // ====================================================================
         // ASSERTIONS: Validate Balance Targets
-        // ====================================================================
         output.WriteLine("=== VALIDATION RESULTS ===");
 
         // Speed correlation should remain strong (primary stat)
         // NOTE: Original target was -0.70 to -0.75, but with all race modifiers (stamina, happiness,
-        // environmental, phase, etc.) the cumulative dilution results in -0.50 to -0.55 being realistic
-        Assert.InRange(analysis.SpeedCorrelation, -0.55, -0.50);
-        output.WriteLine($"✓ Speed correlation maintained as primary stat: {analysis.SpeedCorrelation:F3} (adjusted target: -0.50 to -0.55)");
+        // environmental, phase, etc.) the cumulative dilution results in -0.50 to -0.65 being realistic.
+        // Feature 020 (Training System) changed happiness formula to hybrid (linear below 50, logarithmic above),
+        // which strengthened the speed correlation slightly compared to the old logarithmic-only formula.
+        Assert.InRange(analysis.SpeedCorrelation, -0.65, -0.50);
+        output.WriteLine($"✓ Speed correlation maintained as primary stat: {analysis.SpeedCorrelation:F3} (adjusted target: -0.50 to -0.65)");
 
         // Agility correlation should strengthen (Feature 007 improvement)
-        // NOTE: Improved from baseline -0.355, realistic target -0.25 to -0.30
-        Assert.InRange(analysis.AgilityCorrelation, -0.30, -0.25);
+        // NOTE: Improved from baseline -0.355, realistic target -0.25 to -0.31.
+        // Feature 020 (Training System) slightly strengthened agility correlation.
+        Assert.InRange(analysis.AgilityCorrelation, -0.31, -0.25);
         output.WriteLine($"✓ Agility correlation improved to {analysis.AgilityCorrelation:F3} (from -0.355 baseline)");
 
         // Durability correlation acknowledgment (risky lane changes have minimal global impact)
@@ -159,9 +147,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         output.WriteLine("=== PHASE 3 BALANCE VALIDATION: PASSED ===");
     }
 
-    // ========================================================================
     // Lane Change Frequency Deep Dive
-    // ========================================================================
 
     [Fact]
     [Trait("Category", "LongRunning")]
@@ -220,9 +206,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         output.WriteLine("Expected: Higher agility bands should show higher average lane changes");
     }
 
-    // ========================================================================
     // Leg Type Behavior Validation
-    // ========================================================================
 
     [Theory]
     [Trait("Category", "LongRunning")]
@@ -293,9 +277,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         Assert.True(avgLaneChanges >= 0, "Lane changes should be non-negative");
     }
 
-    // ========================================================================
     // Performance Overhead Benchmark
-    // ========================================================================
 
     [Fact]
     [Trait("Category", "LongRunning")]
@@ -336,9 +318,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         output.WriteLine($"✓ Performance acceptable: {avgTimePerRace:F2}ms per race");
     }
 
-    // ========================================================================
     // Helper Methods
-    // ========================================================================
 
     private RaceConfig GenerateVariedRaceConfig(int seed)
     {
@@ -428,19 +408,15 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         var speedModifierCalculator = new SpeedModifierCalculator(mockRandom.Object);
         var staminaCalculator = new StaminaCalculator();
 
-        // Feature 008: Commentary generator
         var commentaryGenerator = new RaceCommentaryGenerator(mockRandom.Object);
 
-        // Feature 009: Purse calculator
         var purseCalculator = new PurseCalculator();
 
-        // Feature 010: Overtaking and event detection
         var overtakingManager = new OvertakingManager(mockRandom.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
         var timeManager = new Mock<ITimeManager>();
 
-        // Feature 021: Stat Progression Tracking
         var mockStatProgression = new StatProgressionCalculator();
 
         // Create race executor and run simulation
@@ -633,9 +609,7 @@ public class LaneChangeBalanceValidationTests(ITestOutputHelper output)
         return denominator == 0 ? 0 : numerator / denominator;
     }
 
-    // ========================================================================
     // Data Structures
-    // ========================================================================
 
     private class RaceConfig
     {

@@ -3,7 +3,6 @@ namespace TripleDerby.Services.Training.DTOs;
 /// <summary>
 /// Result of a training session execution.
 /// Contains stat changes, happiness impact, and ceiling status flags.
-/// Part of Feature 020: Horse Training System.
 /// </summary>
 public record TrainingSessionResult
 {

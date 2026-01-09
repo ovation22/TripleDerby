@@ -4,7 +4,6 @@ namespace TripleDerby.Core.Entities;
 
 /// <summary>
 /// Entity tracking async training request status and lifecycle.
-/// Part of Feature 020: Horse Training System Phase 5.
 /// </summary>
 public class TrainingRequest
 {

@@ -27,23 +27,18 @@ public class RaceExecutorTests
             .Setup(r => r.ListAsync(It.IsAny<SimilarRaceStartsSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Horse>());
 
-        // Feature 005: Phase 4 - DI Refactor
         var speedModifierCalculator = new SpeedModifierCalculator(randomGeneratorMock.Object);
         var staminaCalculator = new StaminaCalculator();
 
-        // Feature 008: Commentary generator
         var commentaryGenerator = new RaceCommentaryGenerator(randomGeneratorMock.Object);
 
-        // Feature 009: Purse calculator
         var purseCalculator = new PurseCalculator();
 
-        // Feature 010: Overtaking and event detection
         var overtakingManager = new OvertakingManager(randomGeneratorMock.Object, speedModifierCalculator);
         var eventDetector = new EventDetector();
 
         var timeManager = new Mock<ITimeManager>();
 
-        // Feature 021: Stat Progression Tracking
         var mockStatProgression = new StatProgressionCalculator();
 
         _sut = new RaceExecutor(_repositoryMock.Object, randomGeneratorMock.Object, speedModifierCalculator, staminaCalculator, commentaryGenerator, purseCalculator, overtakingManager, eventDetector, timeManager.Object, mockStatProgression, NullLogger<RaceExecutor>.Instance);
@@ -407,9 +402,6 @@ public class RaceExecutorTests
             $"Time difference should be noticeable (>0.1 ticks). Actual: {timeDifference:F2}");
     }
 
-    // ============================================================================
-    // Feature 020 Phase 6: Training Integration Tests
-    // ============================================================================
 
     [Fact]
     public async Task Race_ResetsHasTrainedSinceLastRaceFlag()
@@ -483,9 +475,7 @@ public class RaceExecutorTests
         Assert.False(cpuHorse2.HasTrainedSinceLastRace);
     }
 
-    // ============================================================================
     // Helper Methods
-    // ============================================================================
 
     private static Race CreateRaceWithDetails(byte id, string raceName, string trackName, string surfaceName)
     {

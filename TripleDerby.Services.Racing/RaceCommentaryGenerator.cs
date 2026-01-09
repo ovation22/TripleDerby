@@ -8,7 +8,6 @@ namespace TripleDerby.Services.Racing;
 
 /// <summary>
 /// Generates natural language commentary for race events.
-/// Phase 2 implementation uses synonym pools for language variation.
 /// </summary>
 public class RaceCommentaryGenerator(IRandomGenerator random) : IRaceCommentaryGenerator
 {

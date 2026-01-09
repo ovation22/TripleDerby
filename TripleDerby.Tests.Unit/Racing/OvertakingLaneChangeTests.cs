@@ -16,9 +16,7 @@ namespace TripleDerby.Tests.Unit.Racing;
 /// </summary>
 public class OvertakingLaneChangeTests
 {
-    // ============================================================================
     // Cooldown Calculation Tests
-    // ============================================================================
 
     [Fact]
     public void Cooldown_WithAgility0_ShouldBe10Ticks()
@@ -64,9 +62,7 @@ public class OvertakingLaneChangeTests
         Assert.Equal(4.0, expectedCooldown, precision: 5);
     }
 
-    // ============================================================================
     // Overtaking Threshold Calculation Tests
-    // ============================================================================
 
     [Fact]
     public void OvertakingThreshold_WithSpeed50_EarlyRace_ShouldBe0Point275()
@@ -157,9 +153,7 @@ public class OvertakingLaneChangeTests
         Assert.Equal(0.4125m, threshold, precision: 4); // 0.25 × 1.1 × 1.5
     }
 
-    // ============================================================================
     // Lane Clearance Check Tests (Asymmetric)
-    // ============================================================================
 
     [Fact]
     public void IsLaneClear_WithNobodyInTargetLane_ShouldReturnTrue()
@@ -334,9 +328,7 @@ public class OvertakingLaneChangeTests
         Assert.False(isClear);
     }
 
-    // ============================================================================
     // Desired Lane Determination Tests (Phase 1: RailRunner Only)
-    // ============================================================================
 
     [Fact]
     public void DetermineDesiredLane_RailRunner_ShouldReturnLane1()
@@ -408,9 +400,7 @@ public class OvertakingLaneChangeTests
         Assert.Equal(4, desiredLane);
     }
 
-    // ============================================================================
     // Configuration Constant Validation Tests
-    // ============================================================================
 
     [Fact]
     public void Config_OvertakingBaseThreshold_ShouldBe0Point25()
@@ -461,9 +451,7 @@ public class OvertakingLaneChangeTests
         Assert.Equal(0.2m, RaceModifierConfig.LaneChangeMinClearanceAhead);
     }
 
-    // ============================================================================
     // Helper Methods (Mimic actual implementation logic for unit testing)
-    // ============================================================================
 
     /// <summary>
     /// Mimics RaceService.CalculateOvertakingThreshold for unit testing
@@ -509,13 +497,11 @@ public class OvertakingLaneChangeTests
         return horse.Horse.LegTypeId switch
         {
             LegTypeId.RailRunner => 1,  // Always seek the rail
-            _ => horse.Lane              // Phase 1: All others stay in current lane
+            _ => horse.Lane  // Other leg types stay in current lane
         };
     }
 
-    // ============================================================================
     // Test Data Creation Helpers
-    // ============================================================================
 
     private static Horse CreateHorseWithStats(byte speed, byte agility = 50, LegTypeId legType = LegTypeId.FrontRunner)
     {

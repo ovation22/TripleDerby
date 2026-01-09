@@ -5,7 +5,6 @@ namespace TripleDerby.Services.Racing.Abstractions;
 /// <summary>
 /// Interface for calculating stat progression multipliers and growth for horses after races.
 /// Implements career phase system, race-type focus, performance bonuses, and happiness changes.
-/// Part of Feature 018: Race Outcome Stat Progression System.
 /// </summary>
 public interface IStatProgressionCalculator
 {

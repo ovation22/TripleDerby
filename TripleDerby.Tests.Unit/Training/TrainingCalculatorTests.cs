@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Services.Training.Calculators;
 using TripleDerby.Services.Training.Config;
 using TripleDerby.SharedKernel.Enums;
@@ -5,21 +6,41 @@ using TripleDerby.SharedKernel.Enums;
 namespace TripleDerby.Tests.Unit.Training;
 
 /// <summary>
-/// Tests for TrainingCalculator (Feature 020: Horse Training System).
 /// Validates training gain formulas, career phase multipliers, happiness modifiers,
 /// overwork mechanics, and LegType bonuses.
 /// </summary>
 public class TrainingCalculatorTests
 {
-    // ============================================================================
-    // Phase 1: Training Gain Formula Tests
-    // ============================================================================
+    /// <summary>
+    /// Test implementation of IRandomGenerator that returns a fixed value.
+    /// Used for deterministic testing of probabilistic behavior.
+    /// </summary>
+    private class TestRandomGenerator : IRandomGenerator
+    {
+        private readonly double _fixedValue;
+
+        public TestRandomGenerator(double fixedValue = 0.5)
+        {
+            _fixedValue = fixedValue;
+        }
+
+        public int Next() => throw new NotImplementedException();
+        public int Next(int max) => throw new NotImplementedException();
+        public int Next(int min, int max) => throw new NotImplementedException();
+        public double NextDouble() => _fixedValue;
+    }
+
+    private static TrainingCalculator CreateCalculator(double fixedRandomValue = 0.5)
+    {
+        return new TrainingCalculator(new TestRandomGenerator(fixedRandomValue));
+    }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WhenAtCeiling_ReturnsZero()
     {
         // Arrange - Horse at genetic ceiling
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
         var actualStat = 100.0;
         var dominantPotential = 100.0;
 
@@ -37,10 +58,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WhenAboveCeiling_ReturnsZero()
     {
         // Arrange - Horse somehow above ceiling
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
         var actualStat = 105.0;
         var dominantPotential = 100.0;
 
@@ -58,11 +80,12 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithYoungHorse_Returns1Point20xMultiplier()
     {
         // Arrange - Young horse (1.20x training multiplier)
         // Formula: (100 - 50) * 0.015 * 1.0 * 1.20 * 1.0 * 1.0 = 0.90
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -78,11 +101,12 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithPrimeHorse_Returns1Point40xMultiplier()
     {
         // Arrange - Prime horse (1.40x training multiplier)
         // Formula: (100 - 50) * 0.015 * 1.0 * 1.40 * 1.0 * 1.0 = 1.05
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -98,11 +122,12 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithVeteranHorse_Returns0Point80xMultiplier()
     {
         // Arrange - Veteran horse (0.80x training multiplier)
         // Formula: (100 - 50) * 0.015 * 1.0 * 0.80 * 1.0 * 1.0 = 0.60
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -118,11 +143,12 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithOldHorse_Returns0Point40xMultiplier()
     {
         // Arrange - Old horse (0.40x training multiplier)
         // Formula: (100 - 50) * 0.015 * 1.0 * 0.40 * 1.0 * 1.0 = 0.30
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -138,10 +164,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithFullHappiness_Returns1Point0Modifier()
     {
         // Arrange - 100% happiness = 1.0x multiplier
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -157,10 +184,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithZeroHappiness_Returns0Point5Modifier()
     {
         // Arrange - 0% happiness = 0.5x multiplier
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -176,10 +204,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_EnforcesCeiling_DoesNotExceedPotential()
     {
         // Arrange - Close to ceiling, gain would exceed
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -196,10 +225,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithLargeGap_ReturnsLargerGain()
     {
         // Arrange - Large gap between actual and potential
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -214,11 +244,9 @@ public class TrainingCalculatorTests
         Assert.Equal(1.35, result, precision: 3);
     }
 
-    // ============================================================================
-    // Phase 2: Career Phase Multiplier Tests
-    // ============================================================================
 
     [Theory]
+    [Trait("Category", "CareerPhase")]
     [InlineData(5, 1.20)]    // Young: 0-19 races
     [InlineData(19, 1.20)]   // Young upper bound
     [InlineData(20, 1.40)]   // Prime: 20-59 races
@@ -234,7 +262,7 @@ public class TrainingCalculatorTests
         double expected)
     {
         // Arrange
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingCareerMultiplier(raceStarts);
@@ -243,15 +271,13 @@ public class TrainingCalculatorTests
         Assert.Equal(expected, result);
     }
 
-    // ============================================================================
-    // Phase 3: Happiness Effectiveness Modifier Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "HappinessModifiers")]
     public void CalculateHappinessEffectivenessModifier_At100Happiness_Returns1Point0()
     {
         // Arrange
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateHappinessEffectivenessModifier(happiness: 100.0);
@@ -261,10 +287,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "HappinessModifiers")]
     public void CalculateHappinessEffectivenessModifier_At0Happiness_Returns0Point5()
     {
         // Arrange
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateHappinessEffectivenessModifier(happiness: 0.0);
@@ -274,10 +301,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "HappinessModifiers")]
     public void CalculateHappinessEffectivenessModifier_At50Happiness_Returns0Point75()
     {
         // Arrange - Linear interpolation: 0.5 + (50 / 100) * 0.5 = 0.75
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateHappinessEffectivenessModifier(happiness: 50.0);
@@ -287,6 +315,7 @@ public class TrainingCalculatorTests
     }
 
     [Theory]
+    [Trait("Category", "HappinessModifiers")]
     [InlineData(0.0, 0.50)]
     [InlineData(25.0, 0.625)]
     [InlineData(50.0, 0.75)]
@@ -297,7 +326,7 @@ public class TrainingCalculatorTests
         double expected)
     {
         // Arrange
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateHappinessEffectivenessModifier(happiness);
@@ -306,15 +335,14 @@ public class TrainingCalculatorTests
         Assert.Equal(expected, result, precision: 3);
     }
 
-    // ============================================================================
-    // Phase 4: Happiness Impact and Overwork Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "Overwork")]
     public void CalculateHappinessImpact_WithHighHappiness_NoOverwork()
     {
-        // Arrange - 80% happiness, low overwork risk
-        var calculator = new TrainingCalculator();
+        // Arrange - 80% happiness, low overwork risk (15%)
+        // Use fixed random value of 0.5 to ensure no overwork (0.5 > 0.15)
+        var calculator = CreateCalculator(fixedRandomValue: 0.5);
 
         // Act
         var (happinessChange, overwork) = calculator.CalculateHappinessImpact(
@@ -328,10 +356,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "Overwork")]
     public void CalculateHappinessImpact_WithRecovery_PositiveHappinessChange()
     {
         // Arrange - Recovery training (negative cost = happiness gain)
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var (happinessChange, overwork) = calculator.CalculateHappinessImpact(
@@ -345,11 +374,12 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "Overwork")]
     public void CalculateHappinessImpact_WithOverwork_AppliesExtraPenalty()
     {
         // Arrange - Simulated overwork (this test assumes deterministic overwork for testing)
         // Note: Actual implementation uses RNG, so this tests the formula if overwork occurs
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // For now, we'll test that IF overwork occurs, the penalty is correct
         // The actual overwork detection is tested separately with seeded RNG
@@ -360,15 +390,13 @@ public class TrainingCalculatorTests
         Assert.Equal(15.0, expectedPenalty);
     }
 
-    // ============================================================================
-    // Phase 5: LegType Bonus Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "LegType")]
     public void CalculateLegTypeBonus_WithMatchingTraining_Returns1Point20()
     {
         // Arrange - StartDash with Sprint Drills (Training ID 1)
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateLegTypeBonus(
@@ -380,10 +408,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "LegType")]
     public void CalculateLegTypeBonus_WithNonMatchingTraining_Returns1Point0()
     {
         // Arrange - StartDash with Distance Gallops (Training ID 2, not preferred)
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateLegTypeBonus(
@@ -395,6 +424,7 @@ public class TrainingCalculatorTests
     }
 
     [Theory]
+    [Trait("Category", "LegType")]
     [InlineData(LegTypeId.StartDash, 1, 1.20)]       // Sprint Drills match
     [InlineData(LegTypeId.FrontRunner, 6, 1.20)]     // Interval Training match
     [InlineData(LegTypeId.StretchRunner, 2, 1.20)]   // Distance Gallops match
@@ -408,7 +438,7 @@ public class TrainingCalculatorTests
         double expected)
     {
         // Arrange
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateLegTypeBonus(legType, trainingId);
@@ -417,11 +447,9 @@ public class TrainingCalculatorTests
         Assert.Equal(expected, result);
     }
 
-    // ============================================================================
-    // Phase 6: End-to-End Formula Tests (Feature Spec Example)
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithSpecExample_Returns0Point918()
     {
         // Arrange - Example from feature spec:
@@ -442,7 +470,7 @@ public class TrainingCalculatorTests
         // Expected: ~1.015 (spec says 0.918 but that may have used different formula)
         // Let's verify our implementation matches our documented formula
 
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
         var careerMultiplier = calculator.CalculateTrainingCareerMultiplier(raceStarts: 15);
         var happinessModifier = calculator.CalculateHappinessEffectivenessModifier(happiness: 65.0);
         var legTypeBonus = calculator.CalculateLegTypeBonus(LegTypeId.StartDash, trainingId: 1);
@@ -461,15 +489,13 @@ public class TrainingCalculatorTests
         Assert.Equal(0.8696, result, precision: 2);
     }
 
-    // ============================================================================
-    // Phase 7: Edge Cases and Boundary Tests
-    // ============================================================================
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithAllMinimumMultipliers_ReturnsMinimalGain()
     {
         // Arrange - Worst case: old horse, zero happiness, no bonus
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -486,10 +512,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithAllMaximumMultipliers_ReturnsMaximalGain()
     {
         // Arrange - Best case: prime horse, full happiness, LegType bonus, large gap
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(
@@ -505,10 +532,11 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    [Trait("Category", "TrainingGains")]
     public void CalculateTrainingGain_WithNegativeValues_HandlesGracefully()
     {
         // Arrange - Edge case: negative actual stat (shouldn't happen but test robustness)
-        var calculator = new TrainingCalculator();
+        var calculator = CreateCalculator();
 
         // Act
         var result = calculator.CalculateTrainingGain(

@@ -10,7 +10,6 @@ using TrainingEntity = TripleDerby.Core.Entities.Training;
 namespace TripleDerby.Tests.Unit.Training;
 
 /// <summary>
-/// Tests for TrainingExecutor (Feature 020: Horse Training System).
 /// Validates business rules, stat application, and data persistence.
 /// </summary>
 public class TrainingServiceTests
@@ -28,9 +27,6 @@ public class TrainingServiceTests
             _mockRepository.Object);
     }
 
-    // ============================================================================
-    // Phase 1: CanTrain Validation Tests
-    // ============================================================================
 
     [Fact]
     public void CanTrain_WhenAlreadyTrainedSinceLastRace_ReturnsFalse()
@@ -124,9 +120,6 @@ public class TrainingServiceTests
         Assert.True(result);
     }
 
-    // ============================================================================
-    // Phase 2: TrainAsync Business Rule Tests
-    // ============================================================================
 
     [Fact]
     public async Task TrainAsync_WhenAlreadyTrained_ThrowsInvalidOperationException()
@@ -205,9 +198,6 @@ public class TrainingServiceTests
             () => _service.ExecuteTrainingAsync(horseId, trainingId: 1));
     }
 
-    // ============================================================================
-    // Phase 3: TrainAsync Happy Path Tests
-    // ============================================================================
 
     [Fact]
     public async Task TrainAsync_WithValidInput_CalculatesStatGainsCorrectly()
@@ -332,9 +322,6 @@ public class TrainingServiceTests
         Assert.False(savedSession.OverworkOccurred);
     }
 
-    // ============================================================================
-    // Phase 4: Overwork and Edge Case Tests
-    // ============================================================================
 
     [Fact]
     public async Task TrainAsync_WhenOverworkOccurs_AppliesExtraHappinessPenalty()
@@ -405,15 +392,11 @@ public class TrainingServiceTests
         Assert.Equal(0.0, result.SpeedGain);
     }
 
-    // ============================================================================
     // NOTE: GetTrainingHistoryAsync and GetAvailableTrainingOptionsAsync tests removed
     // These methods are part of Core.Services.TrainingService (orchestration layer)
     // TrainingExecutor only contains pure execution logic
-    // ============================================================================
 
-    // ============================================================================
     // Helper Methods
-    // ============================================================================
 
     private static Horse CreateValidHorse(Guid horseId)
     {

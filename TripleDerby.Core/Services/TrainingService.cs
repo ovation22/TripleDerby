@@ -198,9 +198,8 @@ public class TrainingService(
     /// </summary>
     public async Task<List<TrainingHistoryResult>> GetTrainingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default)
     {
-        var sessions = await repository.ListAsync<TrainingSession>(
-            ts => ts.HorseId == horseId,
-            cancellationToken);
+        var spec = new TrainingSessionSpecification(horseId);
+        var sessions = await repository.ListAsync(spec, cancellationToken);
 
         return sessions
             .OrderByDescending(ts => ts.SessionDate)
@@ -208,7 +207,7 @@ public class TrainingService(
             .Select(ts => new TrainingHistoryResult
             {
                 Id = ts.Id,
-                TrainingName = ts.Training?.Name ?? "Unknown",
+                TrainingName = ts.Training.Name,
                 SessionDate = ts.SessionDate,
                 SpeedGain = ts.SpeedGain,
                 StaminaGain = ts.StaminaGain,

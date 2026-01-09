@@ -1,26 +1,17 @@
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Services.Training.Abstractions;
 using TripleDerby.Services.Training.Config;
 using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Services.Training.Calculators;
 
-/// <summary>
-/// Pure domain calculator for horse training mechanics.
-/// All methods are deterministic functions with no infrastructure dependencies.
-/// Follows the same architectural pattern as StatProgressionCalculator.
-/// Part of Feature 020: Horse Training System.
-/// </summary>
 public class TrainingCalculator : ITrainingCalculator
 {
-    private readonly Random _random;
+    private readonly IRandomGenerator _randomGenerator;
 
-    /// <summary>
-    /// Initializes a new instance of TrainingCalculator.
-    /// </summary>
-    /// <param name="random">Optional Random instance for testing with seeded RNG</param>
-    public TrainingCalculator(Random? random = null)
+    public TrainingCalculator(IRandomGenerator randomGenerator)
     {
-        _random = random ?? new Random();
+        _randomGenerator = randomGenerator;
     }
 
     /// <summary>
@@ -114,7 +105,7 @@ public class TrainingCalculator : ITrainingCalculator
         var adjustedRisk = overworkRisk * riskMultiplier;
 
         // Roll for overwork
-        var overworkOccurred = _random.NextDouble() < adjustedRisk;
+        var overworkOccurred = _randomGenerator.NextDouble() < adjustedRisk;
 
         // Calculate final happiness change
         var happinessChange = -baseHappinessCost;

@@ -117,9 +117,7 @@ public class OvertakingManager(
         }
     }
 
-    // ============================================================================
     // Private Helper Methods
-    // ============================================================================
 
     /// <summary>
     /// Calculates the distance threshold for detecting overtaking opportunities.

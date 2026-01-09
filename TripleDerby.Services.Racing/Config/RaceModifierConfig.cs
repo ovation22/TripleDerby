@@ -25,9 +25,7 @@ namespace TripleDerby.Services.Racing.Config;
 /// </summary>
 public static class RaceModifierConfig
 {
-    // ============================================================================
     // Base Speed Configuration
-    // ============================================================================
 
     /// <summary>
     /// Target number of ticks for a standard 10-furlong race.
@@ -35,9 +33,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double TargetTicksFor10Furlongs = 237.0;
 
-    // ============================================================================
     // Race Simulation Configuration (consolidated from RaceService)
-    // ============================================================================
 
     /// <summary>
     /// Average horse speed in miles per hour.
@@ -74,9 +70,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double AverageBaseSpeed = 10.0 / TargetTicksFor10Furlongs;
 
-    // ============================================================================
     // Stat Modifier Configuration
-    // ============================================================================
 
     /// <summary>
     /// Speed stat modifier per point from neutral (50).
@@ -101,15 +95,14 @@ public static class RaceModifierConfig
     public const double HappinessSpeedBonusDivisor = 20.0;
 
     /// <summary>
-    /// Divisor for happiness penalty calculation (below neutral).
-    /// Smaller value = stronger penalty effect.
-    /// Formula: modifier = log10(1 + deficit) / HappinessSpeedPenaltyDivisor
-    /// Current value (15) yields ~3.4% penalty at happiness=0.
-    /// Asymmetric design: penalty divisor < bonus divisor (unhappiness hurts more).
-    /// Range: Happiness 0 = 0.9661x (-3.39%), Happiness 50 = 1.0x, Happiness 100 = 1.0255x (+2.55%)
-    /// Total effect: ±3% (tertiary stat, weaker than Agility ±5%, stronger than Stamina at 10f)
+    /// Linear penalty rate per happiness point below neutral (50).
+    /// Replaces logarithmic penalty for predictable, sustainable training-racing cycles.
+    /// Formula: modifier = deficit × HappinessLinearPenaltyPerPoint
+    /// Current value (0.0014) yields 0.14% penalty per point below 50.
+    /// Range: Happiness 0 = 0.93x (-7%), Happiness 46.5 = 0.9951x (-0.49%), Happiness 50 = 1.0x
+    /// Design: Linear penalty below 50, logarithmic bonus above 50 for asymmetric balance.
     /// </summary>
-    public const double HappinessSpeedPenaltyDivisor = 15.0;
+    public const double HappinessLinearPenaltyPerPoint = 0.0014;
 
     /// <summary>
     /// Divisor for happiness stamina efficiency bonus (above neutral).
@@ -131,9 +124,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double HappinessStaminaPenaltyDivisor = 20.0;
 
-    // ============================================================================
     // Random Variance Configuration
-    // ============================================================================
 
     /// <summary>
     /// Random variance range applied per tick.
@@ -141,9 +132,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double RandomVarianceRange = 0.01;
 
-    // ============================================================================
     // Environmental Modifiers
-    // ============================================================================
 
     /// <summary>
     /// Speed modifiers by track surface type.
@@ -184,9 +173,7 @@ public static class RaceModifierConfig
             { ConditionId.Slow, 0.90 }       // Slowest condition
         };
 
-    // ============================================================================
     // Phase Modifiers
-    // ============================================================================
 
     /// <summary>
     /// Phase-based modifiers for each leg type (running style).
@@ -204,9 +191,7 @@ public static class RaceModifierConfig
             // RailRunner: Uses conditional lane/traffic bonus (see RailRunner configuration below)
         };
 
-    // ============================================================================
     // Rail Runner Configuration
-    // ============================================================================
 
     /// <summary>
     /// Rail runner speed bonus multiplier when positioned in lane 1 with clear path ahead.
@@ -222,9 +207,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal RailRunnerClearPathDistance = 0.5m;
 
-    // ============================================================================
     // Stamina Configuration
-    // ============================================================================
 
     /// <summary>
     /// Base stamina depletion rates by race distance category.
@@ -259,9 +242,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double MaxStaminaSpeedPenalty = 0.10;  // 10% max penalty (mild)
 
-    // ============================================================================
     // Overtaking & Lane Change Configuration
-    // ============================================================================
 
     /// <summary>
     /// Base threshold distance for detecting overtaking opportunities (in furlongs).
@@ -308,9 +289,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal LaneChangeMinClearanceAhead = 0.2m;
 
-    // ============================================================================
     // Risky Lane Change Configuration
-    // ============================================================================
 
     /// <summary>
     /// Base penalty duration for successful risky lane changes at 0 durability (in ticks).
@@ -338,9 +317,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const double RiskySqueezeAgilityDivisor = 250.0;
 
-    // ============================================================================
     // Traffic Response Configuration
-    // ============================================================================
 
     /// <summary>
     /// FrontRunner frustration penalty magnitude when blocked with no clear lanes.
@@ -378,9 +355,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal TrafficBlockingDistance = 0.2m;
 
-    // ============================================================================
     // Lane Finding Configuration
-    // ============================================================================
 
     /// <summary>
     /// Look-ahead distance for StartDash to evaluate lane congestion (in furlongs).
@@ -388,9 +363,7 @@ public static class RaceModifierConfig
     /// </summary>
     public const decimal StartDashLookAheadDistance = 0.5m;
 
-    // ============================================================================
     // Stat Progression Configuration (Feature 018)
-    // ============================================================================
 
     /// <summary>
     /// Base stat growth rate per race as percentage of remaining gap to genetic ceiling.
@@ -547,19 +520,19 @@ public static class RaceModifierConfig
     /// Happiness increase for winning a race (1st place).
     /// Winning significantly boosts horse morale.
     /// </summary>
-    public const int WinHappinessBonus = 8;
+    public const int WinHappinessBonus = 12;
 
     /// <summary>
     /// Happiness increase for placing in a race (2nd place).
     /// Good performance moderately boosts morale.
     /// </summary>
-    public const int PlaceHappinessBonus = 4;
+    public const int PlaceHappinessBonus = 6;
 
     /// <summary>
     /// Happiness increase for showing in a race (3rd place).
     /// Solid performance provides small morale boost.
     /// </summary>
-    public const int ShowHappinessBonus = 2;
+    public const int ShowHappinessBonus = 3;
 
     /// <summary>
     /// Happiness change for mid-pack finishers (4th to 50th percentile).
@@ -571,7 +544,7 @@ public static class RaceModifierConfig
     /// Happiness decrease for back of pack finishers (bottom 50%).
     /// Poor performance damages morale.
     /// </summary>
-    public const int BackOfPackHappinessPenalty = -3;
+    public const int BackOfPackHappinessPenalty = -2;
 
     /// <summary>
     /// Happiness penalty for finishing race in exhausted state (<10% stamina).

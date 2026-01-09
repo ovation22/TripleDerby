@@ -62,16 +62,16 @@ public static class ModelBuilderExtensions
         );
 
         modelBuilder.Entity<Training>().HasData(
-            new Training { Id = 1, Name = "Sprint Drills", Description = "High-intensity sprint training to improve speed", SpeedModifier = 1.0, StaminaModifier = 0.2, AgilityModifier = 0.3, DurabilityModifier = 0.1, HappinessCost = 8.0, OverworkRisk = 0.15, IsRecovery = false },
-            new Training { Id = 2, Name = "Distance Gallops", Description = "Long-distance running to build stamina", SpeedModifier = 0.2, StaminaModifier = 1.0, AgilityModifier = 0.1, DurabilityModifier = 0.3, HappinessCost = 9.0, OverworkRisk = 0.12, IsRecovery = false },
-            new Training { Id = 3, Name = "Agility Course", Description = "Weaving through obstacles to enhance agility", SpeedModifier = 0.3, StaminaModifier = 0.2, AgilityModifier = 1.0, DurabilityModifier = 0.2, HappinessCost = 7.0, OverworkRisk = 0.10, IsRecovery = false },
-            new Training { Id = 4, Name = "Weight Pulling", Description = "Pulling heavy loads to build durability", SpeedModifier = 0.1, StaminaModifier = 0.3, AgilityModifier = 0.2, DurabilityModifier = 1.0, HappinessCost = 12.0, OverworkRisk = 0.25, IsRecovery = false },
-            new Training { Id = 5, Name = "Hill Climbing", Description = "Climbing steep inclines to build power and endurance", SpeedModifier = 0.4, StaminaModifier = 0.6, AgilityModifier = 0.2, DurabilityModifier = 0.8, HappinessCost = 10.0, OverworkRisk = 0.20, IsRecovery = false },
-            new Training { Id = 6, Name = "Interval Training", Description = "Alternating speed and rest to balance all stats", SpeedModifier = 0.5, StaminaModifier = 0.5, AgilityModifier = 0.4, DurabilityModifier = 0.4, HappinessCost = 6.0, OverworkRisk = 0.08, IsRecovery = false },
-            new Training { Id = 7, Name = "Dressage", Description = "Precision movements to improve agility and focus", SpeedModifier = 0.2, StaminaModifier = 0.1, AgilityModifier = 0.7, DurabilityModifier = 0.3, HappinessCost = 5.0, OverworkRisk = 0.05, IsRecovery = false },
-            new Training { Id = 8, Name = "Swimming", Description = "Low-impact swimming to build stamina and durability", SpeedModifier = 0.1, StaminaModifier = 0.4, AgilityModifier = 0.2, DurabilityModifier = 0.5, HappinessCost = 4.0, OverworkRisk = 0.05, IsRecovery = false },
-            new Training { Id = 9, Name = "Pasture Rest", Description = "Light grazing and rest to restore happiness", SpeedModifier = 0.0, StaminaModifier = 0.0, AgilityModifier = 0.0, DurabilityModifier = 0.0, HappinessCost = -15.0, OverworkRisk = 0.0, IsRecovery = true },
-            new Training { Id = 10, Name = "Spa Treatment", Description = "Massage, hydrotherapy, and pampering to restore morale", SpeedModifier = 0.0, StaminaModifier = 0.0, AgilityModifier = 0.0, DurabilityModifier = 0.0, HappinessCost = -20.0, OverworkRisk = 0.0, IsRecovery = true }
+            new Training { Id = 1, Name = "Sprint Drills", Description = "High-intensity sprint training to improve speed", SpeedModifier = 1.0, StaminaModifier = 0.2, AgilityModifier = 0.3, DurabilityModifier = 0.1, HappinessCost = 3.5, OverworkRisk = 0.15, IsRecovery = false },
+            new Training { Id = 2, Name = "Distance Gallops", Description = "Long-distance running to build stamina", SpeedModifier = 0.2, StaminaModifier = 1.0, AgilityModifier = 0.1, DurabilityModifier = 0.3, HappinessCost = 4.0, OverworkRisk = 0.12, IsRecovery = false },
+            new Training { Id = 3, Name = "Agility Course", Description = "Weaving through obstacles to enhance agility", SpeedModifier = 0.3, StaminaModifier = 0.2, AgilityModifier = 1.0, DurabilityModifier = 0.2, HappinessCost = 3.0, OverworkRisk = 0.10, IsRecovery = false },
+            new Training { Id = 4, Name = "Weight Pulling", Description = "Pulling heavy loads to build durability", SpeedModifier = 0.1, StaminaModifier = 0.3, AgilityModifier = 0.2, DurabilityModifier = 1.0, HappinessCost = 5.5, OverworkRisk = 0.25, IsRecovery = false },
+            new Training { Id = 5, Name = "Hill Climbing", Description = "Climbing steep inclines to build power and endurance", SpeedModifier = 0.4, StaminaModifier = 0.6, AgilityModifier = 0.2, DurabilityModifier = 0.8, HappinessCost = 4.5, OverworkRisk = 0.20, IsRecovery = false },
+            new Training { Id = 6, Name = "Interval Training", Description = "Alternating speed and rest to balance all stats", SpeedModifier = 0.5, StaminaModifier = 0.5, AgilityModifier = 0.4, DurabilityModifier = 0.4, HappinessCost = 2.5, OverworkRisk = 0.08, IsRecovery = false },
+            new Training { Id = 7, Name = "Dressage", Description = "Precision movements to improve agility and focus", SpeedModifier = 0.2, StaminaModifier = 0.1, AgilityModifier = 0.7, DurabilityModifier = 0.3, HappinessCost = 2.0, OverworkRisk = 0.05, IsRecovery = false },
+            new Training { Id = 8, Name = "Swimming", Description = "Low-impact swimming to build stamina and durability", SpeedModifier = 0.1, StaminaModifier = 0.4, AgilityModifier = 0.2, DurabilityModifier = 0.5, HappinessCost = 1.5, OverworkRisk = 0.05, IsRecovery = false },
+            new Training { Id = 9, Name = "Pasture Rest", Description = "Light grazing and rest to restore happiness", SpeedModifier = 0.0, StaminaModifier = 0.0, AgilityModifier = 0.0, DurabilityModifier = 0.0, HappinessCost = -10.0, OverworkRisk = 0.0, IsRecovery = true },
+            new Training { Id = 10, Name = "Spa Treatment", Description = "Massage, hydrotherapy, and pampering to restore morale", SpeedModifier = 0.0, StaminaModifier = 0.0, AgilityModifier = 0.0, DurabilityModifier = 0.0, HappinessCost = -15.0, OverworkRisk = 0.0, IsRecovery = true }
         );
 
         modelBuilder.Entity<Condition>().HasData(
@@ -126,61 +126,45 @@ public static class ModelBuilderExtensions
         );
 
         modelBuilder.Entity<Race>().HasData(
-            // ============================================================================
             // Championship Races (Grade I equivalent) - 10-12.5f, various surfaces
-            // ============================================================================
             new Race { Id = 1, Name = "Triple Derby", Description = "Run for the Spires - Signature Championship Classic", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 10, RaceClassId = RaceClassId.Championship, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1500000 },
             new Race { Id = 2, Name = "Belle Meade Cup", Description = "Race of Winners - Championship Distance Classic", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 12, RaceClassId = RaceClassId.Championship, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1100000 },
             new Race { Id = 3, Name = "Emerald Classic", Description = "Championship Turf Classic", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)4, Furlongs = 10, RaceClassId = RaceClassId.Championship, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
 
-            // ============================================================================
             // Elite Stakes (Grade II/III equivalent) - 8-12f
-            // ============================================================================
             new Race { Id = 4, Name = "Sunflower River Invitational", Description = "Elite spring invitational - tactical two-turn showdown", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 9.5m, RaceClassId = RaceClassId.EliteStakes, MinFieldSize = 8, MaxFieldSize = 16, Purse = 500000 },
             new Race { Id = 5, Name = "Cobalt Ridge Handicap", Description = "Handicap feature - pace, trip, and grit decide it", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 8, RaceClassId = RaceClassId.GradeIII, MinFieldSize = 8, MaxFieldSize = 14, Purse = 200000 },
             new Race { Id = 6, Name = "Blue Lantern Derby Trial", Description = "Premier classic prep - Derby points and reputations on the line", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)6, Furlongs = 9, RaceClassId = RaceClassId.EliteStakes, MinFieldSize = 8, MaxFieldSize = 16, Purse = 500000 },
             new Race { Id = 7, Name = "Silverline Turf Mile", Description = "Elite one-mile turf feature - speed, cover, and a late kick", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)7, Furlongs = 8, RaceClassId = RaceClassId.GradeIII, MinFieldSize = 8, MaxFieldSize = 14, Purse = 200000 },
 
-            // ============================================================================
             // Stakes Races - 6-10f
-            // ============================================================================
             new Race { Id = 8, Name = "Apex Memorial Stakes", Description = "Prestige stakes feature - quality open company", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)8, Furlongs = 9, RaceClassId = RaceClassId.Stakes, MinFieldSize = 8, MaxFieldSize = 14, Purse = 100000 },
             new Race { Id = 9, Name = "Spirelight Sprint", Description = "Fast-paced stakes dash - sharp break required", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 6, RaceClassId = RaceClassId.Stakes, MinFieldSize = 8, MaxFieldSize = 14, Purse = 100000 },
             new Race { Id = 10, Name = "Horizon Mile", Description = "One-mile turf feature - patient rides get rewarded", SurfaceId = SurfaceId.Turf, TrackId = TrackId.Pimento, Furlongs = 8, RaceClassId = RaceClassId.Stakes, MinFieldSize = 8, MaxFieldSize = 14, Purse = 100000 },
 
-            // ============================================================================
             // Allowance Races - 6-10f
-            // ============================================================================
             new Race { Id = 11, Name = "Northbridge Silver Series", Description = "Allowance route - mid-tier condition race", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 8.5m, RaceClassId = RaceClassId.Allowance, MinFieldSize = 8, MaxFieldSize = 12, Purse = 40000 },
             new Race { Id = 12, Name = "Verdant Park Green Ribbon", Description = "Allowance on turf - developing older runners", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)4, Furlongs = 8, RaceClassId = RaceClassId.Allowance, MinFieldSize = 8, MaxFieldSize = 12, Purse = 40000 },
             new Race { Id = 13, Name = "Founders Select", Description = "Optional allowance distance - competitive conditioned field", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)6, Furlongs = 10, RaceClassId = RaceClassId.AllowanceOptional, MinFieldSize = 8, MaxFieldSize = 12, Purse = 50000 },
 
-            // ============================================================================
             // Claiming Races - 5-8.5f
-            // ============================================================================
             new Race { Id = 14, Name = "Dockside Open Market Sprint", Description = "Mid-level claiming sprint - pace-driven affair", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 6.5m, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
             new Race { Id = 15, Name = "Ironworks Sale Dash", Description = "Claiming sprint - quick turnaround and sharp speed", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)7, Furlongs = 6, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
             new Race { Id = 16, Name = "Seabreeze Open Market Route", Description = "Claiming route - stamina and trip matter", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)8, Furlongs = 8.5m, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
             new Race { Id = 17, Name = "Spires Turf Exchange", Description = "Claiming on turf - positioning and late kick", SurfaceId = SurfaceId.Turf, TrackId = TrackId.TripleSpires, Furlongs = 7.5m, RaceClassId = RaceClassId.Claiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 25000 },
 
-            // ============================================================================
             // Maiden Races - 5-8f
-            // ============================================================================
             new Race { Id = 18, Name = "Keystone First Flight", Description = "Maiden special weight - first-time starters and lightly raced", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)4, Furlongs = 6, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
             new Race { Id = 19, Name = "Copperfield Debut", Description = "Maiden special weight - developing runners", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 7, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
             new Race { Id = 20, Name = "Brightline Newcomer Sprint", Description = "Maiden sprint - early speed and clean break required", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 5, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
             new Race { Id = 21, Name = "Greenway First Mile", Description = "Maiden mile on turf - education and rhythm", SurfaceId = SurfaceId.Turf, TrackId = (TrackId)6, Furlongs = 8, RaceClassId = RaceClassId.Maiden, MinFieldSize = 8, MaxFieldSize = 12, Purse = 20000 },
 
-            // ============================================================================
             // Maiden Claiming Races - 5-6.5f
-            // ============================================================================
             new Race { Id = 22, Name = "Dockside First Bid", Description = "Entry-level maiden claiming - learn-and-run field", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)5, Furlongs = 5, RaceClassId = RaceClassId.MaidenClaiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 18000 },
             new Race { Id = 23, Name = "Ironworks Opening Offer", Description = "Maiden claiming sprint - pace pressure throughout", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)7, Furlongs = 5.5m, RaceClassId = RaceClassId.MaidenClaiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 18000 },
             new Race { Id = 24, Name = "Seabreeze First Offer", Description = "Maiden claiming - developing runners with a price tag", SurfaceId = SurfaceId.Dirt, TrackId = (TrackId)8, Furlongs = 6.5m, RaceClassId = RaceClassId.MaidenClaiming, MinFieldSize = 8, MaxFieldSize = 12, Purse = 18000 },
 
-            // ============================================================================
             // Special/Festival Races - Various
-            // ============================================================================
             new Race { Id = 25, Name = "Spires Juvenile Championship", Description = "Two-year-old season-definer beneath the Spires", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.TripleSpires, Furlongs = 8.5m, RaceClassId = RaceClassId.Championship, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
             new Race { Id = 26, Name = "Belle Meade Marathon Championship", Description = "Ultra-distance crown - the ultimate stamina exam", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.BellMeade, Furlongs = 14, RaceClassId = RaceClassId.Championship, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1200000 },
             new Race { Id = 27, Name = "Pimento Sprint Championship", Description = "Six-furlong sprint crown - speed at the highest level", SurfaceId = SurfaceId.Dirt, TrackId = TrackId.Pimento, Furlongs = 6, RaceClassId = RaceClassId.Championship, MinFieldSize = 10, MaxFieldSize = 20, Purse = 1000000 },
