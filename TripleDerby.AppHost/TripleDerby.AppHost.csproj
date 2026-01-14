@@ -25,6 +25,12 @@
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.0" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />
+    <!-- Explicit version overrides to resolve conflicts with Aspire 13.1.0 dependencies -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.2.0" />
   </ItemGroup>
 
 </Project>
