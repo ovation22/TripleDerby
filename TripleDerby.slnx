@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="TripleDerby.Tests.Unit/TripleDerby.Tests.Unit.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/BreedingSeeder/BreedingSeeder.csproj" />
+  </Folder>
+  <Project Path="TripleDerby.AppHost/TripleDerby.AppHost.csproj" />
+  <Project Path="TripleDerby.ServiceDefaults/TripleDerby.ServiceDefaults.csproj" />
+  <Project Path="TripleDerby.Api/TripleDerby.Api.csproj" />
+  <Project Path="TripleDerby.Web/TripleDerby.Web.csproj" />
+  <Project Path="TripleDerby.Core/TripleDerby.Core.csproj" />
+  <Project Path="TripleDerby.Infrastructure/TripleDerby.Infrastructure.csproj" />
+  <Project Path="TripleDerby.SharedKernel/TripleDerby.SharedKernel.csproj" />
+  <Project Path="TripleDerby.Services.Breeding/TripleDerby.Services.Breeding.csproj" />
+  <Project Path="TripleDerby.Services.Racing/TripleDerby.Services.Racing.csproj" />
+  <Project Path="TripleDerby.Services.Training/TripleDerby.Services.Training.csproj" />
+</Solution>
