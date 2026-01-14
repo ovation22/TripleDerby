@@ -49,15 +49,14 @@ builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
 
-// Messaging - Generic message consumer with Azure Service Bus adapter
-builder.Services.AddSingleton<IMessageBrokerAdapter, ServiceBusBrokerAdapter>();
+// Messaging - Generic message consumer with RabbitMQ adapter
+builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
 builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceRequested, IRaceRequestProcessor>>();
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddKeyedSingleton<IMessagePublisher, AzureServiceBusPublisher>("servicebus");
-builder.Services.AddSingleton<IMessagePublisher, AzureServiceBusPublisher>();
+builder.Services.AddMessageBus(builder.Configuration);
 
 builder.AddSqlServerClient(connectionName: "sql");
-builder.AddAzureServiceBusClient(connectionName: "servicebus");
+builder.AddRabbitMQClient(connectionName: "messaging");
 
 try
 {

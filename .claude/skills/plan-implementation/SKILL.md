@@ -108,15 +108,33 @@ Use IMPLEMENTATION_TEMPLATE.md as a starting point.
 ## Workflow
 
 ```
-feature-discovery → plan-implementation → implement → repeat
-       ↓                    ↓                 ↓
-  Feature Spec      Implementation Plan   Working Code
+feature-discovery → plan-implementation → implement phases → repeat
+       ↓                    ↓                    ↓
+  Feature Spec      Implementation Plan    Working Code
 ```
 
-### Phase Progression
+### Phase Progression (CRITICAL)
+
+**STOP after each phase for user review and approval before proceeding.**
+
 ```
-Phase 1 Complete → Mark todos done → Add Phase 2 todos → Repeat
+1. Implement Phase N
+2. Run tests to verify
+3. Report results to user
+4. STOP and WAIT for user review
+5. User approves → Commit changes
+6. User confirms → Start Phase N+1
 ```
+
+**DO NOT proceed to the next phase without explicit user approval.**
+
+Each phase checkpoint should include:
+- Summary of what was implemented
+- Test results (all tests passing)
+- Files created/modified
+- Ask: "Would you like me to commit these changes?"
+- Wait for approval before committing
+- Wait for approval before starting the next phase
 
 ## Reference Files
 

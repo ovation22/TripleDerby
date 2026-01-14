@@ -40,8 +40,9 @@ builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
 builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<TrainingRequested, ITrainingRequestProcessor>>();
 
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddSingleton<IMessagePublisher, RabbitMqMessagePublisher>();
+builder.Services.AddMessageBus(builder.Configuration);
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
+builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddRabbitMQClient(connectionName: "messaging");

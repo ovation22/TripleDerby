@@ -24,11 +24,19 @@ REFACTOR → Clean up code (10-25 min)
 COMMIT  → Save your work (after user approval)
 ```
 
-## Phase Progression
+## Phase Progression (CRITICAL)
+
+**STOP after each phase. Wait for user approval before continuing.**
 
 ```
-Phase 1 Complete → Mark todos done → Add Phase 2 todos → Repeat
+1. Complete Phase N
+2. Run tests, report results
+3. STOP - Ask user to review
+4. Wait for approval to commit
+5. Wait for approval to start next phase
 ```
+
+**Never proceed to Phase N+1 without explicit user approval.**
 
 ## Task Sizing
 
@@ -55,8 +63,10 @@ Phase 1 Complete → Mark todos done → Add Phase 2 todos → Repeat
 ### Completing a Phase
 - [ ] All tasks done
 - [ ] All tests passing
+- [ ] Report to user and STOP
+- [ ] Wait for user review
 - [ ] Ask user before committing
-- [ ] Add next phase to TodoWrite
+- [ ] Wait for approval to start next phase
 
 ## Reference
 

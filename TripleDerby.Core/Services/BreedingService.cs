@@ -1,6 +1,5 @@
 using Ardalis.Specification;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
@@ -24,7 +23,7 @@ public class BreedingService(
     ITripleDerbyRepository repository,
     IOptions<CacheConfig> cacheOptions,
     ITimeManager timeManager,
-    [FromKeyedServices("rabbitmq")] IMessagePublisher messagePublisher,
+    IMessagePublisher messagePublisher,
     ILogger<BreedingService> logger)
     : IBreedingService
 {
