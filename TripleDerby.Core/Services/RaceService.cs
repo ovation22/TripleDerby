@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
@@ -16,7 +15,7 @@ namespace TripleDerby.Core.Services;
 
 public class RaceService(
     ITripleDerbyRepository repository,
-    [FromKeyedServices("servicebus")] IMessagePublisher messagePublisher,
+    IMessagePublisher messagePublisher,
     ITimeManager timeManager,
     ILogger<RaceService> logger) : IRaceService
 {
@@ -67,10 +66,7 @@ public class RaceService(
             RequestedAt = DateTime.UtcNow
         };
 
-        await messagePublisher.PublishAsync(
-            message,
-            new MessagePublishOptions { Destination = "race-requests" },
-            cancellationToken);
+        await messagePublisher.PublishAsync(message, cancellationToken: cancellationToken);
 
         return new RaceRequestStatusResult(
             Id: correlationId,
@@ -150,10 +146,7 @@ public class RaceService(
                 RequestedAt = entity.CreatedDate.DateTime
             };
 
-            await messagePublisher.PublishAsync(
-                msg,
-                new MessagePublishOptions { Destination = "race-requests" },
-                cancellationToken);
+            await messagePublisher.PublishAsync(msg, cancellationToken: cancellationToken);
 
             logger.LogInformation("Replayed RaceRequested event for RaceRequestId={Id}", entity.Id);
 
@@ -250,10 +243,7 @@ public class RaceService(
                         RequestedAt = r.CreatedDate.DateTime
                     };
 
-                    await messagePublisher.PublishAsync(
-                        msg,
-                        new MessagePublishOptions { Destination = "race-requests" },
-                        cancellationToken);
+                    await messagePublisher.PublishAsync(msg, cancellationToken: cancellationToken);
 
                     Interlocked.Increment(ref publishedCount);
                     logger.LogInformation("Replayed RaceRequested for RaceRequestId={Id}", r.Id);

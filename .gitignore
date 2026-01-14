@@ -420,3 +420,6 @@ FodyWeavers.xsd
 # Claude Code - ignore personal config but share skills
 .claude/*
 !.claude/skills/
+
+# Claude Code temporary files
+tmpclaude-*

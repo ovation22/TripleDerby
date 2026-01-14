@@ -43,7 +43,7 @@ builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 builder.Services.AddSingleton<IHorseNameGenerator, HorseNameGenerator>();
-builder.Services.AddSingleton<IMessagePublisher, RabbitMqMessagePublisher>();
+builder.Services.AddMessageBus(builder.Configuration);
 builder.Services.AddSingleton<ColorCache>(); // Color cache for performance optimization
 
 builder.AddSqlServerClient(connectionName: "sql");

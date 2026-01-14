@@ -3,7 +3,6 @@ using Serilog;
 using Serilog.Context;
 using TripleDerby.Api.Config;
 using TripleDerby.Core.Abstractions.Caching;
-using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -52,7 +51,6 @@ public class Program
             builder.AddSqlServerClient(connectionName: "sql");
             builder.AddRedisDistributedCache(connectionName: "cache");
             builder.AddRabbitMQClient(connectionName: "messaging");
-            builder.AddAzureServiceBusClient(connectionName: "servicebus");
 
             builder.Services.AddCorsConfig();
             builder.Services.AddControllersConfig();
@@ -70,6 +68,7 @@ public class Program
 
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IRaceService, RaceService>();
+            builder.Services.AddScoped<IRaceRunService, RaceRunService>();
             builder.Services.AddScoped<ITrackService, TrackService>();
             builder.Services.AddScoped<IHorseService, HorseService>();
             builder.Services.AddScoped<IStatsService, StatsService>();
@@ -77,10 +76,9 @@ public class Program
             builder.Services.AddScoped<IBreedingService, BreedingService>();
             builder.Services.AddScoped<ITrainingService, TrainingService>();
 
-            // Keyed DI for dual-broker support (Feature 011)
-            // Breeding uses RabbitMQ, Race uses Azure Service Bus
-            builder.Services.AddKeyedSingleton<IMessagePublisher, RabbitMqMessagePublisher>("rabbitmq");
-            builder.Services.AddKeyedSingleton<IMessagePublisher, AzureServiceBusPublisher>("servicebus");
+            // Message bus with configuration-driven routing (Feature 021)
+            // Provider selected automatically based on available connection strings
+            builder.Services.AddMessageBus(builder.Configuration);
 
             var app = builder.Build();
 

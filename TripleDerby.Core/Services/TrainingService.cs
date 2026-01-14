@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
@@ -17,7 +16,7 @@ namespace TripleDerby.Core.Services;
 /// </summary>
 public class TrainingService(
     ITripleDerbyRepository repository,
-    [FromKeyedServices("rabbitmq")] IMessagePublisher messagePublisher,
+    IMessagePublisher messagePublisher,
     ITimeManager timeManager,
     ILogger<TrainingService> logger) : ITrainingService
 {
