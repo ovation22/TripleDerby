@@ -17,6 +17,7 @@
   <Project Path="TripleDerby.Infrastructure/TripleDerby.Infrastructure.csproj" />
   <Project Path="TripleDerby.SharedKernel/TripleDerby.SharedKernel.csproj" />
   <Project Path="TripleDerby.Services.Breeding/TripleDerby.Services.Breeding.csproj" />
+  <Project Path="TripleDerby.Services.Feeding/TripleDerby.Services.Feeding.csproj" />
   <Project Path="TripleDerby.Services.Racing/TripleDerby.Services.Racing.csproj" />
   <Project Path="TripleDerby.Services.Training/TripleDerby.Services.Training.csproj" />
 </Solution>

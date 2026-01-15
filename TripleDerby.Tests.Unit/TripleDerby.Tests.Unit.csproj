@@ -28,6 +28,7 @@
     <ProjectReference Include="..\TripleDerby.Core\TripleDerby.Core.csproj" />
     <ProjectReference Include="..\TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj" />
     <ProjectReference Include="..\TripleDerby.Services.Breeding\TripleDerby.Services.Breeding.csproj" />
+    <ProjectReference Include="..\TripleDerby.Services.Feeding\TripleDerby.Services.Feeding.csproj" />
     <ProjectReference Include="..\TripleDerby.Services.Racing\TripleDerby.Services.Racing.csproj" />
     <ProjectReference Include="..\TripleDerby.Services.Training\TripleDerby.Services.Training.csproj" />
   </ItemGroup>
