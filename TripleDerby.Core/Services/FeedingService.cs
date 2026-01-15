@@ -56,7 +56,8 @@ public class FeedingService(
         {
             Id = x.Id,
             Name = x.Name,
-            Description = x.Description
+            Description = x.Description,
+            Category = x.CategoryId.ToString()
         });
     }
 

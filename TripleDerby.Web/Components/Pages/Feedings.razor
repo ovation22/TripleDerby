@@ -25,8 +25,9 @@ else
 {
     <FluentDataGrid Items="@_feedings.AsQueryable()"
                     TGridItem="FeedingsResult"
-                    GridTemplateColumns="1fr 2fr">
+                    GridTemplateColumns="1fr 1fr 2fr">
         <PropertyColumn Property="@(f => f.Name)" Title="Name" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+        <PropertyColumn Property="@(f => f.Category)" Title="Category" Sortable="true" />
         <PropertyColumn Property="@(f => f.Description)" Title="Description" Sortable="true" />
     </FluentDataGrid>
 }
