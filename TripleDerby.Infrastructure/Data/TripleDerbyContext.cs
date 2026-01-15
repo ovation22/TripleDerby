@@ -11,6 +11,7 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
     public virtual DbSet<Feeding> Feedings { get; set; } = null!;
     public virtual DbSet<FeedingCategory> FeedingCategories { get; set; } = null!;
     public virtual DbSet<FeedingSession> FeedingSession { set; get; } = null!;
+    public virtual DbSet<HorseFeedingPreference> HorseFeedingPreferences { get; set; } = null!;
     public virtual DbSet<Horse> Horses { get; set; } = null!;
     public virtual DbSet<HorseStatistic> HorseStatistics { get; set; } = null!;
     public virtual DbSet<LegType> LegTypes { get; set; } = null!;
@@ -114,6 +115,15 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
         modelBuilder.Entity<FeedingSession>()
             .Property(c => c.Result)
             .HasConversion<byte>();
+
+        // HorseFeedingPreference configuration (Feature 022 - Horse Feeding System)
+        modelBuilder.Entity<HorseFeedingPreference>()
+            .Property(c => c.Preference)
+            .HasConversion<byte>();
+
+        modelBuilder.Entity<HorseFeedingPreference>()
+            .HasIndex(e => new { e.HorseId, e.FeedingId })
+            .IsUnique();
 
         modelBuilder.Entity<RaceRun>()
             .HasOne(x => x.Race);

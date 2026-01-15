@@ -60,8 +60,10 @@ public class Horse
     public virtual ICollection<Horse> Foals { get; set; } = new Collection<Horse>();
 
     public virtual ICollection<HorseStatistic> Statistics { get; set; } = new Collection<HorseStatistic>();
-    
+
     public virtual ICollection<FeedingSession> FeedingSessions { get; set; } = new Collection<FeedingSession>();
+
+    public virtual ICollection<HorseFeedingPreference> FeedingPreferences { get; set; } = new Collection<HorseFeedingPreference>();
 
     public double Speed
     {
