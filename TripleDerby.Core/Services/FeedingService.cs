@@ -52,7 +52,7 @@ public class FeedingService(
 
     public async Task<FeedingSessionResult> Feed(byte feedingId, Guid horseId)
     {
-        const FeedResponse result = FeedResponse.Accepted;
+        const FeedResponse result = FeedResponse.Liked;
 
         // Get Horse, with Stats, and with prior feedings of type
         // Save horse, with updated stats (Actual)

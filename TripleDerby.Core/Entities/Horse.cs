@@ -38,7 +38,9 @@ public class Horse
     public int Parented { get; set; }
 
     public bool HasTrainedSinceLastRace { get; set; }
-    
+
+    public bool HasFedSinceLastRace { get; set; }
+
     public Guid OwnerId { get; set; }
 
     public DateTimeOffset CreatedDate { get; set; }

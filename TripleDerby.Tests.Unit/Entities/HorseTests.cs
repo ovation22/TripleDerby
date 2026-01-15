@@ -249,4 +249,200 @@ public class HorseTests
         Assert.False(horse.HasTrainedSinceLastRace);
         Assert.False(horse.IsRetired);
     }
+
+    // Feature 022 - Feeding System Tests
+
+    [Fact]
+    public void Horse_HasFedSinceLastRace_DefaultsToFalse()
+    {
+        // Arrange & Act
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            ColorId = 1,
+            LegTypeId = LegTypeId.FrontRunner,
+            IsMale = true,
+            OwnerId = Guid.NewGuid()
+        };
+
+        // Assert
+        Assert.False(horse.HasFedSinceLastRace);
+    }
+
+    [Fact]
+    public void Horse_HasFedSinceLastRace_CanBeSetToTrue()
+    {
+        // Arrange
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            HasFedSinceLastRace = false
+        };
+
+        // Act
+        horse.HasFedSinceLastRace = true;
+
+        // Assert
+        Assert.True(horse.HasFedSinceLastRace);
+    }
+
+    [Fact]
+    public void Horse_HasFedSinceLastRace_CanBeResetToFalse()
+    {
+        // Arrange
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            HasFedSinceLastRace = true
+        };
+
+        // Act
+        horse.HasFedSinceLastRace = false;
+
+        // Assert
+        Assert.False(horse.HasFedSinceLastRace);
+    }
+
+    [Fact]
+    public void Horse_FeedingWorkflow_SetFlagAfterFeeding()
+    {
+        // Arrange - Horse just finished a race
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            RaceStarts = 10,
+            HasFedSinceLastRace = false
+        };
+
+        // Act - Horse is fed
+        horse.HasFedSinceLastRace = true;
+
+        // Assert - Flag is set, prevents duplicate feeding
+        Assert.True(horse.HasFedSinceLastRace);
+        Assert.Equal(10, horse.RaceStarts);
+    }
+
+    [Fact]
+    public void Horse_RaceWorkflow_ResetsFeedingFlagAfterRace()
+    {
+        // Arrange - Horse has been fed and is about to race
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            RaceStarts = 10,
+            HasFedSinceLastRace = true
+        };
+
+        // Act - Horse completes race
+        horse.RaceStarts++;
+        horse.HasFedSinceLastRace = false;
+
+        // Assert - Flag is reset, allows feeding again
+        Assert.False(horse.HasFedSinceLastRace);
+        Assert.Equal(11, horse.RaceStarts);
+    }
+
+    [Fact]
+    public void Horse_PreventDuplicateFeeding_WhenFlagIsTrue()
+    {
+        // Arrange
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            HasFedSinceLastRace = true
+        };
+
+        // Assert - Business logic should check this flag
+        Assert.True(horse.HasFedSinceLastRace,
+            "Horse has already been fed since last race and should not be allowed to feed again");
+    }
+
+    [Fact]
+    public void Horse_AllowFeeding_WhenFlagIsFalse()
+    {
+        // Arrange
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            HasFedSinceLastRace = false,
+            RaceStarts = 5
+        };
+
+        // Assert - Business logic should allow feeding
+        Assert.False(horse.HasFedSinceLastRace,
+            "Horse has not been fed since last race and should be allowed to feed");
+    }
+
+    [Fact]
+    public void Horse_MultipleRacesWithFeedingAndTraining_CorrectFlagBehavior()
+    {
+        // Arrange - New horse
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            RaceStarts = 0,
+            HasTrainedSinceLastRace = false,
+            HasFedSinceLastRace = false
+        };
+
+        // Act - First race
+        horse.RaceStarts++;
+        Assert.Equal(1, horse.RaceStarts);
+        Assert.False(horse.HasTrainedSinceLastRace);
+        Assert.False(horse.HasFedSinceLastRace);
+
+        // Act - First training
+        horse.HasTrainedSinceLastRace = true;
+        Assert.True(horse.HasTrainedSinceLastRace);
+        Assert.False(horse.HasFedSinceLastRace);
+
+        // Act - First feeding
+        horse.HasFedSinceLastRace = true;
+        Assert.True(horse.HasTrainedSinceLastRace);
+        Assert.True(horse.HasFedSinceLastRace);
+
+        // Act - Second race (resets both flags)
+        horse.RaceStarts++;
+        horse.HasTrainedSinceLastRace = false;
+        horse.HasFedSinceLastRace = false;
+        Assert.Equal(2, horse.RaceStarts);
+        Assert.False(horse.HasTrainedSinceLastRace);
+        Assert.False(horse.HasFedSinceLastRace);
+    }
+
+    [Fact]
+    public void Horse_FeedingIndependentOfTraining_BothCanBeSetSeparately()
+    {
+        // Arrange
+        var horse = new Horse
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thunder Bolt",
+            RaceStarts = 5,
+            HasTrainedSinceLastRace = false,
+            HasFedSinceLastRace = false
+        };
+
+        // Act - Feed but don't train
+        horse.HasFedSinceLastRace = true;
+
+        // Assert - Feeding flag is set, training flag is not
+        Assert.False(horse.HasTrainedSinceLastRace);
+        Assert.True(horse.HasFedSinceLastRace);
+
+        // Act - Now train
+        horse.HasTrainedSinceLastRace = true;
+
+        // Assert - Both flags are now set
+        Assert.True(horse.HasTrainedSinceLastRace);
+        Assert.True(horse.HasFedSinceLastRace);
+    }
 }
