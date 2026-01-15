@@ -1,0 +1,50 @@
+@page "/feedings"
+@rendermode InteractiveServer
+
+@using TripleDerby.SharedKernel
+@using TripleDerby.Web.ApiClients.Abstractions
+
+@inject IFeedingsApiClient FeedingsApi
+
+<PageTitle>Feedings</PageTitle>
+
+<h1>Feeding Types</h1>
+
+@if (_loading)
+{
+    <FluentProgressRing />
+    <p>Loading feeding types...</p>
+}
+else if (_feedings == null || !_feedings.Any())
+{
+    <FluentMessageBar Intent="@MessageIntent.Info">
+        No feeding types available.
+    </FluentMessageBar>
+}
+else
+{
+    <FluentDataGrid Items="@_feedings.AsQueryable()"
+                    TGridItem="FeedingsResult"
+                    GridTemplateColumns="1fr 2fr">
+        <PropertyColumn Property="@(f => f.Name)" Title="Name" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
+        <PropertyColumn Property="@(f => f.Description)" Title="Description" Sortable="true" />
+    </FluentDataGrid>
+}
+
+@code {
+    private List<FeedingsResult>? _feedings;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        _feedings = await FeedingsApi.GetAllAsync();
+        _loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}
