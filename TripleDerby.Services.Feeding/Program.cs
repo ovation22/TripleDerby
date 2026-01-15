@@ -1,12 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Infrastructure.Data;
 using TripleDerby.Infrastructure.Data.Repositories;
+using TripleDerby.Infrastructure.Messaging;
+using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Feeding;
 using TripleDerby.Services.Feeding.Abstractions;
 using TripleDerby.Services.Feeding.Calculators;
+using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -27,9 +32,16 @@ builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
 
 builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 builder.Services.AddScoped<IFeedingCalculator, FeedingCalculator>();
+builder.Services.AddScoped<IFeedingExecutor, FeedingExecutor>();
+builder.Services.AddScoped<IFeedingRequestProcessor, FeedingRequestProcessor>();
 
-// TODO: Add message consumer and processor in later phase
+// Register generic message consumer with RabbitMQ adapter
+builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
+builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<FeedingRequested, IFeedingRequestProcessor>>();
+
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddMessageBus(builder.Configuration);
+builder.Services.AddSingleton<ITimeManager, TimeManager>();
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddRabbitMQClient(connectionName: "messaging");
