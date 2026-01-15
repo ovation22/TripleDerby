@@ -97,6 +97,74 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
 
         return Ok(status);
     }
+
+    /// <summary>
+    /// Gets available daily feeding options for a horse (3 random options).
+    /// </summary>
+    /// <param name="horseId">The ID of the horse.</param>
+    /// <param name="sessionId">The session ID for this request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 with feeding options; 404 if horse not found.</returns>
+    [HttpGet("options")]
+    [ProducesDefaultResponseType]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<FeedingOptionResult>>> GetOptions([FromQuery] Guid horseId, [FromQuery] Guid sessionId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var options = await feedingService.GetFeedingOptions(horseId, sessionId, cancellationToken);
+            return Ok(options);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets feeding history for a horse.
+    /// </summary>
+    /// <param name="horseId">The ID of the horse.</param>
+    /// <param name="limit">Maximum number of records to return (default 10).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 with feeding history; 404 if horse not found.</returns>
+    [HttpGet("history")]
+    [ProducesDefaultResponseType]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<List<FeedingHistoryResult>>> GetHistory([FromQuery] Guid horseId, [FromQuery] int limit = 10, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var history = await feedingService.GetFeedingHistory(horseId, limit, cancellationToken);
+            return Ok(history);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets the details of a completed feeding session.
+    /// </summary>
+    /// <param name="sessionId">The ID of the feeding session.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 with session details; 404 if not found.</returns>
+    [HttpGet("session/{sessionId}")]
+    [ProducesDefaultResponseType]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<FeedingSessionResult>> GetSession(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        var result = await feedingService.GetFeedingSessionResult(sessionId, cancellationToken);
+
+        if (result == null)
+            return NotFound();
+
+        return Ok(result);
+    }
 }
 
 /// <summary>

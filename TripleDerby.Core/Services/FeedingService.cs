@@ -22,6 +22,7 @@ public class FeedingService(
     ITripleDerbyRepository repository,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager,
+    IRandomGenerator randomGenerator,
     ILogger<FeedingService> logger)
     : IFeedingService
 {
@@ -142,6 +143,7 @@ public class FeedingService(
             HorseId = request.HorseId,
             FeedingId = request.FeedingId,
             SessionId = request.SessionId,
+            FeedingSessionId = request.FeedingSessionId,
             Status = request.Status,
             FailureReason = request.FailureReason,
             CreatedDate = request.CreatedDate,
@@ -178,7 +180,7 @@ public class FeedingService(
 
     /// <summary>
     /// Gets available feeding options for a horse (3 random daily options).
-    /// Uses deterministic seeding based on date and horseId for consistent daily options.
+    /// Options are cached per horse per day to ensure consistency within the same day.
     /// </summary>
     public async Task<List<FeedingOptionResult>> GetFeedingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default)
     {
@@ -186,33 +188,37 @@ public class FeedingService(
         if (horse == null)
             throw new KeyNotFoundException($"Horse with ID {horseId} not found");
 
-        var allFeedings = await repository.GetAllAsync<Feeding>(cancellationToken);
+        var today = timeManager.UtcNow().Date;
+        var cacheKey = CacheKeys.FeedingOptions(horseId, today);
 
-        // Create deterministic seed from current date and horse ID for consistent daily options
-        var today = DateTime.UtcNow.Date;
-        var seed = HashCode.Combine(horseId, today.Year, today.Month, today.Day);
-        var random = new Random(seed);
-
-        // Shuffle and take 3 options
-        var shuffled = allFeedings.OrderBy(_ => random.Next()).Take(3);
-
-        return shuffled.Select(f => new FeedingOptionResult
+        // Get or create cached daily options (cache ensures consistency for the day)
+        var cachedResult = await cache.GetOrCreate<FeedingOptionResult>(cacheKey, async () =>
         {
-            Id = f.Id,
-            Name = f.Name,
-            Description = f.Description,
-            CategoryId = f.CategoryId,
-            HappinessMin = f.HappinessMin,
-            HappinessMax = f.HappinessMax,
-            SpeedMin = f.SpeedMin,
-            SpeedMax = f.SpeedMax,
-            StaminaMin = f.StaminaMin,
-            StaminaMax = f.StaminaMax,
-            AgilityMin = f.AgilityMin,
-            AgilityMax = f.AgilityMax,
-            DurabilityMin = f.DurabilityMin,
-            DurabilityMax = f.DurabilityMax
-        }).ToList();
+            var allFeedings = await repository.GetAllAsync<Feeding>(cancellationToken);
+
+            // Shuffle and take 3 random options
+            var shuffled = allFeedings.OrderBy(_ => randomGenerator.Next()).Take(3);
+
+            return shuffled.Select(f => new FeedingOptionResult
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Description = f.Description,
+                CategoryId = f.CategoryId,
+                HappinessMin = f.HappinessMin,
+                HappinessMax = f.HappinessMax,
+                SpeedMin = f.SpeedMin,
+                SpeedMax = f.SpeedMax,
+                StaminaMin = f.StaminaMin,
+                StaminaMax = f.StaminaMax,
+                AgilityMin = f.AgilityMin,
+                AgilityMax = f.AgilityMax,
+                DurabilityMin = f.DurabilityMin,
+                DurabilityMax = f.DurabilityMax
+            });
+        });
+
+        return cachedResult.ToList();
     }
 
     /// <summary>
@@ -241,6 +247,67 @@ public class FeedingService(
                 Result = fs.UpsetStomachOccurred ? "Upset Stomach" : fs.Result.ToString()
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Gets the details of a completed feeding session by ID.
+    /// Returns null if not found.
+    /// </summary>
+    public async Task<FeedingSessionResult?> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default)
+    {
+        var session = await repository.FindAsync<FeedingSession>(feedingSessionId, cancellationToken);
+
+        if (session == null)
+            return null;
+
+        // Load the feeding details if not already loaded
+        if (session.Feeding == null)
+        {
+            var feeding = await repository.FindAsync<Feeding>(session.FeedingId, cancellationToken);
+            if (feeding != null)
+                session.Feeding = feeding;
+        }
+
+        // Load horse if not already loaded (for name in discovery message)
+        if (session.Horse == null)
+        {
+            var horse = await repository.FindAsync<Horse>(session.HorseId, cancellationToken);
+            if (horse != null)
+                session.Horse = horse;
+        }
+
+        // Build discovery message if preference was discovered
+        string? discoveryMessage = null;
+        if (session.PreferenceDiscovered)
+        {
+            var horseName = session.Horse?.Name ?? "Horse";
+            var verb = session.Result switch
+            {
+                FeedResponse.Favorite => "LOVES",
+                FeedResponse.Liked => "likes",
+                FeedResponse.Neutral => "is okay with",
+                FeedResponse.Disliked => "dislikes",
+                FeedResponse.Hated => "HATES",
+                FeedResponse.Rejected => "refused to eat",
+                _ => "tried"
+            };
+            discoveryMessage = $"{horseName} {verb} {session.Feeding?.Name ?? "this food"}!";
+        }
+
+        return new FeedingSessionResult
+        {
+            SessionId = session.Id,
+            FeedingName = session.Feeding?.Name ?? "Unknown",
+            Result = session.Result,
+            HappinessGain = session.HappinessGain,
+            SpeedGain = session.SpeedGain,
+            StaminaGain = session.StaminaGain,
+            AgilityGain = session.AgilityGain,
+            DurabilityGain = session.DurabilityGain,
+            PreferenceDiscovered = session.PreferenceDiscovered,
+            DiscoveryMessage = discoveryMessage,
+            UpsetStomachOccurred = session.UpsetStomachOccurred
+        };
     }
 }
 

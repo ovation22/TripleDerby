@@ -37,4 +37,9 @@ public interface IFeedingService
     /// Gets feeding history for a horse.
     /// </summary>
     Task<List<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the details of a completed feeding session by ID.
+    /// </summary>
+    Task<FeedingSessionResult?> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default);
 }

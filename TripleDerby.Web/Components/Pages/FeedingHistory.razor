@@ -1,0 +1,111 @@
+@page "/horses/{HorseId:guid}/feeding-history"
+@rendermode InteractiveServer
+
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel
+
+@inject IFeedingsApiClient FeedingsApi
+@inject IHorseApiClient HorseApi
+@inject NavigationManager Navigation
+
+<PageTitle>Feeding History</PageTitle>
+
+<h1>Feeding History</h1>
+
+@if (_loading)
+{
+    <FluentProgressRing />
+    <p>Loading feeding history...</p>
+}
+else if (_horse == null)
+{
+    <FluentMessageBar Intent="@MessageIntent.Error">
+        Horse not found.
+    </FluentMessageBar>
+}
+else
+{
+    <h2>@_horse.Name</h2>
+
+    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" style="margin-bottom: 20px;">
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+            Back to Horses
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo($"/horses/{HorseId}/feed"))">
+            Feed Again
+        </FluentButton>
+    </FluentStack>
+
+    @if (_feedingSessions == null || !_feedingSessions.Any())
+    {
+        <FluentMessageBar Intent="@MessageIntent.Info">
+            No feeding history available for this horse.
+        </FluentMessageBar>
+    }
+    else
+    {
+        <FluentDataGrid Items="@_feedingSessions.AsQueryable()"
+                        TGridItem="FeedingHistoryResult"
+                        GridTemplateColumns="1fr 1fr 1fr 1fr 1fr 1fr 1fr 2fr">
+            <TemplateColumn Title="Date" Sortable="true">
+                @context.SessionDate.ToLocalTime().ToString("MM/dd/yyyy HH:mm")
+            </TemplateColumn>
+            <TemplateColumn Title="Feeding">
+                @context.FeedingName
+            </TemplateColumn>
+            <TemplateColumn Title="Response" Sortable="true">
+                @context.Response
+            </TemplateColumn>
+            <PropertyColumn Property="@(s => s.SpeedGain)" Title="Speed" Sortable="true" Format="F2" Align="Align.End" />
+            <PropertyColumn Property="@(s => s.StaminaGain)" Title="Stamina" Sortable="true" Format="F2" Align="Align.End" />
+            <PropertyColumn Property="@(s => s.AgilityGain)" Title="Agility" Sortable="true" Format="F2" Align="Align.End" />
+            <PropertyColumn Property="@(s => s.DurabilityGain)" Title="Durability" Sortable="true" Format="F2" Align="Align.End" />
+            <TemplateColumn Title="Happiness" Sortable="true" SortBy="@_sortByHappiness" Align="Align.End">
+                <div style="color: @(context.HappinessGain >= 0 ? "green" : "red")">
+                    @(context.HappinessGain >= 0 ? "+" : "")@context.HappinessGain.ToString("F1")
+                </div>
+            </TemplateColumn>
+            <TemplateColumn Title="Notes" Align="Align.Start">
+                <div>
+                    @if (context.UpsetStomachOccurred)
+                    {
+                        <FluentBadge Appearance="Appearance.Lightweight" BackgroundColor="orange" Color="white">
+                            Upset Stomach!
+                        </FluentBadge>
+                    }
+                </div>
+            </TemplateColumn>
+        </FluentDataGrid>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid HorseId { get; set; }
+
+    private HorseResult? _horse;
+    private List<FeedingHistoryResult>? _feedingSessions;
+    private bool _loading = true;
+
+    readonly GridSort<FeedingHistoryResult> _sortByHappiness = GridSort<FeedingHistoryResult>
+        .ByDescending(s => s.HappinessGain);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+
+        // Load horse details
+        _horse = await HorseApi.GetByIdAsync(HorseId);
+
+        // Load feeding history (limit to 50 most recent)
+        _feedingSessions = await FeedingsApi.GetFeedingHistoryAsync(HorseId, limit: 50);
+
+        _loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

@@ -12,6 +12,7 @@ public record FeedingRequestStatusResult
     public Guid HorseId { get; init; }
     public byte FeedingId { get; init; }
     public Guid SessionId { get; init; }
+    public Guid? FeedingSessionId { get; init; }
     public FeedingRequestStatus Status { get; init; }
     public string? FailureReason { get; init; }
     public DateTimeOffset CreatedDate { get; init; }
