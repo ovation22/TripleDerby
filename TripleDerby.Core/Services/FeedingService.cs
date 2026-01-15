@@ -177,7 +177,8 @@ public class FeedingService(
     }
 
     /// <summary>
-    /// Gets available feeding options for a horse.
+    /// Gets available feeding options for a horse (3 random daily options).
+    /// Uses deterministic seeding based on date and horseId for consistent daily options.
     /// </summary>
     public async Task<List<FeedingOptionResult>> GetFeedingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default)
     {
@@ -187,7 +188,15 @@ public class FeedingService(
 
         var allFeedings = await repository.GetAllAsync<Feeding>(cancellationToken);
 
-        return allFeedings.Select(f => new FeedingOptionResult
+        // Create deterministic seed from current date and horse ID for consistent daily options
+        var today = DateTime.UtcNow.Date;
+        var seed = HashCode.Combine(horseId, today.Year, today.Month, today.Day);
+        var random = new Random(seed);
+
+        // Shuffle and take 3 options
+        var shuffled = allFeedings.OrderBy(_ => random.Next()).Take(3);
+
+        return shuffled.Select(f => new FeedingOptionResult
         {
             Id = f.Id,
             Name = f.Name,

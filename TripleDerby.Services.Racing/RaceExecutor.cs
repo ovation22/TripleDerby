@@ -346,6 +346,7 @@ public class RaceExecutor(
         foreach (var raceRunHorse in raceRun.Horses)
         {
             raceRunHorse.Horse.HasTrainedSinceLastRace = false;
+            raceRunHorse.Horse.HasFedSinceLastRace = false;
         }
     }
 
