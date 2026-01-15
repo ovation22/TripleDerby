@@ -1,4 +1,6 @@
-﻿using TripleDerby.Core.Abstractions.Caching;
+using Microsoft.Extensions.Logging;
+using TripleDerby.Core.Abstractions.Caching;
+using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -7,13 +9,20 @@ using TripleDerby.Core.Entities;
 using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
+using TripleDerby.SharedKernel.Messages;
 
 namespace TripleDerby.Core.Services;
 
+/// <summary>
+/// Core feeding service for request orchestration.
+/// Follows TrainingService pattern.
+/// </summary>
 public class FeedingService(
     ICacheManager cache,
-    IRandomGenerator randomGenerator,
-    ITripleDerbyRepository repository)
+    ITripleDerbyRepository repository,
+    IMessagePublisher messagePublisher,
+    ITimeManager timeManager,
+    ILogger<FeedingService> logger)
     : IFeedingService
 {
     public async Task<FeedingResult> Get(byte id)
@@ -50,46 +59,179 @@ public class FeedingService(
         });
     }
 
-    public async Task<FeedingSessionResult> Feed(byte feedingId, Guid horseId)
+    /// <summary>
+    /// Queues a feeding session for async processing.
+    /// </summary>
+    public async Task<FeedingRequested> QueueFeedingAsync(
+        Guid horseId,
+        byte feedingId,
+        Guid sessionId,
+        Guid ownerId,
+        CancellationToken cancellationToken = default)
     {
-        const FeedResponse result = FeedResponse.Liked;
+        logger.LogInformation("Queueing feeding request: Horse={HorseId}, Feeding={FeedingId}, Session={SessionId}",
+            horseId, feedingId, sessionId);
 
-        // Get Horse, with Stats, and with prior feedings of type
-        // Save horse, with updated stats (Actual)
-        // [] check feeding type past results to determine result, etc.
-        var horse = await repository.SingleOrDefaultAsync(new HorseWithHappinessAndPriorFeedingsSpecification(horseId, feedingId));
-
-        if (horse is null)
+        var existingRequest = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
+        if (existingRequest != null)
         {
-            throw new KeyNotFoundException($"Horse with ID '{horseId}' was not found.");
+            logger.LogInformation("Feeding request {SessionId} already exists with status {Status}, returning existing",
+                sessionId, existingRequest.Status);
+
+            return new FeedingRequested(
+                existingRequest.Id,
+                existingRequest.HorseId,
+                existingRequest.FeedingId,
+                existingRequest.SessionId,
+                existingRequest.OwnerId,
+                existingRequest.CreatedDate
+            );
         }
 
-        var horseHappiness = horse.Statistics.Single(x => x.StatisticId == StatisticId.Happiness);
+        var horse = await repository.FindAsync<Horse>(horseId, cancellationToken);
+        if (horse == null)
+            throw new KeyNotFoundException($"Horse with ID {horseId} not found");
 
-        horseHappiness.Actual = AffectHorseStatistic(horseHappiness, 0, 1, 0);
+        var feeding = await repository.FindAsync<Feeding>(feedingId, cancellationToken);
+        if (feeding == null)
+            throw new KeyNotFoundException($"Feeding with ID {feedingId} not found");
 
-        var feedingSession = new FeedingSession
+        var feedingRequest = new FeedingRequest
         {
+            Id = sessionId,
+            HorseId = horseId,
             FeedingId = feedingId,
-            Result = result
+            SessionId = sessionId,
+            OwnerId = ownerId,
+            Status = FeedingRequestStatus.Pending,
+            CreatedDate = timeManager.OffsetUtcNow(),
+            CreatedBy = ownerId
         };
-        
-        horse.FeedingSessions.Add(feedingSession);
 
-        await repository.UpdateAsync(horse);
+        feedingRequest = await repository.CreateAsync(feedingRequest, cancellationToken);
 
-        return new FeedingSessionResult { Result = result };
+        var message = new FeedingRequested(
+            feedingRequest.Id,
+            feedingRequest.HorseId,
+            feedingRequest.FeedingId,
+            feedingRequest.SessionId,
+            feedingRequest.OwnerId,
+            feedingRequest.CreatedDate
+        );
+
+        await messagePublisher.PublishAsync(message, cancellationToken: cancellationToken);
+
+        logger.LogInformation("Feeding request queued successfully: RequestId={RequestId}", feedingRequest.Id);
+
+        return message;
     }
 
-    private byte AffectHorseStatistic(
-        HorseStatistic stat,
-        int min,
-        int max,
-        int actualMin
-    )
+    /// <summary>
+    /// Gets the status of a feeding request.
+    /// </summary>
+    public async Task<FeedingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
     {
-        return (byte) Math.Clamp(stat.Actual + randomGenerator.Next(min, max),
-            actualMin,
-            stat.DominantPotential);
+        var request = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
+
+        if (request == null)
+            return null;
+
+        return new FeedingRequestStatusResult
+        {
+            Id = request.Id,
+            HorseId = request.HorseId,
+            FeedingId = request.FeedingId,
+            SessionId = request.SessionId,
+            Status = request.Status,
+            FailureReason = request.FailureReason,
+            CreatedDate = request.CreatedDate,
+            ProcessedDate = request.ProcessedDate
+        };
+    }
+
+    /// <summary>
+    /// Re-publishes a failed feeding request.
+    /// </summary>
+    public async Task ReplayFeedingRequest(Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        var request = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
+
+        if (request == null)
+            throw new KeyNotFoundException($"Feeding request {sessionId} not found");
+
+        if (request.Status != FeedingRequestStatus.Failed)
+            throw new InvalidOperationException($"Feeding request {sessionId} is not in Failed status");
+
+        var message = new FeedingRequested(
+            request.Id,
+            request.HorseId,
+            request.FeedingId,
+            request.SessionId,
+            request.OwnerId,
+            request.CreatedDate
+        );
+
+        await messagePublisher.PublishAsync(message, cancellationToken: cancellationToken);
+
+        logger.LogInformation("Replayed feeding request: RequestId={RequestId}", request.Id);
+    }
+
+    /// <summary>
+    /// Gets available feeding options for a horse.
+    /// </summary>
+    public async Task<List<FeedingOptionResult>> GetFeedingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default)
+    {
+        var horse = await repository.FindAsync<Horse>(horseId, cancellationToken);
+        if (horse == null)
+            throw new KeyNotFoundException($"Horse with ID {horseId} not found");
+
+        var allFeedings = await repository.GetAllAsync<Feeding>(cancellationToken);
+
+        return allFeedings.Select(f => new FeedingOptionResult
+        {
+            Id = f.Id,
+            Name = f.Name,
+            Description = f.Description,
+            CategoryId = f.CategoryId,
+            HappinessMin = f.HappinessMin,
+            HappinessMax = f.HappinessMax,
+            SpeedMin = f.SpeedMin,
+            SpeedMax = f.SpeedMax,
+            StaminaMin = f.StaminaMin,
+            StaminaMax = f.StaminaMax,
+            AgilityMin = f.AgilityMin,
+            AgilityMax = f.AgilityMax,
+            DurabilityMin = f.DurabilityMin,
+            DurabilityMax = f.DurabilityMax
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Gets feeding history for a horse.
+    /// </summary>
+    public async Task<List<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default)
+    {
+        var spec = new FeedingSessionSpecification(horseId);
+        var sessions = await repository.ListAsync(spec, cancellationToken);
+
+        return sessions
+            .OrderByDescending(fs => fs.SessionDate)
+            .Take(limit)
+            .Select(fs => new FeedingHistoryResult
+            {
+                Id = fs.Id,
+                FeedingName = fs.Feeding.Name,
+                SessionDate = fs.SessionDate,
+                Response = fs.Result,
+                HappinessGain = fs.HappinessGain,
+                SpeedGain = fs.SpeedGain,
+                StaminaGain = fs.StaminaGain,
+                AgilityGain = fs.AgilityGain,
+                DurabilityGain = fs.DurabilityGain,
+                UpsetStomachOccurred = fs.UpsetStomachOccurred,
+                Result = fs.UpsetStomachOccurred ? "Upset Stomach" : fs.Result.ToString()
+            })
+            .ToList();
     }
 }
+

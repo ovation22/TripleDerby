@@ -67,4 +67,10 @@ public class FeedingSession
     /// meaning the preference was discovered during this session.
     /// </summary>
     public bool PreferenceDiscovered { get; set; }
+
+    /// <summary>
+    /// Whether upset stomach occurred during this feeding (30% chance for hated food).
+    /// When true, applies additional happiness penalty.
+    /// </summary>
+    public bool UpsetStomachOccurred { get; set; }
 }

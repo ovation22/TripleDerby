@@ -27,6 +27,7 @@ public class TripleDerbyContext(DbContextOptions<TripleDerbyContext> options) : 
     public virtual DbSet<Training> Trainings { get; set; } = null!;
     public virtual DbSet<TrainingSession> TrainingSessions { get; set; } = null!;
     public virtual DbSet<BreedingRequest> BreedingRequests { get; set; } = null!;
+    public virtual DbSet<FeedingRequest> FeedingRequests { get; set; } = null!;
     public virtual DbSet<RaceRequest> RaceRequests { get; set; } = null!;
     public virtual DbSet<TrainingRequest> TrainingRequests { get; set; } = null!;
 

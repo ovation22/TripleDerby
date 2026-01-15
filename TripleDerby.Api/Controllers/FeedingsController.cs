@@ -45,21 +45,61 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
     }
 
     /// <summary>
-    /// Creates a feeding session for a horse using the specified feeding definition.
+    /// Queues a feeding session for async processing.
     /// </summary>
-    /// <param name="feedingId">Identifier of the feeding definition to apply.</param>
-    /// <param name="horseId">Identifier of the horse to feed.</param>
-    /// <returns>200 with <see cref="FeedingSessionResult"/>; 400 on failure.</returns>
-    /// <response code="200">Returns the feeding session result.</response>
-    /// <response code="400">Unable to create feeding session.</response>
-    [HttpPost("{feedingId}/{horseId}")]
+    /// <param name="request">The feeding queue request containing horseId, feedingId, and sessionId.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>202 Accepted with sessionId; 404 if horse/feeding not found.</returns>
+    /// <response code="202">Request queued for processing.</response>
+    /// <response code="404">Horse or feeding not found.</response>
+    [HttpPost("queue")]
+    [ProducesDefaultResponseType]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> QueueFeeding([FromBody] FeedingQueueRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
+            await feedingService.QueueFeedingAsync(
+                request.HorseId,
+                request.FeedingId,
+                request.SessionId,
+                userId,
+                cancellationToken);
+
+            var requestUrl = Url.Action("GetRequest", new { id = request.SessionId });
+            return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Gets the status of a feeding request.
+    /// </summary>
+    /// <param name="id">The sessionId of the feeding request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 with status; 404 if not found.</returns>
+    [HttpGet("request/{id}")]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<FeedingSessionResult>> Feed(byte feedingId, Guid horseId)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<FeedingRequestStatusResult>> GetRequest(Guid id, CancellationToken cancellationToken)
     {
-        var result = await feedingService.Feed(feedingId, horseId);
+        var status = await feedingService.GetRequestStatus(id, cancellationToken);
 
-        return Ok(result);
+        if (status == null)
+            return NotFound();
+
+        return Ok(status);
     }
 }
+
+/// <summary>
+/// Request model for queuing a feeding session.
+/// </summary>
+public record FeedingQueueRequest(Guid HorseId, byte FeedingId, Guid SessionId);
