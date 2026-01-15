@@ -30,6 +30,12 @@ builder.AddProject<Projects.TripleDerby_Services_Breeding>("breeding")
     .WithReference(rabbit)
     .WaitFor(rabbit);
 
+builder.AddProject<Projects.TripleDerby_Services_Feeding>("feeding")
+    .WithReference(sql)
+    .WaitFor(sql)
+    .WithReference(rabbit)
+    .WaitFor(rabbit);
+
 builder.AddProject<Projects.TripleDerby_Services_Training>("training")
     .WithReference(sql)
     .WaitFor(sql)

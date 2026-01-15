@@ -52,13 +52,47 @@ public static class ModelBuilderExtensions
             new Statistic { Id = StatisticId.Happiness, Name = "Happiness", Description = "Current mood and well-being. Affected by feeding, training, and racing. Resets monthly. Influences training effectiveness.", IsGenetic = false }
         );
 
+        // FeedingCategory lookup table
+        modelBuilder.Entity<FeedingCategory>().HasData(
+            new FeedingCategory { Id = FeedingCategoryId.Treats, Name = "Treats", Description = "High happiness, no stats. Most likely to be favorites." },
+            new FeedingCategory { Id = FeedingCategoryId.Fruits, Name = "Fruits", Description = "Good happiness, minor stamina/agility boosts." },
+            new FeedingCategory { Id = FeedingCategoryId.Grains, Name = "Grains", Description = "Moderate happiness, stamina/durability focus." },
+            new FeedingCategory { Id = FeedingCategoryId.Proteins, Name = "Proteins", Description = "Moderate happiness, durability focus." },
+            new FeedingCategory { Id = FeedingCategoryId.Supplements, Name = "Supplements", Description = "Moderate happiness, balanced tiny boosts to all stats." },
+            new FeedingCategory { Id = FeedingCategoryId.Premium, Name = "Premium", Description = "High happiness, varied stat bonuses." }
+        );
+
+        // Feeding seed data: 18 feeds across 6 categories
         modelBuilder.Entity<Feeding>().HasData(
-            new Feeding { Id = 1, Name = "Apple", Description = "Crisp and sweet treat. Increases happiness moderately." },
-            new Feeding { Id = 2, Name = "Carrot", Description = "Crunchy and nutritious vegetable. Boosts happiness and provides minor stat benefits." },
-            new Feeding { Id = 3, Name = "Oats", Description = "High-energy grain feed. Provides sustained energy and moderate happiness increase." },
-            new Feeding { Id = 4, Name = "Sugar Cube", Description = "Sweet indulgence. Significantly increases happiness but provides little nutritional value." },
-            new Feeding { Id = 5, Name = "Hay", Description = "Basic roughage and fiber. Maintains baseline happiness and digestive health." },
-            new Feeding { Id = 6, Name = "Peppermint", Description = "Refreshing herbal treat. Calming effect that moderately increases happiness." }
+            // Treats (4) - High happiness, no stats. Most likely to be favorites.
+            new Feeding { Id = 1, Name = "Sugar Cube", Description = "A sweet treat", CategoryId = FeedingCategoryId.Treats, HappinessMin = 4.0, HappinessMax = 5.0, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 2, Name = "Peppermint", Description = "Refreshing mint candy", CategoryId = FeedingCategoryId.Treats, HappinessMin = 3.5, HappinessMax = 4.5, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 3, Name = "Honey Cake", Description = "Sweet baked treat", CategoryId = FeedingCategoryId.Treats, HappinessMin = 4.5, HappinessMax = 5.5, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 4, Name = "Molasses Cookie", Description = "Rich, chewy cookie", CategoryId = FeedingCategoryId.Treats, HappinessMin = 3.0, HappinessMax = 5.0, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+
+            // Fruits (4) - Good happiness, minor stamina/agility.
+            new Feeding { Id = 5, Name = "Apple", Description = "Crisp and refreshing", CategoryId = FeedingCategoryId.Fruits, HappinessMin = 2.0, HappinessMax = 3.0, StaminaMin = 0.1, StaminaMax = 0.2, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 6, Name = "Carrot", Description = "Crunchy favorite", CategoryId = FeedingCategoryId.Fruits, HappinessMin = 2.0, HappinessMax = 3.0, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0.05, AgilityMax = 0.15 },
+            new Feeding { Id = 7, Name = "Banana", Description = "Energy-rich fruit", CategoryId = FeedingCategoryId.Fruits, HappinessMin = 1.5, HappinessMax = 2.5, StaminaMin = 0.15, StaminaMax = 0.25, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 8, Name = "Watermelon", Description = "Hydrating summer treat", CategoryId = FeedingCategoryId.Fruits, HappinessMin = 2.5, HappinessMax = 3.5, StaminaMin = 0.05, StaminaMax = 0.1, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+
+            // Grains (3) - Moderate happiness, stamina/durability focus.
+            new Feeding { Id = 9, Name = "Oats", Description = "Nutritious staple", CategoryId = FeedingCategoryId.Grains, HappinessMin = 1.0, HappinessMax = 2.0, StaminaMin = 0.2, StaminaMax = 0.35, DurabilityMin = 0.1, DurabilityMax = 0.2, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 10, Name = "Barley", Description = "Hearty grain", CategoryId = FeedingCategoryId.Grains, HappinessMin = 1.0, HappinessMax = 2.0, StaminaMin = 0.15, StaminaMax = 0.3, DurabilityMin = 0.15, DurabilityMax = 0.25, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 11, Name = "Bran Mash", Description = "Warm, digestible meal", CategoryId = FeedingCategoryId.Grains, HappinessMin = 1.5, HappinessMax = 2.5, StaminaMin = 0.1, StaminaMax = 0.2, DurabilityMin = 0.2, DurabilityMax = 0.3, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+
+            // Proteins (2) - Moderate happiness, durability focus.
+            new Feeding { Id = 12, Name = "Flaxseed", Description = "Omega-rich supplement", CategoryId = FeedingCategoryId.Proteins, HappinessMin = 1.0, HappinessMax = 2.0, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0.3, DurabilityMax = 0.45, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 13, Name = "Soybean Meal", Description = "Protein-packed feed", CategoryId = FeedingCategoryId.Proteins, HappinessMin = 1.0, HappinessMax = 1.5, StaminaMin = 0, StaminaMax = 0, DurabilityMin = 0.35, DurabilityMax = 0.5, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+
+            // Supplements (2) - Moderate happiness, balanced tiny boosts.
+            new Feeding { Id = 14, Name = "Electrolyte Mix", Description = "Hydration support", CategoryId = FeedingCategoryId.Supplements, HappinessMin = 1.0, HappinessMax = 2.0, StaminaMin = 0.05, StaminaMax = 0.1, DurabilityMin = 0.05, DurabilityMax = 0.1, SpeedMin = 0.05, SpeedMax = 0.1, AgilityMin = 0.05, AgilityMax = 0.1 },
+            new Feeding { Id = 15, Name = "Vitamin Pellets", Description = "Complete nutrition", CategoryId = FeedingCategoryId.Supplements, HappinessMin = 1.0, HappinessMax = 2.0, StaminaMin = 0.05, StaminaMax = 0.15, DurabilityMin = 0.05, DurabilityMax = 0.15, SpeedMin = 0.05, SpeedMax = 0.15, AgilityMin = 0.05, AgilityMax = 0.15 },
+
+            // Premium (3) - High happiness, varied stat bonuses.
+            new Feeding { Id = 16, Name = "Alfalfa Hay", Description = "Premium forage", CategoryId = FeedingCategoryId.Premium, HappinessMin = 2.0, HappinessMax = 3.0, StaminaMin = 0.2, StaminaMax = 0.3, DurabilityMin = 0.1, DurabilityMax = 0.2, SpeedMin = 0, SpeedMax = 0, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 17, Name = "Performance Blend", Description = "Race day nutrition", CategoryId = FeedingCategoryId.Premium, HappinessMin = 2.0, HappinessMax = 3.5, StaminaMin = 0.1, StaminaMax = 0.2, DurabilityMin = 0, DurabilityMax = 0, SpeedMin = 0.1, SpeedMax = 0.2, AgilityMin = 0, AgilityMax = 0 },
+            new Feeding { Id = 18, Name = "Champion's Treat", Description = "Elite reward", CategoryId = FeedingCategoryId.Premium, HappinessMin = 3.0, HappinessMax = 4.0, StaminaMin = 0.1, StaminaMax = 0.15, DurabilityMin = 0.1, DurabilityMax = 0.15, SpeedMin = 0.1, SpeedMax = 0.15, AgilityMin = 0.1, AgilityMax = 0.15 }
         );
 
         modelBuilder.Entity<Training>().HasData(

@@ -1,0 +1,333 @@
+@page "/horses/{HorseId:guid}/feed"
+@rendermode InteractiveServer
+
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Enums
+
+@inject IFeedingsApiClient FeedingsApi
+@inject IHorseApiClient HorseApi
+@inject NavigationManager Navigation
+
+<PageTitle>Feed Horse</PageTitle>
+
+@if (loading)
+{
+    <FluentProgressRing />
+    <p>Loading feeding options...</p>
+}
+else if (horse == null)
+{
+    <FluentMessageBar Intent="@MessageIntent.Error">
+        Horse not found.
+    </FluentMessageBar>
+    <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+        Back to Horses
+    </FluentButton>
+}
+else if (feedingInProgress)
+{
+    <h1>Feeding @horse.Name</h1>
+
+    <FluentMessageBar Intent="@MessageIntent.Info">
+        Feeding in progress... This may take a few moments.
+    </FluentMessageBar>
+
+    <FluentProgressRing />
+
+    <p>Status: @feedingStatus</p>
+}
+else if (feedingCompleted)
+{
+    <h1>Feeding Complete!</h1>
+
+    <FluentMessageBar Intent="@MessageIntent.Success">
+        @horse.Name has been fed!
+    </FluentMessageBar>
+
+    @if (feedingResult != null)
+    {
+        <FluentCard style="margin-top: 20px;">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+                <h3>Feeding Results</h3>
+
+                @if (feedingResult.PreferenceDiscovered && !string.IsNullOrEmpty(feedingResult.DiscoveryMessage))
+                {
+                    <FluentMessageBar Intent="@MessageIntent.Info" style="font-size: 1.1em; font-weight: bold;">
+                        🎉 @feedingResult.DiscoveryMessage
+                    </FluentMessageBar>
+                }
+
+                @if (feedingResult.UpsetStomachOccurred)
+                {
+                    <FluentMessageBar Intent="@MessageIntent.Warning">
+                        ⚠️ Upset stomach occurred! Your horse didn't enjoy that food.
+                    </FluentMessageBar>
+                }
+
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="30" Wrap="true">
+                    <div>
+                        <strong>Happiness:</strong>
+                        <span style="color: @(feedingResult.HappinessGain >= 0 ? "green" : "red"); font-weight: bold;">
+                            @(feedingResult.HappinessGain >= 0 ? "+" : "")@feedingResult.HappinessGain.ToString("F1")
+                        </span>
+                    </div>
+
+                    @if (feedingResult.SpeedGain > 0)
+                    {
+                        <div>
+                            <strong>Speed:</strong>
+                            <span style="color: green; font-weight: bold;">+@feedingResult.SpeedGain.ToString("F2")</span>
+                        </div>
+                    }
+
+                    @if (feedingResult.StaminaGain > 0)
+                    {
+                        <div>
+                            <strong>Stamina:</strong>
+                            <span style="color: green; font-weight: bold;">+@feedingResult.StaminaGain.ToString("F2")</span>
+                        </div>
+                    }
+
+                    @if (feedingResult.AgilityGain > 0)
+                    {
+                        <div>
+                            <strong>Agility:</strong>
+                            <span style="color: green; font-weight: bold;">+@feedingResult.AgilityGain.ToString("F2")</span>
+                        </div>
+                    }
+
+                    @if (feedingResult.DurabilityGain > 0)
+                    {
+                        <div>
+                            <strong>Durability:</strong>
+                            <span style="color: green; font-weight: bold;">+@feedingResult.DurabilityGain.ToString("F2")</span>
+                        </div>
+                    }
+                </FluentStack>
+
+                @if (feedingResult.SpeedGain == 0 && feedingResult.StaminaGain == 0 &&
+                     feedingResult.AgilityGain == 0 && feedingResult.DurabilityGain == 0)
+                {
+                    <p style="font-style: italic; color: gray;">No stat gains from this feeding.</p>
+                }
+            </FluentStack>
+        </FluentCard>
+    }
+
+    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10" style="margin-top: 20px;">
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+            Back to Horses
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Navigation.NavigateTo($"/horses/{HorseId}/feeding-history"))">
+            View Feeding History
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@ResetAndLoadOptions">
+            Feed Again
+        </FluentButton>
+    </FluentStack>
+}
+else
+{
+    <h1>Feed @horse.Name</h1>
+
+    @if (feedingOptions != null && feedingOptions.Any())
+    {
+        <FluentMessageBar Intent="@MessageIntent.Info">
+            Choose one of today's feeding options for @horse.Name. Options refresh daily.
+        </FluentMessageBar>
+
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+            @foreach (var feeding in feedingOptions)
+            {
+                <FluentCard>
+                    <FluentStack Orientation="Orientation.Vertical" VerticalGap="10">
+                        <h3>@feeding.Name</h3>
+                        <p>@feeding.Description</p>
+
+                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="20">
+                            <div>
+                                <strong>Category:</strong> @feeding.CategoryId
+                            </div>
+                        </FluentStack>
+
+                        <h4>Stat Ranges</h4>
+                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="20">
+                            @if (feeding.SpeedMin > 0 || feeding.SpeedMax > 0)
+                            {
+                                <div>
+                                    <strong>Speed:</strong> @feeding.SpeedMin.ToString("F1") - @feeding.SpeedMax.ToString("F1")
+                                </div>
+                            }
+                            @if (feeding.StaminaMin > 0 || feeding.StaminaMax > 0)
+                            {
+                                <div>
+                                    <strong>Stamina:</strong> @feeding.StaminaMin.ToString("F1") - @feeding.StaminaMax.ToString("F1")
+                                </div>
+                            }
+                            @if (feeding.AgilityMin > 0 || feeding.AgilityMax > 0)
+                            {
+                                <div>
+                                    <strong>Agility:</strong> @feeding.AgilityMin.ToString("F1") - @feeding.AgilityMax.ToString("F1")
+                                </div>
+                            }
+                            @if (feeding.DurabilityMin > 0 || feeding.DurabilityMax > 0)
+                            {
+                                <div>
+                                    <strong>Durability:</strong> @feeding.DurabilityMin.ToString("F1") - @feeding.DurabilityMax.ToString("F1")
+                                </div>
+                            }
+                        </FluentStack>
+
+                        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="20">
+                            <div>
+                                <strong>Happiness Gain:</strong> @feeding.HappinessMin.ToString("F1") - @feeding.HappinessMax.ToString("F1")
+                            </div>
+                        </FluentStack>
+
+                        <FluentButton Appearance="Appearance.Accent"
+                                      OnClick="@(() => SelectFeeding(feeding.Id))"
+                                      Disabled="@isFeeding">
+                            Select This Feeding
+                        </FluentButton>
+                    </FluentStack>
+                </FluentCard>
+            }
+        </FluentStack>
+
+        <FluentDivider />
+
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+            Cancel
+        </FluentButton>
+    }
+    else
+    {
+        <FluentMessageBar Intent="@MessageIntent.Warning">
+            No feeding options available for this horse today.
+        </FluentMessageBar>
+        <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Navigation.NavigateTo("/horses"))">
+            Back to Horses
+        </FluentButton>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid HorseId { get; set; }
+
+    private HorseResult? horse;
+    private List<FeedingOptionResult>? feedingOptions;
+    private Guid sessionId = Guid.NewGuid();
+
+    private bool loading = true;
+    private bool isFeeding = false;
+    private bool feedingInProgress = false;
+    private bool feedingCompleted = false;
+    private string feedingStatus = "Pending";
+    private FeedingSessionResult? feedingResult = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHorseAndOptions();
+    }
+
+    private async Task LoadHorseAndOptions()
+    {
+        loading = true;
+
+        // Load horse details
+        horse = await HorseApi.GetByIdAsync(HorseId);
+
+        if (horse != null)
+        {
+            // Load feeding options (3 daily options)
+            feedingOptions = await FeedingsApi.GetFeedingOptionsAsync(HorseId, sessionId);
+        }
+
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectFeeding(byte feedingId)
+    {
+        isFeeding = true;
+        await InvokeAsync(StateHasChanged);
+
+        // Initiate feeding request
+        var response = await FeedingsApi.CreateRequestAsync(HorseId, feedingId, sessionId);
+
+        if (response != null)
+        {
+            feedingInProgress = true;
+            isFeeding = false;
+            await InvokeAsync(StateHasChanged);
+
+            // Poll for completion
+            await PollFeedingStatus();
+        }
+        else
+        {
+            isFeeding = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task PollFeedingStatus()
+    {
+        var maxAttempts = 30; // 30 seconds max
+        var attempt = 0;
+
+        while (attempt < maxAttempts)
+        {
+            await Task.Delay(1000); // Poll every second
+
+            var request = await FeedingsApi.GetRequestStatusAsync(sessionId);
+
+            if (request != null)
+            {
+                feedingStatus = request.Status.ToString();
+
+                if (request.Status == FeedingRequestStatus.Completed)
+                {
+                    feedingInProgress = false;
+                    feedingCompleted = true;
+
+                    // Fetch the feeding results
+                    if (request.FeedingSessionId.HasValue)
+                    {
+                        feedingResult = await FeedingsApi.GetFeedingSessionResultAsync(request.FeedingSessionId.Value);
+                    }
+
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+                else if (request.Status == FeedingRequestStatus.Failed)
+                {
+                    feedingInProgress = false;
+                    feedingStatus = $"Failed: {request.FailureReason}";
+                    await InvokeAsync(StateHasChanged);
+                    return;
+                }
+            }
+
+            attempt++;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        // Timeout
+        feedingInProgress = false;
+        feedingStatus = "Timeout - please check feeding history";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ResetAndLoadOptions()
+    {
+        sessionId = Guid.NewGuid();
+        feedingCompleted = false;
+        feedingInProgress = false;
+        feedingStatus = "Pending";
+        feedingResult = null;
+        await LoadHorseAndOptions();
+    }
+}

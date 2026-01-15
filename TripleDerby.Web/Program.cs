@@ -48,6 +48,10 @@ builder.Services.AddHttpClient<ITrainingsApiClient, TrainingsApiClient>(client =
 {
     client.BaseAddress = new("https+http://api");
 });
+builder.Services.AddHttpClient<IFeedingsApiClient, FeedingsApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://api");
+});
 
 var app = builder.Build();
 
