@@ -1,4 +1,5 @@
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 using TripleDerby.Web.ApiClients.Abstractions;
 
 namespace TripleDerby.Web.ApiClients;
@@ -76,9 +77,16 @@ public class FeedingsApiClient(HttpClient httpClient, ILogger<FeedingsApiClient>
         return null;
     }
 
-    public async Task<List<FeedingHistoryResult>?> GetFeedingHistoryAsync(Guid horseId, int limit = 10, CancellationToken cancellationToken = default)
+    public async Task<PagedList<FeedingHistoryResult>?> GetFeedingHistoryAsync(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        var resp = await SearchAsync<List<FeedingHistoryResult>>($"/api/feedings/history?horseId={horseId}&limit={limit}", cancellationToken);
+        var queryString = $"horseId={horseId}&Page={request.Page}&Size={request.Size}";
+
+        if (!string.IsNullOrWhiteSpace(request.SortBy))
+        {
+            queryString += $"&SortBy={request.SortBy}&Direction={request.Direction}";
+        }
+
+        var resp = await SearchAsync<PagedList<FeedingHistoryResult>>($"/api/feedings/history?{queryString}", cancellationToken);
 
         if (resp.Success)
             return resp.Data;

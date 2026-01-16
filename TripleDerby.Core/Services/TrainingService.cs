@@ -8,6 +8,7 @@ using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Services;
 
@@ -195,27 +196,17 @@ public class TrainingService(
     /// <summary>
     /// Gets training history for a horse.
     /// </summary>
-    public async Task<List<TrainingHistoryResult>> GetTrainingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default)
+    public async Task<PagedList<TrainingHistoryResult>> GetTrainingHistory(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        var spec = new TrainingSessionSpecification(horseId);
-        var sessions = await repository.ListAsync(spec, cancellationToken);
+        // Verify horse exists
+        var horse = await repository.FindAsync<Horse>(horseId, cancellationToken);
+        if (horse == null)
+        {
+            throw new KeyNotFoundException($"Horse with ID '{horseId}' was not found.");
+        }
 
-        return sessions
-            .OrderByDescending(ts => ts.SessionDate)
-            .Take(limit)
-            .Select(ts => new TrainingHistoryResult
-            {
-                Id = ts.Id,
-                TrainingName = ts.Training.Name,
-                SessionDate = ts.SessionDate,
-                SpeedGain = ts.SpeedGain,
-                StaminaGain = ts.StaminaGain,
-                AgilityGain = ts.AgilityGain,
-                DurabilityGain = ts.DurabilityGain,
-                HappinessChange = ts.HappinessChange,
-                OverworkOccurred = ts.OverworkOccurred,
-                Result = ts.OverworkOccurred ? "Overworked" : "Success"
-            })
-            .ToList();
+        // Specification handles filtering, sorting, pagination, and projection
+        var spec = new TrainingSessionHistorySpecification(horseId, request);
+        return await repository.ListAsync(spec, cancellationToken);
     }
 }

@@ -10,6 +10,7 @@ using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Services;
 
@@ -225,29 +226,18 @@ public class FeedingService(
     /// <summary>
     /// Gets feeding history for a horse.
     /// </summary>
-    public async Task<List<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default)
+    public async Task<PagedList<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        var spec = new FeedingSessionSpecification(horseId);
-        var sessions = await repository.ListAsync(spec, cancellationToken);
+        // Verify horse exists
+        var horse = await repository.FindAsync<Horse>(horseId, cancellationToken);
+        if (horse == null)
+        {
+            throw new KeyNotFoundException($"Horse with ID '{horseId}' was not found.");
+        }
 
-        return sessions
-            .OrderByDescending(fs => fs.SessionDate)
-            .Take(limit)
-            .Select(fs => new FeedingHistoryResult
-            {
-                Id = fs.Id,
-                FeedingName = fs.Feeding.Name,
-                SessionDate = fs.SessionDate,
-                Response = fs.Result,
-                HappinessGain = fs.HappinessGain,
-                SpeedGain = fs.SpeedGain,
-                StaminaGain = fs.StaminaGain,
-                AgilityGain = fs.AgilityGain,
-                DurabilityGain = fs.DurabilityGain,
-                UpsetStomachOccurred = fs.UpsetStomachOccurred,
-                Result = fs.UpsetStomachOccurred ? "Upset Stomach" : fs.Result.ToString()
-            })
-            .ToList();
+        // Specification handles filtering, sorting, pagination, and projection
+        var spec = new FeedingSessionHistorySpecification(horseId, request);
+        return await repository.ListAsync(spec, cancellationToken);
     }
 
     /// <summary>

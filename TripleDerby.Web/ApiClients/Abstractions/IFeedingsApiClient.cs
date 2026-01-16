@@ -1,4 +1,5 @@
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Web.ApiClients.Abstractions;
 
@@ -13,7 +14,7 @@ public interface IFeedingsApiClient
     Task<FeedingRequestStatusResult?> GetRequestStatusAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task<bool> ReplayRequestAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task<List<FeedingOptionResult>?> GetFeedingOptionsAsync(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default);
-    Task<List<FeedingHistoryResult>?> GetFeedingHistoryAsync(Guid horseId, int limit = 10, CancellationToken cancellationToken = default);
+    Task<PagedList<FeedingHistoryResult>?> GetFeedingHistoryAsync(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default);
     Task<FeedingSessionResult?> GetFeedingSessionResultAsync(Guid feedingSessionId, CancellationToken cancellationToken = default);
 }
 

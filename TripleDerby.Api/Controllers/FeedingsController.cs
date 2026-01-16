@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -123,21 +124,24 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
     }
 
     /// <summary>
-    /// Gets feeding history for a horse.
+    /// Gets paginated feeding history for a horse with optional filtering and sorting.
     /// </summary>
     /// <param name="horseId">The ID of the horse.</param>
-    /// <param name="limit">Maximum number of records to return (default 10).</param>
+    /// <param name="request">Pagination request with page, size, sorting, and filtering options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>200 with feeding history; 404 if horse not found.</returns>
+    /// <returns>200 with paginated feeding history; 404 if horse not found.</returns>
     [HttpGet("history")]
     [ProducesDefaultResponseType]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<FeedingHistoryResult>>> GetHistory([FromQuery] Guid horseId, [FromQuery] int limit = 10, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<PagedList<FeedingHistoryResult>>> GetHistory(
+        [FromQuery] Guid horseId,
+        [FromQuery] PaginationRequest request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var history = await feedingService.GetFeedingHistory(horseId, limit, cancellationToken);
+            var history = await feedingService.GetFeedingHistory(horseId, request, cancellationToken);
             return Ok(history);
         }
         catch (KeyNotFoundException ex)

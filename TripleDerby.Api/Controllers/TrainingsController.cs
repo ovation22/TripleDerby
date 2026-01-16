@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TripleDerby.Api.Conventions;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -78,22 +79,31 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
     }
 
     /// <summary>
-    /// Gets training history for a horse.
+    /// Gets paginated training history for a horse with optional filtering and sorting.
     /// </summary>
     /// <param name="horseId">Horse ID</param>
-    /// <param name="limit">Maximum number of records to return</param>
+    /// <param name="request">Pagination request with page, size, sorting, and filtering options</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Training history records</returns>
-    /// <response code="200">Returns training history</response>
+    /// <returns>Paginated training history records</returns>
+    /// <response code="200">Returns paginated training history</response>
+    /// <response code="404">Horse not found</response>
     [HttpGet("history")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<TrainingHistoryResult>>> GetHistory(
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedList<TrainingHistoryResult>>> GetHistory(
         [FromQuery] Guid horseId,
-        [FromQuery] int limit = 10,
+        [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await trainingService.GetTrainingHistory(horseId, limit, cancellationToken);
-        return Ok(result);
+        try
+        {
+            var result = await trainingService.GetTrainingHistory(horseId, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
     /// <summary>

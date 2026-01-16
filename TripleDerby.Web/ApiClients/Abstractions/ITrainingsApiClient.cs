@@ -1,4 +1,5 @@
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Web.ApiClients.Abstractions;
 
@@ -13,7 +14,7 @@ public interface ITrainingsApiClient
     Task<TrainingRequestStatusResult?> GetRequestStatusAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task<bool> ReplayRequestAsync(Guid sessionId, CancellationToken cancellationToken = default);
     Task<List<TrainingOptionResult>?> GetTrainingOptionsAsync(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default);
-    Task<List<TrainingHistoryResult>?> GetTrainingHistoryAsync(Guid horseId, int limit = 10, CancellationToken cancellationToken = default);
+    Task<PagedList<TrainingHistoryResult>?> GetTrainingHistoryAsync(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default);
 }
 
 public record TrainHorseResponse(Guid SessionId, string Status);

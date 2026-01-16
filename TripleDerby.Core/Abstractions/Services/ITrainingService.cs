@@ -1,5 +1,6 @@
 ﻿using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Abstractions.Services;
 
@@ -52,7 +53,7 @@ public interface ITrainingService
     Task<List<TrainingOptionResult>> GetTrainingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets training history for a horse.
+    /// Gets paginated training history for a horse with optional filtering and sorting.
     /// </summary>
-    Task<List<TrainingHistoryResult>> GetTrainingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default);
+    Task<PagedList<TrainingHistoryResult>> GetTrainingHistory(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default);
 }
