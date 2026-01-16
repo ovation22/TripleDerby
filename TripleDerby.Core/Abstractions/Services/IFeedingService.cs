@@ -1,5 +1,6 @@
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Abstractions.Services;
 
@@ -21,7 +22,7 @@ public interface IFeedingService
     /// <summary>
     /// Gets the status of a feeding request.
     /// </summary>
-    Task<FeedingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default);
+    Task<FeedingRequestStatusResult> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Re-publishes a failed feeding request.
@@ -34,12 +35,12 @@ public interface IFeedingService
     Task<List<FeedingOptionResult>> GetFeedingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets feeding history for a horse.
+    /// Gets paginated feeding history for a horse with optional filtering and sorting.
     /// </summary>
-    Task<List<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default);
+    Task<PagedList<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the details of a completed feeding session by ID.
     /// </summary>
-    Task<FeedingSessionResult?> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default);
+    Task<FeedingSessionResult> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default);
 }

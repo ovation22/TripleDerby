@@ -3,6 +3,7 @@
 
 @using TripleDerby.Web.ApiClients.Abstractions
 @using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Pagination
 
 @inject IFeedingsApiClient FeedingsApi
 @inject IHorseApiClient HorseApi
@@ -102,8 +103,16 @@ else
         // Load horse details
         _horse = await HorseApi.GetByIdAsync(HorseId);
 
-        // Load feeding history (limit to 50 most recent)
-        _feedingSessions = await FeedingsApi.GetFeedingHistoryAsync(HorseId, limit: 50);
+        // Load feeding history (using pagination - default sort by SessionDate descending)
+        var request = new PaginationRequest
+        {
+            Page = 1,
+            Size = 50,
+            SortBy = "SessionDate",
+            Direction = SharedKernel.Pagination.SortDirection.Desc
+        };
+        var pagedResult = await FeedingsApi.GetFeedingHistoryAsync(HorseId, request);
+        _feedingSessions = pagedResult?.Data.ToList();
 
         _loading = false;
         await InvokeAsync(StateHasChanged);

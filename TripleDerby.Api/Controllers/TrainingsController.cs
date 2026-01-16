@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TripleDerby.Api.Conventions;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.SharedKernel;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Api.Controllers;
 
@@ -38,15 +39,8 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TrainingResult>> Get(byte id)
     {
-        try
-        {
-            var result = await trainingService.Get(id);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var result = await trainingService.Get(id);
+        return Ok(result);
     }
 
     /// <summary>
@@ -66,33 +60,28 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         [FromQuery] Guid sessionId,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await trainingService.GetTrainingOptions(horseId, sessionId, cancellationToken);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var result = await trainingService.GetTrainingOptions(horseId, sessionId, cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
-    /// Gets training history for a horse.
+    /// Gets paginated training history for a horse with optional filtering and sorting.
     /// </summary>
     /// <param name="horseId">Horse ID</param>
-    /// <param name="limit">Maximum number of records to return</param>
+    /// <param name="request">Pagination request with page, size, sorting, and filtering options</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Training history records</returns>
-    /// <response code="200">Returns training history</response>
+    /// <returns>Paginated training history records</returns>
+    /// <response code="200">Returns paginated training history</response>
+    /// <response code="404">Horse not found</response>
     [HttpGet("history")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<TrainingHistoryResult>>> GetHistory(
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedList<TrainingHistoryResult>>> GetHistory(
         [FromQuery] Guid horseId,
-        [FromQuery] int limit = 10,
+        [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await trainingService.GetTrainingHistory(horseId, limit, cancellationToken);
+        var result = await trainingService.GetTrainingHistory(horseId, request, cancellationToken);
         return Ok(result);
     }
 
@@ -113,24 +102,17 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         [FromBody] TrainHorseRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
-            await trainingService.QueueTrainingAsync(
-                request.HorseId,
-                request.TrainingId,
-                request.SessionId,
-                userId,
-                cancellationToken);
+        await trainingService.QueueTrainingAsync(
+            request.HorseId,
+            request.TrainingId,
+            request.SessionId,
+            userId,
+            cancellationToken);
 
-            var requestUrl = Url.Action(nameof(GetRequest), new { id = request.SessionId });
-            return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var requestUrl = Url.Action(nameof(GetRequest), new { id = request.SessionId });
+        return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
     }
 
     /// <summary>
@@ -149,10 +131,6 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         CancellationToken cancellationToken)
     {
         var result = await trainingService.GetRequestStatus(id, cancellationToken);
-
-        if (result == null)
-            return NotFound($"Training request with ID {id} not found");
-
         return Ok(result);
     }
 
@@ -177,10 +155,6 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         {
             await trainingService.ReplayTrainingRequest(id, cancellationToken);
             return Accepted();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {

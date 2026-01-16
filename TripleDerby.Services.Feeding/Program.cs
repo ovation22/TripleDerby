@@ -42,6 +42,7 @@ builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<FeedingRe
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddMessageBus(builder.Configuration);
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
+builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddRabbitMQClient(connectionName: "messaging");

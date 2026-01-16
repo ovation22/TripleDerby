@@ -10,6 +10,7 @@ using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
+using TripleDerby.SharedKernel.Pagination;
 
 namespace TripleDerby.Core.Services;
 
@@ -131,12 +132,12 @@ public class FeedingService(
     /// <summary>
     /// Gets the status of a feeding request.
     /// </summary>
-    public async Task<FeedingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
+    public async Task<FeedingRequestStatusResult> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
     {
         var request = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
 
         if (request == null)
-            return null;
+            throw new KeyNotFoundException($"Feeding request with ID '{sessionId}' was not found.");
 
         return new FeedingRequestStatusResult
         {
@@ -225,41 +226,30 @@ public class FeedingService(
     /// <summary>
     /// Gets feeding history for a horse.
     /// </summary>
-    public async Task<List<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, int limit = 10, CancellationToken cancellationToken = default)
+    public async Task<PagedList<FeedingHistoryResult>> GetFeedingHistory(Guid horseId, PaginationRequest request, CancellationToken cancellationToken = default)
     {
-        var spec = new FeedingSessionSpecification(horseId);
-        var sessions = await repository.ListAsync(spec, cancellationToken);
+        // Verify horse exists
+        var horse = await repository.FindAsync<Horse>(horseId, cancellationToken);
+        if (horse == null)
+        {
+            throw new KeyNotFoundException($"Horse with ID '{horseId}' was not found.");
+        }
 
-        return sessions
-            .OrderByDescending(fs => fs.SessionDate)
-            .Take(limit)
-            .Select(fs => new FeedingHistoryResult
-            {
-                Id = fs.Id,
-                FeedingName = fs.Feeding.Name,
-                SessionDate = fs.SessionDate,
-                Response = fs.Result,
-                HappinessGain = fs.HappinessGain,
-                SpeedGain = fs.SpeedGain,
-                StaminaGain = fs.StaminaGain,
-                AgilityGain = fs.AgilityGain,
-                DurabilityGain = fs.DurabilityGain,
-                UpsetStomachOccurred = fs.UpsetStomachOccurred,
-                Result = fs.UpsetStomachOccurred ? "Upset Stomach" : fs.Result.ToString()
-            })
-            .ToList();
+        // Specification handles filtering, sorting, pagination, and projection
+        var spec = new FeedingSessionHistorySpecification(horseId, request);
+        return await repository.ListAsync(spec, cancellationToken);
     }
 
     /// <summary>
     /// Gets the details of a completed feeding session by ID.
     /// Returns null if not found.
     /// </summary>
-    public async Task<FeedingSessionResult?> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default)
+    public async Task<FeedingSessionResult> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default)
     {
         var session = await repository.FindAsync<FeedingSession>(feedingSessionId, cancellationToken);
 
         if (session == null)
-            return null;
+            throw new KeyNotFoundException($"Feeding session with ID '{feedingSessionId}' was not found.");
 
         // Load the feeding details if not already loaded
         if (session.Feeding == null)

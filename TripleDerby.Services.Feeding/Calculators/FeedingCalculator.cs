@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Services.Feeding.Abstractions;
 using TripleDerby.Services.Feeding.Config;
 using TripleDerby.SharedKernel.Enums;
@@ -8,8 +9,9 @@ namespace TripleDerby.Services.Feeding.Calculators;
 /// Calculator for feeding-related computations.
 /// Uses deterministic seeding for preference generation and effect calculations.
 /// </summary>
-public class FeedingCalculator : IFeedingCalculator
+public class FeedingCalculator(IRandomGenerator randomGenerator) : IFeedingCalculator
 {
+    private readonly IRandomGenerator _randomGenerator = randomGenerator;
     public FeedResponse CalculatePreference(Guid horseId, byte feedingId, FeedingCategoryId categoryId)
     {
         // Generate deterministic seed from horse + feeding combination
@@ -58,8 +60,7 @@ public class FeedingCalculator : IFeedingCalculator
         var preferenceMultiplier = FeedingConfig.PreferenceMultipliers[preference];
 
         // Generate random value in base range
-        var random = new Random();
-        var baseGain = baseHappinessMin + (random.NextDouble() * (baseHappinessMax - baseHappinessMin));
+        var baseGain = baseHappinessMin + (_randomGenerator.NextDouble() * (baseHappinessMax - baseHappinessMin));
 
         // Apply preference multiplier and happiness effectiveness
         return baseGain * preferenceMultiplier * happinessEffectiveness;
@@ -83,8 +84,7 @@ public class FeedingCalculator : IFeedingCalculator
         var preferenceMultiplier = FeedingConfig.PreferenceMultipliers[preference];
 
         // Generate random value in base range
-        var random = new Random();
-        var baseGain = baseStatMin + (random.NextDouble() * (baseStatMax - baseStatMin));
+        var baseGain = baseStatMin + (_randomGenerator.NextDouble() * (baseStatMax - baseStatMin));
 
         // Apply preference multiplier and happiness effectiveness
         var gain = baseGain * preferenceMultiplier * happinessEffectiveness;
