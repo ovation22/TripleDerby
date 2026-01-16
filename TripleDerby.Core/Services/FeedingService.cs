@@ -132,12 +132,12 @@ public class FeedingService(
     /// <summary>
     /// Gets the status of a feeding request.
     /// </summary>
-    public async Task<FeedingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
+    public async Task<FeedingRequestStatusResult> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
     {
         var request = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
 
         if (request == null)
-            return null;
+            throw new KeyNotFoundException($"Feeding request with ID '{sessionId}' was not found.");
 
         return new FeedingRequestStatusResult
         {
@@ -244,12 +244,12 @@ public class FeedingService(
     /// Gets the details of a completed feeding session by ID.
     /// Returns null if not found.
     /// </summary>
-    public async Task<FeedingSessionResult?> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default)
+    public async Task<FeedingSessionResult> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default)
     {
         var session = await repository.FindAsync<FeedingSession>(feedingSessionId, cancellationToken);
 
         if (session == null)
-            return null;
+            throw new KeyNotFoundException($"Feeding session with ID '{feedingSessionId}' was not found.");
 
         // Load the feeding details if not already loaded
         if (session.Feeding == null)

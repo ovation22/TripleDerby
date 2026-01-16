@@ -22,7 +22,7 @@ public interface IFeedingService
     /// <summary>
     /// Gets the status of a feeding request.
     /// </summary>
-    Task<FeedingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default);
+    Task<FeedingRequestStatusResult> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Re-publishes a failed feeding request.
@@ -42,5 +42,5 @@ public interface IFeedingService
     /// <summary>
     /// Gets the details of a completed feeding session by ID.
     /// </summary>
-    Task<FeedingSessionResult?> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default);
+    Task<FeedingSessionResult> GetFeedingSessionResult(Guid feedingSessionId, CancellationToken cancellationToken = default);
 }

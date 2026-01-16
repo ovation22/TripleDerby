@@ -39,15 +39,8 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TrainingResult>> Get(byte id)
     {
-        try
-        {
-            var result = await trainingService.Get(id);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var result = await trainingService.Get(id);
+        return Ok(result);
     }
 
     /// <summary>
@@ -67,15 +60,8 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         [FromQuery] Guid sessionId,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await trainingService.GetTrainingOptions(horseId, sessionId, cancellationToken);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var result = await trainingService.GetTrainingOptions(horseId, sessionId, cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
@@ -95,15 +81,8 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var result = await trainingService.GetTrainingHistory(horseId, request, cancellationToken);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var result = await trainingService.GetTrainingHistory(horseId, request, cancellationToken);
+        return Ok(result);
     }
 
     /// <summary>
@@ -123,24 +102,17 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         [FromBody] TrainHorseRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
-            await trainingService.QueueTrainingAsync(
-                request.HorseId,
-                request.TrainingId,
-                request.SessionId,
-                userId,
-                cancellationToken);
+        await trainingService.QueueTrainingAsync(
+            request.HorseId,
+            request.TrainingId,
+            request.SessionId,
+            userId,
+            cancellationToken);
 
-            var requestUrl = Url.Action(nameof(GetRequest), new { id = request.SessionId });
-            return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var requestUrl = Url.Action(nameof(GetRequest), new { id = request.SessionId });
+        return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
     }
 
     /// <summary>
@@ -159,10 +131,6 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         CancellationToken cancellationToken)
     {
         var result = await trainingService.GetRequestStatus(id, cancellationToken);
-
-        if (result == null)
-            return NotFound($"Training request with ID {id} not found");
-
         return Ok(result);
     }
 
@@ -187,10 +155,6 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
         {
             await trainingService.ReplayTrainingRequest(id, cancellationToken);
             return Accepted();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {

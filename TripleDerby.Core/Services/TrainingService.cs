@@ -120,12 +120,12 @@ public class TrainingService(
     /// <summary>
     /// Gets the status of a training request.
     /// </summary>
-    public async Task<TrainingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
+    public async Task<TrainingRequestStatusResult> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default)
     {
         var request = await repository.FindAsync<TrainingRequest>(sessionId, cancellationToken);
 
         if (request == null)
-            return null;
+            throw new KeyNotFoundException($"Training request with ID '{sessionId}' was not found.");
 
         return new TrainingRequestStatusResult
         {

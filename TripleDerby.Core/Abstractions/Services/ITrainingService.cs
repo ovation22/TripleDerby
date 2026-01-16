@@ -40,7 +40,7 @@ public interface ITrainingService
     /// <summary>
     /// Gets the status of a training request.
     /// </summary>
-    Task<TrainingRequestStatusResult?> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default);
+    Task<TrainingRequestStatusResult> GetRequestStatus(Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Re-publishes a failed training request.

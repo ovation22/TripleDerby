@@ -59,24 +59,17 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> QueueFeeding([FromBody] FeedingQueueRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
-            await feedingService.QueueFeedingAsync(
-                request.HorseId,
-                request.FeedingId,
-                request.SessionId,
-                userId,
-                cancellationToken);
+        await feedingService.QueueFeedingAsync(
+            request.HorseId,
+            request.FeedingId,
+            request.SessionId,
+            userId,
+            cancellationToken);
 
-            var requestUrl = Url.Action("GetRequest", new { id = request.SessionId });
-            return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var requestUrl = Url.Action("GetRequest", new { id = request.SessionId });
+        return Accepted(requestUrl, new { sessionId = request.SessionId, status = "queued" });
     }
 
     /// <summary>
@@ -92,10 +85,6 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
     public async Task<ActionResult<FeedingRequestStatusResult>> GetRequest(Guid id, CancellationToken cancellationToken)
     {
         var status = await feedingService.GetRequestStatus(id, cancellationToken);
-
-        if (status == null)
-            return NotFound();
-
         return Ok(status);
     }
 
@@ -112,15 +101,8 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<FeedingOptionResult>>> GetOptions([FromQuery] Guid horseId, [FromQuery] Guid sessionId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var options = await feedingService.GetFeedingOptions(horseId, sessionId, cancellationToken);
-            return Ok(options);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var options = await feedingService.GetFeedingOptions(horseId, sessionId, cancellationToken);
+        return Ok(options);
     }
 
     /// <summary>
@@ -139,15 +121,8 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
         [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var history = await feedingService.GetFeedingHistory(horseId, request, cancellationToken);
-            return Ok(history);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
+        var history = await feedingService.GetFeedingHistory(horseId, request, cancellationToken);
+        return Ok(history);
     }
 
     /// <summary>
@@ -163,10 +138,6 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
     public async Task<ActionResult<FeedingSessionResult>> GetSession(Guid sessionId, CancellationToken cancellationToken = default)
     {
         var result = await feedingService.GetFeedingSessionResult(sessionId, cancellationToken);
-
-        if (result == null)
-            return NotFound();
-
         return Ok(result);
     }
 }
