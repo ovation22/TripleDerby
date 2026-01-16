@@ -1,3 +1,4 @@
+using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.Services.Feeding.Calculators;
 using TripleDerby.SharedKernel.Enums;
 
@@ -5,7 +6,7 @@ namespace TripleDerby.Tests.Unit.Services;
 
 public class FeedingCalculatorTests
 {
-    private readonly FeedingCalculator _calculator = new();
+    private readonly FeedingCalculator _calculator = new(new RandomGenerator());
 
     #region CalculatePreference Tests
 
