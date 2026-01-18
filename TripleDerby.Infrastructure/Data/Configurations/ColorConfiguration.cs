@@ -13,7 +13,7 @@ public class ColorConfiguration : IEntityTypeConfiguration<Color>
             .IsRequired();
 
         builder.Property(c => c.Description)
-            .HasMaxLength(200)
+            .HasMaxLength(300)
             .IsRequired();
     }
 }
