@@ -12,6 +12,7 @@ using TripleDerby.Infrastructure.Messaging;
 using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Breeding;
+using TripleDerby.Services.Breeding.Abstractions;
 using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -35,16 +36,17 @@ builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 builder.Services.AddScoped<IBreedingExecutor, BreedingExecutor>();
 builder.Services.AddScoped<IBreedingRequestProcessor, BreedingRequestProcessor>();
 
-// Register generic message consumer with RabbitMQ adapter
-builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
+// Register message bus (publishes and consumes via configured provider)
+builder.Services.AddMessageBus(builder.Configuration);
+
+// Register message consumer
 builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<BreedingRequested, IBreedingRequestProcessor>>();
 
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 builder.Services.AddSingleton<IHorseNameGenerator, HorseNameGenerator>();
-builder.Services.AddMessageBus(builder.Configuration);
-builder.Services.AddSingleton<ColorCache>(); // Color cache for performance optimization
+builder.Services.AddSingleton<ColorCache>();
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddRabbitMQClient(connectionName: "messaging");
@@ -64,3 +66,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make the implicit Program class internal to avoid conflicts with other projects
+internal partial class Program { }

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Infrastructure.Messaging;
 
 namespace TripleDerby.Tests.Unit.Messaging;
@@ -8,8 +10,6 @@ namespace TripleDerby.Tests.Unit.Messaging;
 /// </summary>
 public class MessageBusExtensionsTests
 {
-    #region ResolveProvider Tests
-
     [Theory]
     [InlineData("RabbitMq", "RabbitMq")]
     [InlineData("rabbitmq", "RabbitMq")]
@@ -64,10 +64,6 @@ public class MessageBusExtensionsTests
         // Assert
         Assert.Equal("RabbitMq", result);
     }
-
-    #endregion
-
-    #region DetectProvider Tests
 
     [Fact]
     public void DetectProvider_WithOnlyRabbitMqConnectionString_ReturnsRabbitMq()
@@ -139,10 +135,6 @@ public class MessageBusExtensionsTests
         Assert.Contains("ConnectionStrings:servicebus", ex.Message);
     }
 
-    #endregion
-
-    #region HasRabbitMqConnectionString Tests
-
     [Theory]
     [InlineData("MessageBus:RabbitMq:ConnectionString", "amqp://localhost")]
     [InlineData("MessageBus:RabbitMq", "amqp://localhost")]
@@ -198,10 +190,6 @@ public class MessageBusExtensionsTests
         Assert.False(result);
     }
 
-    #endregion
-
-    #region HasServiceBusConnectionString Tests
-
     [Theory]
     [InlineData("ConnectionStrings:servicebus", "Endpoint=sb://localhost")]
     public void HasServiceBusConnectionString_WithValidConnectionString_ReturnsTrue(string key, string value)
@@ -252,7 +240,129 @@ public class MessageBusExtensionsTests
         Assert.False(result);
     }
 
-    #endregion
+    [Fact]
+    public void AddMessageBus_WithRabbitMqProvider_RegistersRabbitMqBrokerAdapter()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:messaging"] = "amqp://guest:guest@localhost:5672/",
+                ["MessageBus:Routing:Provider"] = "RabbitMq"
+            })
+            .Build();
+
+        // Act
+        services.AddMessageBus(config);
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var adapter = serviceProvider.GetService<IMessageBrokerAdapter>();
+        Assert.NotNull(adapter);
+        Assert.IsType<RabbitMqBrokerAdapter>(adapter);
+    }
+
+    [Fact]
+    public void AddMessageBus_WithServiceBusProvider_RegistersServiceBusBrokerAdapter()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:servicebus"] = "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=test",
+                ["MessageBus:Routing:Provider"] = "ServiceBus"
+            })
+            .Build();
+
+        // Act
+        services.AddMessageBus(config);
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var adapter = serviceProvider.GetService<IMessageBrokerAdapter>();
+        Assert.NotNull(adapter);
+        Assert.IsType<ServiceBusBrokerAdapter>(adapter);
+    }
+
+    [Fact]
+    public void AddMessageBus_WithAutoProvider_RabbitMqConnectionString_RegistersRabbitMqBrokerAdapter()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:messaging"] = "amqp://guest:guest@localhost:5672/",
+                ["MessageBus:Routing:Provider"] = "Auto"
+            })
+            .Build();
+
+        // Act
+        services.AddMessageBus(config);
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var adapter = serviceProvider.GetService<IMessageBrokerAdapter>();
+        Assert.NotNull(adapter);
+        Assert.IsType<RabbitMqBrokerAdapter>(adapter);
+    }
+
+    [Fact]
+    public void AddMessageBus_RegistersBothPublisherAndConsumerAdapter()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:messaging"] = "amqp://guest:guest@localhost:5672/",
+                ["MessageBus:Routing:Provider"] = "RabbitMq"
+            })
+            .Build();
+
+        services.AddSingleton<IConfiguration>(config);
+
+        // Act
+        services.AddMessageBus(config);
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Assert
+        var publisher = serviceProvider.GetService<IMessagePublisher>();
+        var adapter = serviceProvider.GetService<IMessageBrokerAdapter>();
+
+        Assert.NotNull(publisher);
+        Assert.NotNull(adapter);
+        Assert.IsType<RoutingMessagePublisher>(publisher);
+        Assert.IsType<RabbitMqBrokerAdapter>(adapter);
+    }
+
+    [Fact]
+    public void AddMessageBus_WithInvalidProvider_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:messaging"] = "amqp://guest:guest@localhost:5672/",
+                ["MessageBus:Routing:Provider"] = "Kafka"
+            })
+            .Build();
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            services.AddMessageBus(config));
+
+        Assert.Contains("Invalid MessageBus:Routing:Provider value: 'Kafka'", ex.Message);
+        Assert.Contains("Valid values: 'RabbitMq', 'ServiceBus', 'Auto'", ex.Message);
+    }
 
     private static IConfiguration CreateEmptyConfiguration()
     {

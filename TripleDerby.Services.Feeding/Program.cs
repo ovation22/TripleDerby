@@ -35,12 +35,13 @@ builder.Services.AddScoped<IFeedingCalculator, FeedingCalculator>();
 builder.Services.AddScoped<IFeedingExecutor, FeedingExecutor>();
 builder.Services.AddScoped<IFeedingRequestProcessor, FeedingRequestProcessor>();
 
-// Register generic message consumer with RabbitMQ adapter
-builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
+// Register message bus (publishes and consumes via configured provider)
+builder.Services.AddMessageBus(builder.Configuration);
+
+// Register message consumer
 builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<FeedingRequested, IFeedingRequestProcessor>>();
 
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddMessageBus(builder.Configuration);
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 
@@ -62,3 +63,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make the implicit Program class internal to avoid conflicts with other projects
+internal partial class Program { }

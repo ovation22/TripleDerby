@@ -5,6 +5,7 @@ using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Core.Entities;
 using TripleDerby.Services.Breeding;
+using TripleDerby.Services.Breeding.Abstractions;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Messages;
 

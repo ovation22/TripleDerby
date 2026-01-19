@@ -1,4 +1,4 @@
-using TripleDerby.Services.Racing;
+using TripleDerby.Services.Racing.Calculators;
 using TripleDerby.SharedKernel.Enums;
 
 namespace TripleDerby.Tests.Unit.Services;

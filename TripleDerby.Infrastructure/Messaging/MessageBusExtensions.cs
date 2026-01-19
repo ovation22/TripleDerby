@@ -13,6 +13,7 @@ public static class MessageBusExtensions
 {
     /// <summary>
     /// Adds message bus with automatic provider selection based on configuration.
+    /// Registers both IMessagePublisher and IMessageBrokerAdapter for the selected provider.
     /// Provider determined by MessageBus:Routing:Provider setting ("RabbitMq", "ServiceBus", "Auto").
     /// </summary>
     /// <param name="services">The service collection</param>
@@ -35,8 +36,15 @@ public static class MessageBusExtensions
 
         var provider = ResolveProvider(routingConfig.Provider, configuration);
 
-        // Register appropriate publisher based on provider
-        RegisterPublisher(services, provider);
+        // Register publisher and consumer adapter based on provider
+        if (provider == "RabbitMq")
+        {
+            RegisterRabbitMq(services);
+        }
+        else if (provider == "ServiceBus")
+        {
+            RegisterServiceBus(services);
+        }
 
         return services;
     }
@@ -58,38 +66,51 @@ public static class MessageBusExtensions
     }
 
     /// <summary>
-    /// Registers the concrete publisher and routing decorator based on provider.
+    /// Registers RabbitMQ implementations for both publisher and consumer.
+    /// Registers IMessagePublisher with RoutingMessagePublisher decorator and IMessageBrokerAdapter with RabbitMqBrokerAdapter.
     /// </summary>
-    private static void RegisterPublisher(IServiceCollection services, string provider)
+    /// <param name="services">The service collection</param>
+    private static void RegisterRabbitMq(IServiceCollection services)
     {
-        if (provider == "RabbitMq")
+        // Register publisher
+        services.AddSingleton<RabbitMqMessagePublisher>();
+        services.AddSingleton<IMessagePublisher>(sp =>
         {
-            services.AddSingleton<RabbitMqMessagePublisher>();
-            services.AddSingleton<IMessagePublisher>(sp =>
-            {
-                var innerPublisher = sp.GetRequiredService<RabbitMqMessagePublisher>();
-                var routingOptions = sp.GetRequiredService<IOptions<MessageRoutingConfig>>();
-                var logger = sp.GetRequiredService<ILogger<RoutingMessagePublisher>>();
+            var innerPublisher = sp.GetRequiredService<RabbitMqMessagePublisher>();
+            var routingOptions = sp.GetRequiredService<IOptions<MessageRoutingConfig>>();
+            var logger = sp.GetRequiredService<ILogger<RoutingMessagePublisher>>();
 
-                logger.LogInformation("Message bus configured with provider: RabbitMq");
+            logger.LogInformation("Message bus publisher configured with provider: RabbitMq");
 
-                return new RoutingMessagePublisher(innerPublisher, routingOptions, logger);
-            });
-        }
-        else if (provider == "ServiceBus")
+            return new RoutingMessagePublisher(innerPublisher, routingOptions, logger);
+        });
+
+        // Register consumer adapter
+        services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
+    }
+
+    /// <summary>
+    /// Registers Azure Service Bus implementations for both publisher and consumer.
+    /// Registers IMessagePublisher with RoutingMessagePublisher decorator and IMessageBrokerAdapter with ServiceBusBrokerAdapter.
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    private static void RegisterServiceBus(IServiceCollection services)
+    {
+        // Register publisher
+        services.AddSingleton<AzureServiceBusPublisher>();
+        services.AddSingleton<IMessagePublisher>(sp =>
         {
-            services.AddSingleton<AzureServiceBusPublisher>();
-            services.AddSingleton<IMessagePublisher>(sp =>
-            {
-                var innerPublisher = sp.GetRequiredService<AzureServiceBusPublisher>();
-                var routingOptions = sp.GetRequiredService<IOptions<MessageRoutingConfig>>();
-                var logger = sp.GetRequiredService<ILogger<RoutingMessagePublisher>>();
+            var innerPublisher = sp.GetRequiredService<AzureServiceBusPublisher>();
+            var routingOptions = sp.GetRequiredService<IOptions<MessageRoutingConfig>>();
+            var logger = sp.GetRequiredService<ILogger<RoutingMessagePublisher>>();
 
-                logger.LogInformation("Message bus configured with provider: ServiceBus");
+            logger.LogInformation("Message bus publisher configured with provider: ServiceBus");
 
-                return new RoutingMessagePublisher(innerPublisher, routingOptions, logger);
-            });
-        }
+            return new RoutingMessagePublisher(innerPublisher, routingOptions, logger);
+        });
+
+        // Register consumer adapter
+        services.AddSingleton<IMessageBrokerAdapter, ServiceBusBrokerAdapter>();
     }
 
     /// <summary>
