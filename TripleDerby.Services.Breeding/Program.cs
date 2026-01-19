@@ -12,6 +12,7 @@ using TripleDerby.Infrastructure.Messaging;
 using TripleDerby.Infrastructure.Utilities;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Services.Breeding;
+using TripleDerby.Services.Breeding.Abstractions;
 using TripleDerby.SharedKernel.Messages;
 
 var builder = Host.CreateApplicationBuilder(args);

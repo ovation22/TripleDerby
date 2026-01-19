@@ -1,6 +1,6 @@
 using TripleDerby.SharedKernel;
 
-namespace TripleDerby.Services.Breeding;
+namespace TripleDerby.Services.Breeding.Abstractions;
 
 public interface IBreedingExecutor
 {

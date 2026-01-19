@@ -342,6 +342,28 @@ public class MessageBusExtensionsTests
         Assert.IsType<RabbitMqBrokerAdapter>(adapter);
     }
 
+    [Fact]
+    public void AddMessageBus_WithInvalidProvider_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:messaging"] = "amqp://guest:guest@localhost:5672/",
+                ["MessageBus:Routing:Provider"] = "Kafka"
+            })
+            .Build();
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            services.AddMessageBus(config));
+
+        Assert.Contains("Invalid MessageBus:Routing:Provider value: 'Kafka'", ex.Message);
+        Assert.Contains("Valid values: 'RabbitMq', 'ServiceBus', 'Auto'", ex.Message);
+    }
+
     private static IConfiguration CreateEmptyConfiguration()
     {
         return new ConfigurationBuilder()
