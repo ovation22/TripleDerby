@@ -49,11 +49,13 @@ builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
 
-// Messaging - Generic message consumer with RabbitMQ adapter
-builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
-builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceRequested, IRaceRequestProcessor>>();
-builder.Services.AddHostedService<Worker>();
+// Messaging - Register message bus (publishes and consumes via configured provider)
 builder.Services.AddMessageBus(builder.Configuration);
+
+// Register message consumer
+builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceRequested, IRaceRequestProcessor>>();
+
+builder.Services.AddHostedService<Worker>();
 
 builder.AddSqlServerClient(connectionName: "sql");
 builder.AddRabbitMQClient(connectionName: "messaging");

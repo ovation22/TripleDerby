@@ -35,12 +35,13 @@ builder.Services.AddScoped<ITrainingExecutor, TrainingExecutor>();
 builder.Services.AddScoped<ITrainingRequestProcessor, TrainingRequestProcessor>();
 builder.Services.AddScoped<ITrainingCalculator, TrainingCalculator>();
 
-// Register generic message consumer with RabbitMQ adapter
-builder.Services.AddSingleton<IMessageBrokerAdapter, RabbitMqBrokerAdapter>();
+// Register message bus (publishes and consumes via configured provider)
+builder.Services.AddMessageBus(builder.Configuration);
+
+// Register message consumer
 builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<TrainingRequested, ITrainingRequestProcessor>>();
 
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddMessageBus(builder.Configuration);
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 
