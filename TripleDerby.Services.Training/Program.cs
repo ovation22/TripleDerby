@@ -63,3 +63,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make the implicit Program class internal to avoid conflicts with other projects
+internal partial class Program { }
