@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
+using TripleDerby.Core.Abstractions.Data;
 using TripleDerby.Infrastructure.Data;
 
 namespace TripleDerby.Api.Config;
@@ -12,5 +13,7 @@ public static class DatabaseConfig
         var conn = configuration.GetConnectionString("TripleDerby");
         services.AddDbContextPool<TripleDerbyContext>(options =>
             options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
+
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 }

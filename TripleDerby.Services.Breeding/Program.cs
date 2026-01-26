@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using TripleDerby.Core.Abstractions.Data;
 using TripleDerby.Core.Abstractions.Generators;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
@@ -32,6 +33,7 @@ var conn = builder.Configuration.GetConnectionString("TripleDerby");
 builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
     options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 builder.Services.AddScoped<IBreedingExecutor, BreedingExecutor>();
 builder.Services.AddScoped<IBreedingRequestProcessor, BreedingRequestProcessor>();
