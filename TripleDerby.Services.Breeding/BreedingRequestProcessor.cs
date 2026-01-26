@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Data;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -15,6 +16,7 @@ public class BreedingRequestProcessor(
     IBreedingExecutor breedingExecutor,
     ILogger<BreedingRequestProcessor> logger,
     ITripleDerbyRepository repository,
+    IUnitOfWork unitOfWork,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager)
     : IBreedingRequestProcessor
@@ -103,7 +105,7 @@ public class BreedingRequestProcessor(
         try
         {
             // Execute breeding logic and create foal, update parent counters, and update BreedingRequest atomically
-            var result = await repository.ExecuteInTransactionAsync(async () =>
+            var result = await unitOfWork.ExecuteAsync(async () =>
             {
                 // Delegate to BreedingExecutor for core breeding logic
                 var breedingResult = await breedingExecutor.Breed(

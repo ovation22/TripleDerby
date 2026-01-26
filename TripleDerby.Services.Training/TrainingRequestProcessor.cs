@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Data;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -15,6 +16,7 @@ public class TrainingRequestProcessor(
     ITrainingExecutor trainingExecutor,
     ILogger<TrainingRequestProcessor> logger,
     ITripleDerbyRepository repository,
+    IUnitOfWork unitOfWork,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager)
     : ITrainingRequestProcessor
@@ -100,7 +102,7 @@ public class TrainingRequestProcessor(
     {
         try
         {
-            var result = await repository.ExecuteInTransactionAsync(async () =>
+            var result = await unitOfWork.ExecuteAsync(async () =>
             {
                 var trainingResult = await trainingExecutor.ExecuteTrainingAsync(
                     request.HorseId,

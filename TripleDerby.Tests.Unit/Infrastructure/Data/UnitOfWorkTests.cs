@@ -76,6 +76,9 @@ public class UnitOfWorkTests
         // Assert exception was propagated
         Assert.Same(expectedException, actualException);
 
+        // Clear change tracker to force EF to query the database (not the tracker)
+        dbContext.ChangeTracker.Clear();
+
         // Verify entity was NOT persisted (rolled back)
         var savedEntity = await dbContext.TestEntities.FindAsync(1);
         Assert.Null(savedEntity);
