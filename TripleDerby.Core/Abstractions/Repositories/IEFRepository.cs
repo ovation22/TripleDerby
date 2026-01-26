@@ -319,23 +319,4 @@ public interface IEFRepository
     /// <param name="entities">The entities to delete.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task DeleteAsync<T>(List<T> entities, CancellationToken cancellationToken = default) where T : class;
-
-    /// <summary>
-    /// Executes the provided asynchronous operation inside a database transaction.
-    /// The operation may call other repository methods that use the same DbContext.
-    /// The transaction is committed if the operation completes successfully, otherwise rolled back.
-    /// </summary>
-    /// <param name="operation">The async operation to execute inside the transaction.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Executes the provided asynchronous operation inside a database transaction and returns a result.
-    /// The operation may call other repository methods that use the same DbContext.
-    /// The transaction is committed if the operation completes successfully, otherwise rolled back.
-    /// </summary>
-    /// <typeparam name="T">Return type of the operation.</typeparam>
-    /// <param name="operation">The async operation to execute inside the transaction.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation, CancellationToken cancellationToken = default);
 }
