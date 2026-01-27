@@ -14,6 +14,7 @@ public static class DatabaseConfig
         services.AddDbContextPool<TripleDerbyContext>(options =>
             options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<TripleDerbyContext>());
+        services.AddScoped<ITransactionManager, TransactionManager>();
     }
 }

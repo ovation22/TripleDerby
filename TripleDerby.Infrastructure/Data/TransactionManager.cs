@@ -5,13 +5,13 @@ using TripleDerby.Core.Abstractions.Data;
 
 namespace TripleDerby.Infrastructure.Data;
 
-public class UnitOfWork : IUnitOfWork
+public class TransactionManager : ITransactionManager
 {
     private readonly DbContext _dbContext;
-    private readonly ILogger<UnitOfWork> _logger;
+    private readonly ILogger<TransactionManager> _logger;
     private IDbContextTransaction? _currentTransaction;
 
-    public UnitOfWork(DbContext dbContext, ILogger<UnitOfWork> logger)
+    public TransactionManager(DbContext dbContext, ILogger<TransactionManager> logger)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

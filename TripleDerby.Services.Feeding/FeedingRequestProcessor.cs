@@ -16,7 +16,7 @@ public class FeedingRequestProcessor(
     IFeedingExecutor feedingExecutor,
     ILogger<FeedingRequestProcessor> logger,
     ITripleDerbyRepository repository,
-    IUnitOfWork unitOfWork,
+    ITransactionManager transactionManager,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager)
     : IFeedingRequestProcessor
@@ -102,7 +102,7 @@ public class FeedingRequestProcessor(
     {
         try
         {
-            var result = await unitOfWork.ExecuteAsync(async () =>
+            var result = await transactionManager.ExecuteAsync(async () =>
             {
                 var feedingResult = await feedingExecutor.ExecuteFeedingAsync(
                     request.HorseId,

@@ -31,7 +31,8 @@ var conn = builder.Configuration.GetConnectionString("TripleDerby");
 builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
     options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<TripleDerbyContext>());
+builder.Services.AddScoped<ITransactionManager, TransactionManager>();
 builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 builder.Services.AddScoped<IFeedingCalculator, FeedingCalculator>();
 builder.Services.AddScoped<IFeedingExecutor, FeedingExecutor>();

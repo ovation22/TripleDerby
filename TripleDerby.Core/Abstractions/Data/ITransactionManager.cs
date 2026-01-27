@@ -1,14 +1,16 @@
 namespace TripleDerby.Core.Abstractions.Data;
 
 /// <summary>
-/// Manages database transactions, coordinating multiple repository operations
-/// as a single atomic unit of work.
+/// Manages database transaction lifecycle, coordinating multiple repository operations
+/// as a single atomic transaction.
 /// </summary>
 /// <remarks>
-/// This interface provides explicit transaction lifecycle management,
+/// This interface provides explicit transaction management,
 /// separating transaction control from repository data access operations.
+/// Repository methods continue to save changes immediately; this manager
+/// provides transaction boundaries around groups of repository operations.
 /// </remarks>
-public interface IUnitOfWork
+public interface ITransactionManager
 {
     /// <summary>
     /// Begins a new database transaction.

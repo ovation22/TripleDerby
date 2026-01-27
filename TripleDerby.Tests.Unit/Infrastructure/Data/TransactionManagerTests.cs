@@ -7,9 +7,9 @@ using TripleDerby.Tests.Unit.Infrastructure.Data.Repositories;
 
 namespace TripleDerby.Tests.Unit.Infrastructure.Data;
 
-public class UnitOfWorkTests
+public class TransactionManagerTests
 {
-    private static (TestDbContext, UnitOfWork) CreateUnitOfWork()
+    private static (TestDbContext, TransactionManager) CreateTransactionManager()
     {
         var options = new DbContextOptionsBuilder<TestDbContext>()
             .UseSqlite("DataSource=:memory:")
@@ -20,21 +20,21 @@ public class UnitOfWorkTests
         dbContext.Database.OpenConnection();
         dbContext.Database.EnsureCreated();
 
-        var mockLogger = new Mock<ILogger<UnitOfWork>>();
-        var unitOfWork = new UnitOfWork(dbContext, mockLogger.Object);
+        var mockLogger = new Mock<ILogger<TransactionManager>>();
+        var transactionManager = new TransactionManager(dbContext, mockLogger.Object);
 
-        return (dbContext, unitOfWork);
+        return (dbContext, transactionManager);
     }
 
     [Fact]
     public async Task ExecuteAsync_SuccessfulOperation_CommitsTransaction()
     {
         // Arrange
-        var (dbContext, unitOfWork) = CreateUnitOfWork();
+        var (dbContext, transactionManager) = CreateTransactionManager();
         var operationExecuted = false;
 
         // Act
-        await unitOfWork.ExecuteAsync(async () =>
+        await transactionManager.ExecuteAsync(async () =>
         {
             // Add an entity to verify transaction commits
             var entity = new TestEntity { Id = 1, Name = "Test" };
@@ -56,13 +56,13 @@ public class UnitOfWorkTests
     public async Task ExecuteAsync_OperationThrowsException_RollsBackTransaction()
     {
         // Arrange
-        var (dbContext, unitOfWork) = CreateUnitOfWork();
+        var (dbContext, transactionManager) = CreateTransactionManager();
         var expectedException = new InvalidOperationException("Test exception");
 
         // Act & Assert
         var actualException = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await unitOfWork.ExecuteAsync(async () =>
+            await transactionManager.ExecuteAsync(async () =>
             {
                 // Add an entity that should be rolled back
                 var entity = new TestEntity { Id = 1, Name = "ShouldBeRolledBack" };
@@ -90,11 +90,11 @@ public class UnitOfWorkTests
     public async Task ExecuteAsync_WithResult_ReturnsResultAndCommits()
     {
         // Arrange
-        var (dbContext, unitOfWork) = CreateUnitOfWork();
+        var (dbContext, transactionManager) = CreateTransactionManager();
         var expectedResult = 42;
 
         // Act
-        var result = await unitOfWork.ExecuteAsync(async () =>
+        var result = await transactionManager.ExecuteAsync(async () =>
         {
             // Add an entity to verify transaction commits
             var entity = new TestEntity { Id = 1, Name = "Test" };
@@ -124,13 +124,13 @@ public class UnitOfWorkTests
         dbContext.Database.OpenConnection();
         dbContext.Database.EnsureCreated();
 
-        var mockLogger = new Mock<ILogger<UnitOfWork>>();
-        var unitOfWork = new UnitOfWork(dbContext, mockLogger.Object);
+        var mockLogger = new Mock<ILogger<TransactionManager>>();
+        var transactionManager = new TransactionManager(dbContext, mockLogger.Object);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await unitOfWork.ExecuteAsync((Func<Task>)null!, CancellationToken.None);
+            await transactionManager.ExecuteAsync((Func<Task>)null!, CancellationToken.None);
         });
     }
 
@@ -138,16 +138,16 @@ public class UnitOfWorkTests
     public async Task BeginTransactionAsync_WhenNoTransaction_StartsTransaction()
     {
         // Arrange
-        var (dbContext, unitOfWork) = CreateUnitOfWork();
+        var (dbContext, transactionManager) = CreateTransactionManager();
 
         // Act
-        await unitOfWork.BeginTransactionAsync(CancellationToken.None);
+        await transactionManager.BeginTransactionAsync(CancellationToken.None);
 
         // Assert - verify we can add and commit
         var entity = new TestEntity { Id = 1, Name = "Test" };
         dbContext.TestEntities.Add(entity);
         await dbContext.SaveChangesAsync();
-        await unitOfWork.CommitAsync(CancellationToken.None);
+        await transactionManager.CommitAsync(CancellationToken.None);
 
         var savedEntity = await dbContext.TestEntities.FindAsync(1);
         Assert.NotNull(savedEntity);
@@ -159,15 +159,15 @@ public class UnitOfWorkTests
     public async Task BeginTransactionAsync_WhenTransactionActive_ThrowsInvalidOperationException()
     {
         // Arrange
-        var (dbContext, unitOfWork) = CreateUnitOfWork();
+        var (dbContext, transactionManager) = CreateTransactionManager();
 
         // Act - start first transaction
-        await unitOfWork.BeginTransactionAsync(CancellationToken.None);
+        await transactionManager.BeginTransactionAsync(CancellationToken.None);
 
         // Assert - second call should throw
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await unitOfWork.BeginTransactionAsync(CancellationToken.None);
+            await transactionManager.BeginTransactionAsync(CancellationToken.None);
         });
 
         await dbContext.DisposeAsync();
@@ -185,13 +185,13 @@ public class UnitOfWorkTests
         dbContext.Database.OpenConnection();
         dbContext.Database.EnsureCreated();
 
-        var mockLogger = new Mock<ILogger<UnitOfWork>>();
-        var unitOfWork = new UnitOfWork(dbContext, mockLogger.Object);
+        var mockLogger = new Mock<ILogger<TransactionManager>>();
+        var transactionManager = new TransactionManager(dbContext, mockLogger.Object);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await unitOfWork.CommitAsync(CancellationToken.None);
+            await transactionManager.CommitAsync(CancellationToken.None);
         });
     }
 
@@ -207,13 +207,13 @@ public class UnitOfWorkTests
         dbContext.Database.OpenConnection();
         dbContext.Database.EnsureCreated();
 
-        var mockLogger = new Mock<ILogger<UnitOfWork>>();
-        var unitOfWork = new UnitOfWork(dbContext, mockLogger.Object);
+        var mockLogger = new Mock<ILogger<TransactionManager>>();
+        var transactionManager = new TransactionManager(dbContext, mockLogger.Object);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await unitOfWork.RollbackAsync(CancellationToken.None);
+            await transactionManager.RollbackAsync(CancellationToken.None);
         });
     }
 }

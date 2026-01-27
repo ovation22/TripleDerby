@@ -23,7 +23,7 @@ public class BreedingRequestProcessorTests
         var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
         var repo = new Mock<ITripleDerbyRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
+        var transactionManager = new Mock<ITransactionManager>();
         var publisher = new Mock<IMessagePublisher>();
         var timeMgr = new Mock<ITimeManager>();
 
@@ -31,7 +31,7 @@ public class BreedingRequestProcessorTests
             breedingExecutor.Object,
             logger.Object,
             repo.Object,
-            unitOfWork.Object,
+            transactionManager.Object,
             publisher.Object,
             timeMgr.Object);
 
@@ -48,7 +48,7 @@ public class BreedingRequestProcessorTests
         var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
         var repo = new Mock<ITripleDerbyRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
+        var transactionManager = new Mock<ITransactionManager>();
         var publisher = new Mock<IMessagePublisher>();
         var timeMgr = new Mock<ITimeManager>();
 
@@ -62,7 +62,7 @@ public class BreedingRequestProcessorTests
             breedingExecutor.Object,
             logger.Object,
             repo.Object,
-            unitOfWork.Object,
+            transactionManager.Object,
             publisher.Object,
             timeMgr.Object);
 
@@ -85,7 +85,7 @@ public class BreedingRequestProcessorTests
         var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
         var repo = new Mock<ITripleDerbyRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
+        var transactionManager = new Mock<ITransactionManager>();
         var publisher = new Mock<IMessagePublisher>();
         var timeMgr = new Mock<ITimeManager>();
 
@@ -105,7 +105,7 @@ public class BreedingRequestProcessorTests
             breedingExecutor.Object,
             logger.Object,
             repo.Object,
-            unitOfWork.Object,
+            transactionManager.Object,
             publisher.Object,
             timeMgr.Object);
 
@@ -127,7 +127,7 @@ public class BreedingRequestProcessorTests
         var breedingExecutor = new Mock<IBreedingExecutor>();
         var logger = new Mock<ILogger<BreedingRequestProcessor>>();
         var repo = new Mock<ITripleDerbyRepository>();
-        var unitOfWork = new Mock<IUnitOfWork>();
+        var transactionManager = new Mock<ITransactionManager>();
         var publisher = new Mock<IMessagePublisher>();
         var timeMgr = new Mock<ITimeManager>();
 
@@ -157,7 +157,7 @@ public class BreedingRequestProcessorTests
             breedingExecutor.Object,
             logger.Object,
             repo.Object,
-            unitOfWork.Object,
+            transactionManager.Object,
             publisher.Object,
             timeMgr.Object);
 

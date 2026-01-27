@@ -16,7 +16,7 @@ public class TrainingRequestProcessor(
     ITrainingExecutor trainingExecutor,
     ILogger<TrainingRequestProcessor> logger,
     ITripleDerbyRepository repository,
-    IUnitOfWork unitOfWork,
+    ITransactionManager transactionManager,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager)
     : ITrainingRequestProcessor
@@ -102,7 +102,7 @@ public class TrainingRequestProcessor(
     {
         try
         {
-            var result = await unitOfWork.ExecuteAsync(async () =>
+            var result = await transactionManager.ExecuteAsync(async () =>
             {
                 var trainingResult = await trainingExecutor.ExecuteTrainingAsync(
                     request.HorseId,

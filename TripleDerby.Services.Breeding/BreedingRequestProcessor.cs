@@ -16,7 +16,7 @@ public class BreedingRequestProcessor(
     IBreedingExecutor breedingExecutor,
     ILogger<BreedingRequestProcessor> logger,
     ITripleDerbyRepository repository,
-    IUnitOfWork unitOfWork,
+    ITransactionManager transactionManager,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager)
     : IBreedingRequestProcessor
@@ -105,7 +105,7 @@ public class BreedingRequestProcessor(
         try
         {
             // Execute breeding logic and create foal, update parent counters, and update BreedingRequest atomically
-            var result = await unitOfWork.ExecuteAsync(async () =>
+            var result = await transactionManager.ExecuteAsync(async () =>
             {
                 // Delegate to BreedingExecutor for core breeding logic
                 var breedingResult = await breedingExecutor.Breed(
