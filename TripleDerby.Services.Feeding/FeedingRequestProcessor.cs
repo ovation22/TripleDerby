@@ -1,3 +1,4 @@
+using TripleDerby.Core.Abstractions.Data;
 using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -15,6 +16,7 @@ public class FeedingRequestProcessor(
     IFeedingExecutor feedingExecutor,
     ILogger<FeedingRequestProcessor> logger,
     ITripleDerbyRepository repository,
+    ITransactionManager transactionManager,
     IMessagePublisher messagePublisher,
     ITimeManager timeManager)
     : IFeedingRequestProcessor
@@ -100,7 +102,7 @@ public class FeedingRequestProcessor(
     {
         try
         {
-            var result = await repository.ExecuteInTransactionAsync(async () =>
+            var result = await transactionManager.ExecuteAsync(async () =>
             {
                 var feedingResult = await feedingExecutor.ExecuteFeedingAsync(
                     request.HorseId,
