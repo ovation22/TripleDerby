@@ -1,0 +1,33 @@
+.race-header {
+    margin-bottom: 2rem;
+}
+
+.race-header h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.race-details {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.race-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.race-detail-item strong {
+    font-weight: 600;
+}
+
+/* Responsive: stack details on smaller screens */
+@media (max-width: 768px) {
+    .race-details {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

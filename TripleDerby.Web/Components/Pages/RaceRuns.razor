@@ -6,6 +6,7 @@
 @using TripleDerby.SharedKernel
 @using TripleDerby.SharedKernel.Pagination
 @using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.Web.Components.Widgets
 
 @inject IRaceApiClient RaceApi
 @inject IRaceRunApiClient RaceRunApi
@@ -26,16 +27,7 @@ else if (_race == null)
 }
 else
 {
-    <div style="margin-bottom: 2rem;">
-        <h2>@_race.Name</h2>
-        <div style="display: flex; gap: 2rem; margin-top: 1rem;">
-            <div><strong>Track:</strong> @_race.Track</div>
-            <div><strong>Distance:</strong> @_race.Furlongs furlongs</div>
-            <div><strong>Surface:</strong> @_race.Surface</div>
-            <div><strong>Class:</strong> @_race.RaceClass</div>
-            <div><strong>Purse:</strong> @_race.Purse.ToString("C")</div>
-        </div>
-    </div>
+    <RaceDetailsHeader Race="@_race" />
 
     <div style="min-height: 490px;" tabindex="-1">
     <FluentDataGrid @ref="dataGrid"
