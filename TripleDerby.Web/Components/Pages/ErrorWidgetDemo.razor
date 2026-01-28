@@ -1,0 +1,213 @@
+@page "/error-widget-demo"
+@using TripleDerby.Web.Components.Shared
+
+<PageTitle>ErrorWidget Demo</PageTitle>
+
+<h1>ErrorWidget Component Demo</h1>
+
+<p>This page demonstrates the ErrorWidget component in various scenarios.</p>
+
+<FluentDivider Style="margin: 2rem 0;" />
+
+<h2>Scenario 1: Basic Error with Retry Button</h2>
+<p>Shows an error message with a retry button that increments a counter.</p>
+
+<ErrorWidget ErrorMessage="Failed to load data from the server. Please try again."
+             OnRetry="@HandleRetry1" />
+
+<p><strong>Retry Count:</strong> @retryCount1</p>
+
+<FluentDivider Style="margin: 2rem 0;" />
+
+<h2>Scenario 2: Error Without Retry Button</h2>
+<p>Shows an error message without a retry option (no OnRetry callback).</p>
+
+<ErrorWidget ErrorMessage="This resource has been permanently deleted and cannot be recovered." />
+
+<FluentDivider Style="margin: 2rem 0;" />
+
+<h2>Scenario 3: Error with Technical Details (Development Mode)</h2>
+<p>Shows an error with expandable technical details.</p>
+
+<ErrorWidget ErrorMessage="An unexpected error occurred while processing your request."
+             ShowDetails="true"
+             ErrorDetails="@technicalDetails"
+             OnRetry="@HandleRetry3" />
+
+<p><strong>Retry Count:</strong> @retryCount3</p>
+
+<FluentDivider Style="margin: 2rem 0;" />
+
+<h2>Scenario 4: Simulated API Failure</h2>
+<p>Simulates an API call that fails and can be retried.</p>
+
+@if (loading)
+{
+    <FluentProgressRing />
+    <p>Loading data...</p>
+}
+else if (!string.IsNullOrEmpty(apiErrorMessage))
+{
+    <ErrorWidget ErrorMessage="@apiErrorMessage"
+                 OnRetry="@SimulateApiCall"
+                 ShowDetails="@showApiDetails"
+                 ErrorDetails="@apiErrorDetails" />
+}
+else
+{
+    <FluentMessageBar Intent="MessageIntent.Success">
+        ✅ Data loaded successfully! (Attempt @apiAttemptCount)
+    </FluentMessageBar>
+}
+
+<FluentStack Orientation="Orientation.Horizontal" HorizontalGap="10">
+    <FluentButton Appearance="Appearance.Accent" OnClick="@SimulateApiCall">
+        Load Data
+    </FluentButton>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="@(() => showApiDetails = !showApiDetails)">
+        @(showApiDetails ? "Hide" : "Show") Technical Details
+    </FluentButton>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="@ResetDemo">
+        Reset Demo
+    </FluentButton>
+</FluentStack>
+
+<FluentDivider Style="margin: 2rem 0;" />
+
+<h2>Scenario 5: Network Error Simulation</h2>
+<p>Simulates a network timeout error.</p>
+
+<ErrorWidget ErrorMessage="Unable to connect to the server. Please check your network connection and try again."
+             ShowDetails="true"
+             ErrorDetails="@networkErrorDetails"
+             OnRetry="@HandleNetworkRetry" />
+
+<p><strong>Network Retry Count:</strong> @networkRetryCount</p>
+
+<FluentDivider Style="margin: 2rem 0;" />
+
+<FluentButton Appearance="Appearance.Neutral" OnClick="@(() => Navigation.NavigateTo("/"))">
+    Back to Home
+</FluentButton>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    // Scenario 1
+    private int retryCount1 = 0;
+    private Task HandleRetry1()
+    {
+        retryCount1++;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // Scenario 3
+    private int retryCount3 = 0;
+    private string technicalDetails = @"System.Net.Http.HttpRequestException: Connection refused
+   at System.Net.Http.HttpClient.SendAsync(HttpRequestMessage request)
+   at TripleDerby.Web.ApiClients.BaseApiClient.GetAsync<T>(String endpoint)
+   at TripleDerby.Web.Components.Pages.Home.LoadDataAsync()
+
+Inner Exception: System.Net.Sockets.SocketException: No connection could be made because the target machine actively refused it.
+   at System.Net.Sockets.Socket.Connect(EndPoint remoteEP)";
+
+    private Task HandleRetry3()
+    {
+        retryCount3++;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // Scenario 4 - Simulated API
+    private bool loading = false;
+    private string? apiErrorMessage = null;
+    private string? apiErrorDetails = null;
+    private int apiAttemptCount = 0;
+    private bool showApiDetails = false;
+    private Random random = new Random();
+
+    private async Task SimulateApiCall()
+    {
+        loading = true;
+        apiErrorMessage = null;
+        apiErrorDetails = null;
+        apiAttemptCount++;
+        StateHasChanged();
+
+        // Simulate network delay
+        await Task.Delay(1000);
+
+        // 60% chance of failure on first 2 attempts, then success
+        bool shouldFail = apiAttemptCount <= 2 && random.Next(100) < 60;
+
+        if (shouldFail)
+        {
+            var errorCodes = new[] { 500, 503, 504, 408 };
+            var errorCode = errorCodes[random.Next(errorCodes.Length)];
+
+            apiErrorMessage = errorCode switch
+            {
+                500 => "Internal server error occurred. The server encountered an unexpected condition.",
+                503 => "Service temporarily unavailable. Please try again in a moment.",
+                504 => "Gateway timeout. The server took too long to respond.",
+                408 => "Request timeout. The server did not receive a complete request in time.",
+                _ => "An error occurred while processing your request."
+            };
+
+            apiErrorDetails = $@"HTTP {errorCode} Error
+Timestamp: {DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss UTC}
+Endpoint: https://api.triplederby.local/stats/horses
+Request ID: {Guid.NewGuid()}
+Attempt: {apiAttemptCount}
+
+Headers:
+  Content-Type: application/json
+  User-Agent: TripleDerby-Web/1.0
+
+Response Body:
+{{
+  ""error"": ""Service temporarily unavailable"",
+  ""code"": ""{errorCode}"",
+  ""timestamp"": ""{DateTimeOffset.UtcNow:o}""
+}}";
+        }
+
+        loading = false;
+        StateHasChanged();
+    }
+
+    private void ResetDemo()
+    {
+        loading = false;
+        apiErrorMessage = null;
+        apiErrorDetails = null;
+        apiAttemptCount = 0;
+        showApiDetails = false;
+        StateHasChanged();
+    }
+
+    // Scenario 5 - Network Error
+    private int networkRetryCount = 0;
+    private string networkErrorDetails = @"System.Net.Http.HttpRequestException: Request timed out
+   at System.Net.Http.HttpClient.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at TripleDerby.Web.ApiClients.StatsApiClient.GetHorseGenderStatsAsync()
+
+Timeout Configuration:
+  AttemptTimeout: 30 seconds
+  TotalRequestTimeout: 2 minutes
+  Retry Attempts: 3
+
+Network Details:
+  Local IP: 192.168.1.100
+  Remote Host: api.triplederby.local
+  Remote Port: 443
+  Protocol: HTTPS/TLS 1.3";
+
+    private Task HandleNetworkRetry()
+    {
+        networkRetryCount++;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

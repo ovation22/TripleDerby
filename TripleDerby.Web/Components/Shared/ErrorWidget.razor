@@ -1,0 +1,61 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="error-widget" role="alert" aria-live="assertive">
+    <FluentMessageBar Intent="MessageIntent.Error" aria-label="Error message">
+        <div class="error-content">
+            <div class="error-message">
+                @ErrorMessage
+            </div>
+
+            @if (ShowDetails && !string.IsNullOrWhiteSpace(ErrorDetails))
+            {
+                <details class="error-details">
+                    <summary>Technical Details</summary>
+                    <pre>@ErrorDetails</pre>
+                </details>
+            }
+        </div>
+    </FluentMessageBar>
+
+    @if (OnRetry.HasDelegate)
+    {
+        <div class="error-actions">
+            <FluentButton Appearance="Appearance.Accent"
+                          OnClick="HandleRetry"
+                          aria-label="Retry failed operation">
+                Retry
+            </FluentButton>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// The error message to display to the user (required)
+    /// </summary>
+    [Parameter, EditorRequired]
+    public string ErrorMessage { get; set; } = "An error occurred";
+
+    /// <summary>
+    /// Optional callback invoked when the user clicks the Retry button
+    /// </summary>
+    [Parameter]
+    public EventCallback OnRetry { get; set; }
+
+    /// <summary>
+    /// Whether to show detailed error information (typically only in Development)
+    /// </summary>
+    [Parameter]
+    public bool ShowDetails { get; set; }
+
+    /// <summary>
+    /// Optional technical details about the error (shown only when ShowDetails is true)
+    /// </summary>
+    [Parameter]
+    public string? ErrorDetails { get; set; }
+
+    private async Task HandleRetry()
+    {
+        await OnRetry.InvokeAsync();
+    }
+}

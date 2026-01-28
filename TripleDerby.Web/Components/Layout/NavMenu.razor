@@ -13,6 +13,10 @@
             <FluentNavLink Href="tracks" Icon="@(new RaceTrackIcon())" IconColor="Color.Accent">Tracks</FluentNavLink>
             <FluentNavLink Href="trainings" Icon="@(new Icons.Regular.Size20.Dumbbell())" IconColor="Color.Accent">Trainings</FluentNavLink>
             <FluentNavLink Href="races" Icon="@(new HorseAndRider())" IconColor="Color.Accent">Races</FluentNavLink>
+            @if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                <FluentNavLink Href="error-widget-demo" Icon="@(new Icons.Regular.Size20.Warning())" IconColor="Color.Accent">Error Demo</FluentNavLink>
+            }
         </FluentNavMenu>
     </nav>
 </div>
