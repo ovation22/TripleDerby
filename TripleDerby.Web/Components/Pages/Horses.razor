@@ -105,7 +105,6 @@
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
 
     string? errorMessage;
-    bool hasError;
 
     string nameFilter = string.Empty;
     string colorFilter = string.Empty;
@@ -315,7 +314,6 @@
     {
         loading = true;
         errorMessage = null;
-        hasError = false;
 
         try
         {
@@ -386,7 +384,6 @@
             if (response == null)
             {
                 errorMessage = "Failed to load horses data. Please try again.";
-                hasError = true;
                 Logger.LogWarning("Horses grid: API returned null response");
                 return;
             }
@@ -397,7 +394,6 @@
         catch (Exception ex)
         {
             errorMessage = "An error occurred while loading horses data. Please try again.";
-            hasError = true;
             Logger.LogError(ex, "Horses grid: Error loading horses data from API");
             horses = Enumerable.Empty<HorseResult>().AsQueryable();
             await pagination.SetTotalItemCountAsync(0);

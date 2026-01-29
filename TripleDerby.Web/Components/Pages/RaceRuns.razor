@@ -82,7 +82,6 @@ else
     readonly PaginationState _pagination = new() { ItemsPerPage = 10 };
 
     string? errorMessage;
-    bool hasError;
 
     readonly GridSort<RaceRunSummary> _sortByCreated = GridSort<RaceRunSummary>
         .ByAscending(p => p.RunDate);
@@ -114,7 +113,6 @@ else
     {
         _loading = true;
         errorMessage = null;
-        hasError = false;
 
         try
         {
@@ -151,7 +149,6 @@ else
             if (response == null)
             {
                 errorMessage = "Failed to load race runs data. Please try again.";
-                hasError = true;
                 Logger.LogWarning("RaceRuns grid: API returned null response for RaceId {RaceId}", RaceId);
                 return;
             }
@@ -162,7 +159,6 @@ else
         catch (Exception ex)
         {
             errorMessage = "An error occurred while loading race runs data. Please try again.";
-            hasError = true;
             Logger.LogError(ex, "RaceRuns grid: Error loading race runs data from API for RaceId {RaceId}", RaceId);
             _raceRuns = Enumerable.Empty<RaceRunSummary>().AsQueryable();
             await _pagination.SetTotalItemCountAsync(0);
