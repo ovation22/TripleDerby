@@ -1,0 +1,30 @@
+@using TripleDerby.SharedKernel
+
+<div class="race-header">
+    <h2>@Race.Name</h2>
+    <div class="race-details">
+        <div class="race-detail-item">
+            <strong>Track:</strong> @Race.Track
+        </div>
+        <div class="race-detail-item">
+            <strong>Distance:</strong> @Race.Furlongs furlongs
+        </div>
+        <div class="race-detail-item">
+            <strong>Surface:</strong> @Race.Surface
+        </div>
+        <div class="race-detail-item">
+            <strong>Class:</strong> @Race.RaceClass
+        </div>
+        <div class="race-detail-item">
+            <strong>Purse:</strong> @Race.Purse.ToString("C")
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// The race details to display
+    /// </summary>
+    [Parameter, EditorRequired]
+    public RaceResult Race { get; set; } = null!;
+}

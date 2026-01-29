@@ -1,6 +1,7 @@
 @using System.Globalization
 @using System.Linq
 @using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.Web.Components.Shared
 
 <div role="region" aria-label="@Title">
     <div class="hc-header">
@@ -8,7 +9,7 @@
         <div class="hc-total">
             @if (loading)
             {
-                <span>Loading…</span>
+                <span>Loadingï¿½</span>
             }
             else
             {
@@ -17,9 +18,13 @@
         </div>
     </div>
 
-    @if (loading)
+    @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="hc-loading" aria-live="polite">Loading color stats…</div>
+        <ErrorWidget ErrorMessage="@errorMessage" OnRetry="HandleRetryAsync" />
+    }
+    else if (loading)
+    {
+        <div class="hc-loading" aria-live="polite">Loading color statsï¿½</div>
     }
     else
     {
@@ -71,6 +76,7 @@
 
 @code {
     [Inject] private IStatsApiClient StatsApi { get; set; } = null!;
+    [Inject] private ILogger<HorseColorStats> Logger { get; set; } = null!;
 
     /// <summary>
     /// Input model used by the component when consumer passes data.
@@ -88,6 +94,7 @@
     private int OtherCount;
     private double OtherPercentage;
     private bool loading;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -105,17 +112,37 @@
     private async Task LoadAsync()
     {
         loading = true;
+        errorMessage = null;
+
         try
         {
             var dtos = await StatsApi.GetHorseColorStatsAsync();
+
+            if (dtos == null || !dtos.Any())
+            {
+                errorMessage = "No color statistics data available.";
+                Logger.LogWarning("HorseColorStats: API returned null or empty data");
+                return;
+            }
+
             Stats = dtos.Select(d => new ColorStat(d.ColorId, d.ColorName ?? string.Empty, d.Count, d.Percentage)).ToList();
             UpdateDisplayFromStats();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load color statistics. Please try again.";
+            Logger.LogError(ex, "HorseColorStats: Error loading color statistics from API");
         }
         finally
         {
             loading = false;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private async Task HandleRetryAsync()
+    {
+        await LoadAsync();
     }
 
     private void UpdateDisplayFromStats()

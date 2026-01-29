@@ -4,6 +4,7 @@
 @using TripleDerby.Web.ApiClients.Abstractions
 @using TripleDerby.SharedKernel.Horses
 @using TripleDerby.Web.Icons
+@using TripleDerby.Web.Components.Shared
 
 <div role="region" aria-label="@Title">
     <div class="hc-header">
@@ -13,7 +14,7 @@
             <div class="hc-total">
                 @if (loading)
                 {
-                    <span>Loading…</span>
+                    <span>Loadingï¿½</span>
                 }
                 else
                 {
@@ -23,9 +24,13 @@
         }
     </div>
 
-    @if (loading)
+    @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="hc-loading" aria-live="polite">Loading gender stats…</div>
+        <ErrorWidget ErrorMessage="@errorMessage" OnRetry="HandleRetryAsync" />
+    }
+    else if (loading)
+    {
+        <div class="hc-loading" aria-live="polite">Loading gender statsï¿½</div>
     }
     else
     {
@@ -76,6 +81,7 @@
 
 @code {
     [Inject] private IStatsApiClient StatsApi { get; set; } = null!;
+    [Inject] private ILogger<HorseGenderStats> Logger { get; set; } = null!;
 
     public record GenderStat(bool IsMale, string GenderName, int Count, double Percentage);
 
@@ -89,6 +95,7 @@
     private List<GenderStat> DisplayStats = new();
     private int TotalCount;
     private bool loading;
+    private string? errorMessage;
 
     // Inline style used to generate the correct number of columns for the grid.
     // At runtime this becomes "grid-template-columns: repeat(N, 1fr);"
@@ -109,10 +116,20 @@
     private async Task LoadAsync()
     {
         loading = true;
+        errorMessage = null;
+
         try
         {
             // Expects an API client method GetHorseGenderStatsAsync returning IEnumerable<HorseGenderStats>
             var dtos = await StatsApi.GetHorseGenderStatsAsync();
+
+            if (dtos == null || !dtos.Any())
+            {
+                errorMessage = "No gender statistics data available.";
+                Logger.LogWarning("HorseGenderStats: API returned null or empty data");
+                return;
+            }
+
             Stats = dtos.Select(d =>
                 new GenderStat(
                     d.IsMale,
@@ -123,11 +140,21 @@
 
             UpdateDisplayFromStats();
         }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load gender statistics. Please try again.";
+            Logger.LogError(ex, "HorseGenderStats: Error loading gender statistics from API");
+        }
         finally
         {
             loading = false;
             await InvokeAsync(StateHasChanged);
         }
+    }
+
+    private async Task HandleRetryAsync()
+    {
+        await LoadAsync();
     }
 
     private void UpdateDisplayFromStats()

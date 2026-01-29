@@ -3,6 +3,7 @@ using Microsoft.FluentUI.AspNetCore.Components;
 using TripleDerby.ServiceDefaults;
 using TripleDerby.Web.ApiClients;
 using TripleDerby.Web.ApiClients.Abstractions;
+using TripleDerby.Web.Resilience;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,42 +17,33 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddFluentUIComponents();
 
-builder.Services.AddHttpClient<IBreedingApiClient, BreedingApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-}); 
-builder.Services.AddHttpClient<IHorseApiClient, HorseApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<IStatsApiClient, StatsApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<IUserApiClient, UserApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<IRaceApiClient, RaceApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<IRaceRunApiClient, RaceRunApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<ITrackApiClient, TrackApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<ITrainingsApiClient, TrainingsApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
-builder.Services.AddHttpClient<IFeedingsApiClient, FeedingsApiClient>(client =>
-{
-    client.BaseAddress = new("https+http://api");
-});
+// Configure API clients with retry and circuit breaker resilience policies
+builder.Services.AddApiClientWithResilience<IBreedingApiClient, BreedingApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<IHorseApiClient, HorseApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<IStatsApiClient, StatsApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<IUserApiClient, UserApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<IRaceApiClient, RaceApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<IRaceRunApiClient, RaceRunApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<ITrackApiClient, TrackApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<ITrainingsApiClient, TrainingsApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
+builder.Services.AddApiClientWithResilience<IFeedingsApiClient, FeedingsApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
 
 var app = builder.Build();
 

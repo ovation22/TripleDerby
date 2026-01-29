@@ -7,6 +7,7 @@
 @using TripleDerby.SharedKernel.Pagination
 @using TripleDerby.Web.ApiClients.Abstractions
 @using TripleDerby.Web.Components.Ui;
+@using TripleDerby.Web.Components.Widgets;
 
 @inject IBreedingApiClient BreedingApi
 @inject IHorseApiClient HorseApi
@@ -37,30 +38,7 @@
                                     SelectedIndexChanged="i => SelectedDamIndex = i"
                                     SelectedItemChanged="OnDamChanged">
                 <ItemTemplate Context="horse">
-                    <FlipCard MinimalStyle="true" Height="250px" Width="300px">
-                        <Front>
-                            <div class="card-top">
-                                <div class="card-image">
-                                    <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())" />
-                                </div>
-                            </div>
-                            <div class="card-bottom">
-                                <div class="card-name">@horse.Name</div>
-                                <div class="card-earnings">$@horse.Earnings</div>
-                            </div>
-                        </Front>
-                        <Back>
-                            <div class="card-stats">
-                                <div class="card-title">Stats</div>
-                                <div class="stat-row"><div class="stat-label">Starts</div><div class="stat-value">@horse.RaceStarts</div></div>
-                                <div class="stat-row"><div class="stat-label">Wins</div><div class="stat-value">@horse.RaceWins</div></div>
-                                <div class="stat-row"><div class="stat-label">Place</div><div class="stat-value">@horse.RacePlace</div></div>
-                                <div class="stat-row"><div class="stat-label">Show</div><div class="stat-value">@horse.RaceShow</div></div>
-                                <div class="stat-row"><div class="stat-label">Sire</div><div class="stat-value">@(horse.Sire ?? "-")</div></div>
-                                <div class="stat-row"><div class="stat-label">Dam</div><div class="stat-value">@(horse.Dam ?? "-")</div></div>
-                            </div>
-                        </Back>
-                    </FlipCard>
+                    <HorseFlipCard Horse="@horse" />
                 </ItemTemplate>
             </HorizontalCardSelector>
         }
@@ -83,42 +61,7 @@
                                 SelectedIndexChanged="i => SelectedSireIndex = i"
                                 SelectedItemChanged="OnSireChanged">
             <ItemTemplate Context="horse">
-                <FlipCard MinimalStyle="true" Height="250px" Width="300px">
-                    <Front>
-                        <div class="card-top">
-                            <div class="card-image">
-                                <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())"/>
-                            </div>
-                        </div>
-                        <div class="card-bottom">
-                            <div class="card-name">@horse.Name</div>
-                            <div class="card-earnings">$@horse.Earnings</div>
-                        </div>
-                    </Front>
-                    <Back>
-                        <div class="card-stats">
-                            <div class="card-title">Stats</div>
-                            <div class="stat-row">
-                                <div class="stat-label">Starts</div>
-                                <div class="stat-value">@horse.RaceStarts</div></div>
-                            <div class="stat-row">
-                                <div class="stat-label">Wins</div>
-                                <div class="stat-value">@horse.RaceWins</div></div>
-                            <div class="stat-row">
-                                <div class="stat-label">Place</div>
-                                <div class="stat-value">@horse.RacePlace</div></div>
-                            <div class="stat-row">
-                                <div class="stat-label">Show</div>
-                                <div class="stat-value">@horse.RaceShow</div></div>
-                            <div class="stat-row">
-                                <div class="stat-label">Sire</div>
-                                <div class="stat-value">@(horse.Sire ?? "-")</div></div>
-                            <div class="stat-row">
-                                <div class="stat-label">Dam</div>
-                                <div class="stat-value">@(horse.Dam ?? "-")</div></div>
-                        </div>
-                    </Back>
-                </FlipCard>
+                <HorseFlipCard Horse="@horse" />
             </ItemTemplate>
         </HorizontalCardSelector>
     }

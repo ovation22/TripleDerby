@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Microsoft.FluentUI.AspNetCore.Components.Emojis.AnimalsNature.Color
 @using TripleDerby.Web.Components.Widgets
+@using TripleDerby.Web.Components.Shared
 @using TripleDerby.Web.Icons
 
 <PageTitle>Triple Derby - Admin</PageTitle>
@@ -40,19 +41,40 @@
         <FluentGrid>
             <FluentGridItem xs="12">
                 <FluentCard Height="156px;">
-                    <HorseGenderStats Title="Genders" />
+                    <ErrorBoundary>
+                        <ChildContent>
+                            <HorseGenderStats Title="Genders" />
+                        </ChildContent>
+                        <ErrorContent>
+                            <ErrorWidget ErrorMessage="An unexpected error occurred in the Gender Stats widget." />
+                        </ErrorContent>
+                    </ErrorBoundary>
                 </FluentCard>
             </FluentGridItem>
             <FluentGridItem xs="12">
                 <FluentCard Height="270px;">
-                    <HorseLegTypeStats Title="Leg Types" />
+                    <ErrorBoundary>
+                        <ChildContent>
+                            <HorseLegTypeStats Title="Leg Types" />
+                        </ChildContent>
+                        <ErrorContent>
+                            <ErrorWidget ErrorMessage="An unexpected error occurred in the Leg Type Stats widget." />
+                        </ErrorContent>
+                    </ErrorBoundary>
                 </FluentCard>
             </FluentGridItem>
         </FluentGrid>
     </FluentGridItem>
     <FluentGridItem xs="12" sm="6">
         <FluentCard Style="height: 100%">
-            <HorseColorStats Title="Horse Colors" MaxItems="6" />
+            <ErrorBoundary>
+                <ChildContent>
+                    <HorseColorStats Title="Horse Colors" MaxItems="6" />
+                </ChildContent>
+                <ErrorContent>
+                    <ErrorWidget ErrorMessage="An unexpected error occurred in the Color Stats widget." />
+                </ErrorContent>
+            </ErrorBoundary>
         </FluentCard>
     </FluentGridItem>
     <FluentGridItem xs="12" sm="6" md="3">

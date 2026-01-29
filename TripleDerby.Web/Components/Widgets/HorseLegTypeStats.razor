@@ -5,6 +5,7 @@
 @using TripleDerby.SharedKernel.Horses
 @using TripleDerby.SharedKernel.Enums
 @using TripleDerby.Web.Icons
+@using TripleDerby.Web.Components.Shared
 
 <div role="region" aria-label="@Title">
     <div class="hc-header">
@@ -14,7 +15,7 @@
             <div class="hc-total">
                 @if (loading)
                 {
-                    <span>Loading…</span>
+                    <span>Loadingï¿½</span>
                 }
                 else
                 {
@@ -24,9 +25,13 @@
         }
     </div>
 
-    @if (loading)
+    @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="hc-loading" aria-live="polite">Loading leg type stats…</div>
+        <ErrorWidget ErrorMessage="@errorMessage" OnRetry="HandleRetryAsync" />
+    }
+    else if (loading)
+    {
+        <div class="hc-loading" aria-live="polite">Loading leg type statsï¿½</div>
     }
     else
     {
@@ -90,6 +95,7 @@
 
 @code {
     [Inject] private IStatsApiClient StatsApi { get; set; } = null!;
+    [Inject] private ILogger<HorseLegTypeStats> Logger { get; set; } = null!;
 
     public record LegStat(int LegTypeId, string LegTypeName, int Count, double Percentage);
 
@@ -103,6 +109,7 @@
     private List<LegStat> DisplayStats = new();
     private int TotalCount;
     private bool loading;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -119,12 +126,27 @@
     private async Task LoadAsync()
     {
         loading = true;
+        errorMessage = null;
+
         try
         {
             // Assumes the API client exposes GetHorseLegTypeStatsAsync returning IEnumerable<HorseLegTypeStats>
             var dtos = await StatsApi.GetHorseLegTypeStatsAsync();
+
+            if (dtos == null || !dtos.Any())
+            {
+                errorMessage = "No leg type statistics data available.";
+                Logger.LogWarning("HorseLegTypeStats: API returned null or empty data");
+                return;
+            }
+
             Stats = dtos.Select(d => new LegStat((int)d.LegTypeId, d.LegTypeName ?? d.LegTypeId.ToString(), d.Count, d.Percentage)).ToList();
             UpdateDisplayFromStats();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load leg type statistics. Please try again.";
+            Logger.LogError(ex, "HorseLegTypeStats: Error loading leg type statistics from API");
         }
         finally
         {
@@ -133,12 +155,17 @@
         }
     }
 
+    private async Task HandleRetryAsync()
+    {
+        await LoadAsync();
+    }
+
     private void UpdateDisplayFromStats()
     {
         var list = (Stats ?? Enumerable.Empty<LegStat>()).OrderByDescending(s => s.Percentage).ToList();
         TotalCount = list.Sum(x => x.Count);
 
-        // There are only five leg types — show them all in a single column.
+        // There are only five leg types ï¿½ show them all in a single column.
         DisplayStats = list.Select(x => new LegStat(x.LegTypeId, x.LegTypeName, x.Count, Math.Round(x.Percentage, 2))).ToList();
     }
 }

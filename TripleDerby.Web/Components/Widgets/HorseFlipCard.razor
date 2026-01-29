@@ -1,0 +1,71 @@
+@using TripleDerby.SharedKernel
+@using TripleDerby.Web.Components.Ui
+
+<FlipCard MinimalStyle="@MinimalStyle" Height="@Height" Width="@Width">
+    <Front>
+        <div class="card-top">
+            <div class="card-image">
+                <FluentEmoji Value="@(new Emojis.AnimalsNature.Color.Default.Horse())" />
+            </div>
+        </div>
+        <div class="card-bottom">
+            <div class="card-name">@Horse.Name</div>
+            <div class="card-earnings">$@Horse.Earnings</div>
+        </div>
+    </Front>
+    <Back>
+        <div class="card-stats">
+            <div class="card-title">Stats</div>
+            <div class="stat-row">
+                <div class="stat-label">Starts</div>
+                <div class="stat-value">@Horse.RaceStarts</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">Wins</div>
+                <div class="stat-value">@Horse.RaceWins</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">Place</div>
+                <div class="stat-value">@Horse.RacePlace</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">Show</div>
+                <div class="stat-value">@Horse.RaceShow</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">Sire</div>
+                <div class="stat-value">@(Horse.Sire ?? "-")</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">Dam</div>
+                <div class="stat-value">@(Horse.Dam ?? "-")</div>
+            </div>
+        </div>
+    </Back>
+</FlipCard>
+
+@code {
+    /// <summary>
+    /// The horse to display on the card
+    /// </summary>
+    [Parameter, EditorRequired]
+    public HorseResult Horse { get; set; } = null!;
+
+    /// <summary>
+    /// Whether to use minimal styling for the flip card
+    /// </summary>
+    [Parameter]
+    public bool MinimalStyle { get; set; } = true;
+
+    /// <summary>
+    /// Height of the card
+    /// </summary>
+    [Parameter]
+    public string Height { get; set; } = "250px";
+
+    /// <summary>
+    /// Width of the card
+    /// </summary>
+    [Parameter]
+    public string Width { get; set; } = "300px";
+}

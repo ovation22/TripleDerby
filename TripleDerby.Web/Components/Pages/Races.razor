@@ -6,13 +6,22 @@
 @using TripleDerby.SharedKernel
 @using TripleDerby.SharedKernel.Pagination
 @using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.Web.Components.Shared
 
 @inject IRaceApiClient RaceApi
 @inject NavigationManager Navigation
+@inject ILogger<Races> Logger
 
 <PageTitle>Races</PageTitle>
 
 <h1>Races</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div style="margin-top: 1rem;">
+        <ErrorWidget ErrorMessage="@errorMessage" OnRetry="HandleRetryAsync" />
+    </div>
+}
 
 <div style="min-height: 490px;" tabindex="-1">
     <FluentDataGrid @ref="dataGrid"
@@ -53,45 +62,79 @@
     FluentDataGrid<RacesResult>? dataGrid;
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
 
+    string? errorMessage;
+    bool hasError;
+
     protected async Task RefreshItemsAsync(GridItemsProviderRequest<RacesResult> req)
     {
         loading = true;
+        errorMessage = null;
+        hasError = false;
 
-        var start = req.StartIndex;
-        var count = (req.Count.HasValue && req.Count.Value > 0)
-            ? req.Count.Value
-            : pagination.ItemsPerPage;
-        if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 1;
-
-        var page = (start / count) + 1;
-
-        var sortBy = "Name";
-        var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
-
-        var s = req.GetSortByProperties().FirstOrDefault(x => !string.IsNullOrEmpty(x.PropertyName));
-        if (!string.IsNullOrEmpty(s.PropertyName))
+        try
         {
-            sortBy = s.PropertyName;
-            sortDirection = s.Direction == FUISort.Ascending
-                ? SharedKernel.Pagination.SortDirection.Asc
-                : SharedKernel.Pagination.SortDirection.Desc;
+            var start = req.StartIndex;
+            var count = (req.Count.HasValue && req.Count.Value > 0)
+                ? req.Count.Value
+                : pagination.ItemsPerPage;
+            if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 1;
+
+            var page = (start / count) + 1;
+
+            var sortBy = "Name";
+            var sortDirection = SharedKernel.Pagination.SortDirection.Asc;
+
+            var s = req.GetSortByProperties().FirstOrDefault(x => !string.IsNullOrEmpty(x.PropertyName));
+            if (!string.IsNullOrEmpty(s.PropertyName))
+            {
+                sortBy = s.PropertyName;
+                sortDirection = s.Direction == FUISort.Ascending
+                    ? SharedKernel.Pagination.SortDirection.Asc
+                    : SharedKernel.Pagination.SortDirection.Desc;
+            }
+
+            var request = new PaginationRequest
+            {
+                Page = page,
+                Size = count,
+                SortBy = sortBy,
+                Direction = sortDirection
+            };
+
+            var response = await RaceApi.FilterAsync(request);
+
+            if (response == null)
+            {
+                errorMessage = "Failed to load races data. Please try again.";
+                hasError = true;
+                Logger.LogWarning("Races grid: API returned null response");
+                return;
+            }
+
+            races = (response.Data ?? Enumerable.Empty<RacesResult>()).AsQueryable();
+            await pagination.SetTotalItemCountAsync(response.Total);
         }
-
-        var request = new PaginationRequest
+        catch (Exception ex)
         {
-            Page = page,
-            Size = count,
-            SortBy = sortBy,
-            Direction = sortDirection
-        };
+            errorMessage = "An error occurred while loading races data. Please try again.";
+            hasError = true;
+            Logger.LogError(ex, "Races grid: Error loading races data from API");
+            races = Enumerable.Empty<RacesResult>().AsQueryable();
+            await pagination.SetTotalItemCountAsync(0);
+        }
+        finally
+        {
+            loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
-        var response = await RaceApi.FilterAsync(request);
-
-        races = (response?.Data ?? Enumerable.Empty<RacesResult>()).AsQueryable();
-        await pagination.SetTotalItemCountAsync(response?.Total ?? 0);
-
-        loading = false;
-        await InvokeAsync(StateHasChanged);
+    private async Task HandleRetryAsync()
+    {
+        if (dataGrid is not null)
+        {
+            await dataGrid.RefreshDataAsync();
+        }
     }
 
     private void NavigateToRaceRun(RacesResult race)
