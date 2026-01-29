@@ -48,7 +48,12 @@ public class Program
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
-            builder.AddSqlServerClient(connectionName: "sql");
+            // SQL SERVER (Commented for local dev)
+            // builder.AddSqlServerClient(connectionName: "sql");
+
+            // POSTGRESQL (Active for local dev)
+            builder.AddNpgsqlDataSource(connectionName: "sql");
+
             builder.AddRedisDistributedCache(connectionName: "cache");
             builder.AddRabbitMQClient(connectionName: "messaging");
 
