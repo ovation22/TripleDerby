@@ -10,7 +10,7 @@ public static class DatabaseConfig
 {
     public static void AddDatabaseConfig(this IServiceCollection services, IConfiguration configuration)
     {
-        var conn = configuration.GetConnectionString("TripleDerby");
+        var conn = configuration.GetConnectionString("sql");
 
         // SQL SERVER (Commented for local dev)
         // services.AddDbContextPool<TripleDerbyContext>(options =>

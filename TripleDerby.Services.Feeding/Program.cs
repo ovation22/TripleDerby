@@ -26,7 +26,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(Log.Logger);
 
-var conn = builder.Configuration.GetConnectionString("TripleDerby");
+var conn = builder.Configuration.GetConnectionString("sql");
 
 // SQL SERVER (Commented for local dev)
 // builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
