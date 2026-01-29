@@ -16,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Azure.Messaging.ServiceBus" Version="13.1.0" />
     <PackageReference Include="Aspire.Microsoft.Data.SqlClient" Version="13.1.0" />
-    <PackageReference Include="Aspire.Npgsql" Version="13.1.0" />
     <PackageReference Include="Aspire.RabbitMQ.Client" Version="13.1.0" />
     <PackageReference Include="Aspire.Seq" Version="13.1.0" />
     <PackageReference Include="Aspire.StackExchange.Redis.DistributedCaching" Version="13.1.0" />
