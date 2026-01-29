@@ -52,7 +52,8 @@ public class Program
             // builder.AddSqlServerClient(connectionName: "sql");
 
             // POSTGRESQL (Active for local dev)
-            builder.AddNpgsqlDataSource(connectionName: "sql");
+            // Connection string automatically provided by Aspire via .WithReference(sql)
+            // Manual DbContext configuration in DatabaseConfig.cs
 
             builder.AddRedisDistributedCache(connectionName: "cache");
             builder.AddRabbitMQClient(connectionName: "messaging");

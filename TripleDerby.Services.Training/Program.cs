@@ -57,7 +57,8 @@ builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 // builder.AddSqlServerClient(connectionName: "sql");
 
 // POSTGRESQL (Active for local dev)
-builder.AddNpgsqlDataSource(connectionName: "sql");
+// Connection string automatically provided by Aspire via .WithReference(sql)
+// Manual DbContext configuration above
 
 builder.AddRabbitMQClient(connectionName: "messaging");
 
