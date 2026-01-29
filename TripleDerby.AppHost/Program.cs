@@ -14,11 +14,11 @@ var cache = builder.AddRedis("cache");
 //     .AddDatabase("TripleDerby");
 
 // POSTGRESQL (Active for local dev)
-var sql = builder.AddPostgres("sql", port: 55432)
+var postgres = builder.AddPostgres("sql", port: 55432)
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithPgAdmin()
-    .AddDatabase("TripleDerby");
+    .WithPgAdmin();
+var sql = postgres.AddDatabase("TripleDerby");
 
 var rabbit = builder.AddRabbitMQ("messaging")
     .WithDataVolume(isReadOnly: false)
