@@ -30,8 +30,13 @@ builder.Logging.AddSerilog(Log.Logger);
 
 var conn = builder.Configuration.GetConnectionString("TripleDerby");
 
+// SQL SERVER (Commented for local dev)
+// builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
+//     options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
+
+// POSTGRESQL (Active for local dev)
 builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
-    options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
+    options.UseNpgsql(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<TripleDerbyContext>());
 builder.Services.AddScoped<ITransactionManager, TransactionManager>();
@@ -60,7 +65,12 @@ builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceReque
 
 builder.Services.AddHostedService<Worker>();
 
-builder.AddSqlServerClient(connectionName: "sql");
+// SQL SERVER (Commented for local dev)
+// builder.AddSqlServerClient(connectionName: "sql");
+
+// POSTGRESQL (Active for local dev)
+builder.AddNpgsqlDataSource(connectionName: "sql");
+
 builder.AddRabbitMQClient(connectionName: "messaging");
 
 try
