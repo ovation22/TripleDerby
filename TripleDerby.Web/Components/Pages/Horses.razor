@@ -43,7 +43,8 @@
                     Pagination="pagination"
                     HeaderCellAsButtonWithMenu=true
                     UseMenuService=false
-                    Loading="loading">
+                    Loading="loading"
+                    ShowHover="true">
         <PropertyColumn Property="@(c => c.Name)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true>
             <ColumnOptions>
                 <div class="search-box">
@@ -52,6 +53,12 @@
             </ColumnOptions>
         </PropertyColumn>
         <TemplateColumn Title="Gender" Sortable="true" SortBy="@sortByGender" Align="Align.Center">
+            <ColumnOptions>
+                <div class="search-box">
+                    <FluentSearch type="search" Autofocus=true @bind-Value="nameFilter" @oninput="HandleNameFilter" @bind-Value:after="HandleClearName" Placeholder="Horse name..." />
+                </div>
+            </ColumnOptions>
+            <ChildContent>
             <div title="@(context.IsMale ? "Sire" : "Dam")" aria-label="Gender">
                 @if (context.IsMale)
                 {
@@ -62,6 +69,7 @@
                     <FluentIcon Value="@(new TripleDerby.Web.Icons.FemaleIcon())" />
                 }
             </div>
+            </ChildContent>
         </TemplateColumn>
         <PropertyColumn Title="Color" Property="@(c => c!.Color)" Sortable="true" Align="Align.Start">
             <ColumnOptions>

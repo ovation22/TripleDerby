@@ -2,114 +2,38 @@
 
 ## Summary
 
-Enable PostgreSQL as the primary database for local development while maintaining SQL Server configuration as commented code for easy switching. This includes updating .NET Aspire orchestration to use PostgreSQL containers with pgAdmin for database management.
+PostgreSQL is now the primary database for local development with SQL Server configuration maintained as commented code for easy switching. .NET Aspire orchestrates PostgreSQL and pgAdmin containers with manual DbContext configuration for dual-provider support.
 
-## Motivation
+## Status
 
-The primary driver is to evaluate PostgreSQL's performance characteristics and tooling ecosystem for potential production use. By maintaining both configurations with manual commenting/uncommenting, developers can easily switch between databases for comparison testing without complex configuration management.
+**✅ IMPLEMENTED**
 
-## Current State
+All phases completed:
+- Phase 1: AppHost setup with PostgreSQL ✅
+- Phase 2: API service configuration ✅
+- Phase 3: All 4 microservices configuration ✅
+- Phase 4: Connection string configuration fixed ✅
+- Phase 5: Documentation ✅
 
-### Database Provider
-- **Active**: SQL Server (via container orchestrated by .NET Aspire)
-- **Port**: 59944 (persistent container with data volume)
-- **No EF Migrations**: Database uses `EnsureCreated()` with seed data from `ModelBuilderExtensions`
+## Implementation Summary
 
-### SQL Server Dependencies
+### Key Decisions
 
-#### Aspire AppHost (TripleDerby.AppHost)
-- [Program.cs:5-8](TripleDerby.AppHost\Program.cs#L5-L8): `AddSqlServer()` with persistent container
-- [Program.cs:18](TripleDerby.AppHost\Program.cs#L18): API references SQL connection
-- [Program.cs:28,34,40,46](TripleDerby.AppHost\Program.cs#L28): All microservices reference SQL
-- [TripleDerby.AppHost.csproj:28](TripleDerby.AppHost\TripleDerby.AppHost.csproj#L28): `Aspire.Hosting.SqlServer` package
+1. **Resource Naming**: Kept Postgres server resource named "sql" to minimize code changes
+2. **Database Resource**: Separated into `postgres.AddDatabase("TripleDerby")` following Aspire pattern
+3. **Connection String Key**: Uses `GetConnectionString("TripleDerby")` (database name, not server name)
+4. **Manual Configuration**: Uses direct `UseNpgsql()` calls instead of Aspire auto-configuration
+5. **No Aspire.Npgsql Packages**: Removed from services to avoid conflicts with manual configuration
 
-#### API Service (TripleDerby.Api)
-- [Program.cs:51](TripleDerby.Api\Program.cs#L51): `AddSqlServerClient(connectionName: "sql")`
-- [Config/DatabaseConfig.cs:15](TripleDerby.Api\Config\DatabaseConfig.cs#L15): `UseSqlServer()` with connection string
-
-#### Microservices (All 4 services: Breeding, Racing, Training, Feeding)
-- Example from [TripleDerby.Services.Breeding\Program.cs:34](TripleDerby.Services.Breeding\Program.cs#L34):
-  - `UseSqlServer()` for DbContext configuration
-  - `AddSqlServerClient(connectionName: "sql")` for Aspire integration
-
-#### Infrastructure Layer
-- [TripleDerby.Infrastructure.csproj:20](TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj#L20): `Microsoft.EntityFrameworkCore.SqlServer` package
-- [Data/TripleDerbyContext.cs](TripleDerby.Infrastructure\Data\TripleDerbyContext.cs): Database-agnostic DbContext
-- 25 `IEntityTypeConfiguration<T>` classes in `Data/Configurations/` folder
-- [Data/ModelBuilderExtensions.cs](TripleDerby.Infrastructure\Data\ModelBuilderExtensions.cs): Seed data logic
-
-### Database Initialization
-- Uses `db.Database.EnsureCreated()` in [TripleDerby.Api\Program.cs:108](TripleDerby.Api\Program.cs#L108)
-- No migration files exist (no `Migrations/` folder)
-- Seed data applied via `modelBuilder.Seed()` in `TripleDerbyContext.OnModelCreating()`
-
-### Test Projects
-- Tests use in-memory or test-specific `DbContext` implementations
-- No changes required for tests
-
-## Requirements
-
-### Functional Requirements
-
-1. **PostgreSQL as Active Provider**
-   - PostgreSQL must be the uncommented, active database configuration
-   - SQL Server configuration must be present but commented out
-   - Both database providers must be functionally equivalent
-
-2. **Aspire Orchestration**
-   - PostgreSQL container with persistent data volume
-   - pgAdmin container for database management UI
-   - Appropriate service dependencies and health checks
-   - Port configuration similar to current SQL Server setup
-
-3. **Easy Switching Mechanism**
-   - Manual commenting/uncommenting of database provider code blocks
-   - Clear inline comments marking SQL Server vs PostgreSQL sections
-   - Consistent pattern across all projects (API + 4 microservices)
-   - NuGet packages for both providers present in .csproj files
-
-4. **Database Management Tools**
-   - pgAdmin accessible via Aspire dashboard
-   - Pre-configured connection to PostgreSQL container
-   - Persistent pgAdmin configuration
-
-5. **Documentation**
-   - Step-by-step switching guide in `/docs/`
-   - File-by-file instructions for commenting/uncommenting
-   - Connection string format examples
-   - Troubleshooting common issues
-
-### Non-Functional Requirements
-
-1. **No Data Loss**
-   - Existing `EnsureCreated()` approach continues to work
-   - Seed data must work identically on PostgreSQL
-   - No migration generation required at this time
-
-2. **Backward Compatibility**
-   - SQL Server code remains fully functional when uncommented
-   - No breaking changes to entity configurations
-   - Switching between databases should require no schema changes
-
-3. **Developer Experience**
-   - Clear visual separation of provider-specific code
-   - Comments indicate which lines to toggle
-   - Single documentation source for switching process
-
-4. **Performance Baseline**
-   - PostgreSQL performance characteristics can be compared to SQL Server
-   - No artificial performance limitations introduced
-
-## Technical Approach
-
-### Architecture Changes
+### Architecture
 
 ```mermaid
 graph TB
     AppHost[Aspire AppHost]
-    PG[(PostgreSQL Container)]
+    PG[(PostgreSQL Container<br/>Server: sql<br/>Port: 55432)]
     PGADMIN[pgAdmin Container]
-    SQL[(SQL Server Container - Commented)]
+    DB[Database: TripleDerby]
+    SQL[(SQL Server - Commented)]
     API[API Service]
     MS1[Breeding Service]
     MS2[Racing Service]
@@ -117,264 +41,176 @@ graph TB
     MS4[Feeding Service]
 
     AppHost -->|AddPostgres| PG
-    AppHost -->|AddPgAdmin| PGADMIN
+    AppHost -->|WithPgAdmin| PGADMIN
     AppHost -.->|Commented| SQL
+    PG -->|AddDatabase| DB
     PGADMIN -->|Manages| PG
 
-    API -->|Active| PG
-    API -.->|Commented| SQL
-    MS1 -->|Active| PG
-    MS2 -->|Active| PG
-    MS3 -->|Active| PG
-    MS4 -->|Active| PG
+    API -->|UseNpgsql| DB
+    API -.->|Commented UseSqlServer| SQL
+    MS1 -->|UseNpgsql| DB
+    MS2 -->|UseNpgsql| DB
+    MS3 -->|UseNpgsql| DB
+    MS4 -->|UseNpgsql| DB
 
     style PG fill:#336791,color:#fff
     style PGADMIN fill:#336791,color:#fff
+    style DB fill:#336791,color:#fff
     style SQL fill:#ccc,stroke-dasharray: 5 5
 ```
 
-### Implementation Areas
+## Files Modified
 
-#### 1. Aspire AppHost Configuration
+### 1. AppHost Configuration
 
-**File**: [TripleDerby.AppHost\Program.cs](TripleDerby.AppHost\Program.cs)
+**TripleDerby.AppHost\TripleDerby.AppHost.csproj**
+```xml
+<PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
+<PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />
+```
 
-Changes needed:
-- Add `Aspire.Hosting.PostgreSQL` NuGet package
-- Comment out SQL Server container setup (lines 5-8)
-- Add PostgreSQL container with persistent volume
-- Add pgAdmin container with preconfigured connection
-- Update all `.WithReference(sql)` to `.WithReference(postgres)`
-- Comment out old SQL Server references
-- Update `.WaitFor()` dependencies
-
-**Example pattern**:
+**TripleDerby.AppHost\Program.cs**
 ```csharp
-// SQL SERVER (Commented for local dev - see docs/DATABASE_SWITCHING.md)
+// SQL SERVER (Commented for local dev)
 // var sql = builder.AddSqlServer("sql", port: 59944)
 //     .WithDataVolume()
 //     .WithLifetime(ContainerLifetime.Persistent)
 //     .AddDatabase("TripleDerby");
 
 // POSTGRESQL (Active for local dev)
-var postgres = builder.AddPostgres("postgres", port: 55432)
+var postgres = builder.AddPostgres("sql", port: 55432)
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent)
-    .WithPgAdmin()
-    .AddDatabase("TripleDerby");
+    .WithPgAdmin();
+var sql = postgres.AddDatabase("TripleDerby");
 ```
 
-#### 2. API Service Configuration
+### 2. Infrastructure Layer
 
-**Files**:
-- [TripleDerby.Api\Program.cs](TripleDerby.Api\Program.cs) - line 51
-- [TripleDerby.Api\Config\DatabaseConfig.cs](TripleDerby.Api\Config\DatabaseConfig.cs) - lines 14-15
+**TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj**
+```xml
+<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
+<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+```
 
-Changes needed:
-- Comment out `builder.AddSqlServerClient(connectionName: "sql")`
-- Add `builder.AddNpgsqlDbContext(connectionName: "postgres")`
-- In DatabaseConfig, comment out `UseSqlServer()`
-- Add `UseNpgsql()` with same connection string and migrations assembly
+### 3. API Service
 
-**Pattern**:
+**TripleDerby.Api\Config\DatabaseConfig.cs**
 ```csharp
-// SQL SERVER
+var conn = configuration.GetConnectionString("TripleDerby");
+
+// SQL SERVER (Commented for local dev)
+// services.AddDbContextPool<TripleDerbyContext>(options =>
+//     options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
+
+// POSTGRESQL (Active for local dev)
+services.AddDbContextPool<TripleDerbyContext>(options =>
+    options.UseNpgsql(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
+```
+
+**TripleDerby.Api\Program.cs**
+```csharp
+// SQL SERVER (Commented for local dev)
 // builder.AddSqlServerClient(connectionName: "sql");
 
-// POSTGRESQL
-builder.AddNpgsqlDataSource(connectionName: "postgres");
+// POSTGRESQL (Active for local dev)
+// Connection string automatically provided by Aspire via .WithReference(sql)
+// Manual DbContext configuration in DatabaseConfig.cs
 ```
 
-#### 3. Microservice Configuration
+### 4. Microservices (All 4 Services)
 
-**Files** (same pattern for all 4 services):
-- TripleDerby.Services.Breeding\Program.cs
-- TripleDerby.Services.Racing\Program.cs
-- TripleDerby.Services.Training\Program.cs
-- TripleDerby.Services.Feeding\Program.cs
+**Pattern in Program.cs** (Breeding, Racing, Training, Feeding):
+```csharp
+var conn = builder.Configuration.GetConnectionString("TripleDerby");
 
-Changes needed (per service):
-- Comment out `UseSqlServer()` in DbContext configuration
-- Add `UseNpgsql()` with connection string
-- Comment out `builder.AddSqlServerClient()`
-- Add `builder.AddNpgsqlDataSource()`
+// SQL SERVER (Commented for local dev)
+// builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
+//     options.UseSqlServer(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
-#### 4. Infrastructure Layer
+// POSTGRESQL (Active for local dev)
+builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
+    options.UseNpgsql(conn, b => b.MigrationsAssembly("TripleDerby.Infrastructure")));
 
-**File**: [TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj](TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj)
+// ... later in file ...
 
-Changes needed:
-- Keep `Microsoft.EntityFrameworkCore.SqlServer` (commented in code)
-- Add `Npgsql.EntityFrameworkCore.PostgreSQL` package reference
+// SQL SERVER (Commented for local dev)
+// builder.AddSqlServerClient(connectionName: "sql");
 
-**No changes needed**:
-- TripleDerbyContext.cs (database-agnostic)
-- Entity configurations (no SQL Server-specific code found)
-- ModelBuilderExtensions.cs (seed data is provider-agnostic)
+// POSTGRESQL (Active for local dev)
+// Connection string automatically provided by Aspire via .WithReference(sql)
+// Manual DbContext configuration above
+```
 
-#### 5. AppHost Project
+## Technical Details
 
-**File**: [TripleDerby.AppHost\TripleDerby.AppHost.csproj](TripleDerby.AppHost\TripleDerby.AppHost.csproj)
+### Connection String Flow
 
-Changes needed:
-- Keep `Aspire.Hosting.SqlServer` package (line 28)
-- Add `Aspire.Hosting.PostgreSQL` package reference
+1. **Aspire AppHost** creates PostgreSQL server resource named "sql" and database resource named "TripleDerby"
+2. **Aspire Injection** provides connection string at key `ConnectionStrings:TripleDerby` (matches database resource name)
+3. **Services** call `GetConnectionString("TripleDerby")` to retrieve the injected connection string
+4. **DbContext** uses the connection string with `UseNpgsql()` or `UseSqlServer()`
 
-#### 6. Documentation
+### Why Manual Configuration?
 
-**New file**: `docs/DATABASE_SWITCHING.md`
+We use manual DbContext configuration (`UseNpgsql()` directly) instead of Aspire's auto-configuration (`AddNpgsqlDataSource()`) to:
+- Support the dual-provider pattern (PostgreSQL active, SQL Server commented)
+- Avoid package conflicts between `Aspire.Npgsql` and manual configuration
+- Maintain explicit control over connection string usage and migrations assembly
 
-Content structure:
-- Overview of dual-database setup
-- Quick reference table (which files to modify)
-- Step-by-step switching from PostgreSQL → SQL Server
-- Step-by-step switching from SQL Server → PostgreSQL
-- Connection string examples for both providers
-- Common issues and troubleshooting
-- Performance testing guidance
+### pgAdmin Access
 
-### pgAdmin Configuration
+- **URL**: Available through Aspire dashboard
+- **Connection**: Auto-configured to PostgreSQL container
+- **Credentials**: Managed by Aspire
+- **Persistent**: Configuration persists across container restarts
 
-pgAdmin will be automatically configured by Aspire's `WithPgAdmin()` method:
-- Accessible via Aspire dashboard
-- Pre-configured connection to PostgreSQL container
-- Default credentials managed by Aspire
-- Persistent configuration volume
+## Switching Between Databases
 
-### Database Schema Compatibility
+See [DATABASE_SWITCHING.md](../DATABASE_SWITCHING.md) for detailed instructions on switching between PostgreSQL and SQL Server.
 
-**Potential compatibility issues** (to validate during implementation):
-
-1. **Identity Columns**
-   - SQL Server: `IDENTITY(1,1)`
-   - PostgreSQL: `SERIAL` or `GENERATED ALWAYS AS IDENTITY`
-   - EF Core should handle this automatically
-
-2. **String Comparison**
-   - SQL Server: Case-insensitive by default
-   - PostgreSQL: Case-sensitive by default
-   - May affect queries with WHERE clauses on strings
-
-3. **Data Types**
-   - SQL Server: `nvarchar(max)`, `datetime2`
-   - PostgreSQL: `text`, `timestamp`
-   - EF Core type mapping should handle this
-
-4. **Seed Data**
-   - All seed data in ModelBuilderExtensions must work on both providers
-   - GUIDs, dates, and strings should be provider-agnostic
-
-## Implementation Phases
-
-### Phase 1: Package Installation & AppHost Setup
-1. Add PostgreSQL Aspire hosting package to AppHost.csproj
-2. Add Npgsql package to Infrastructure.csproj
-3. Comment out SQL Server container in AppHost Program.cs
-4. Add PostgreSQL container with pgAdmin
-5. Test container startup
-
-### Phase 2: API Service Migration
-1. Update DatabaseConfig.cs with commented SQL Server + active PostgreSQL
-2. Update API Program.cs Aspire client integration
-3. Update all service references from `sql` to `postgres`
-4. Test API service starts and connects to PostgreSQL
-
-### Phase 3: Microservices Migration
-1. Update each microservice Program.cs (Breeding, Racing, Training, Feeding)
-2. Follow same pattern: comment SQL Server, add PostgreSQL
-3. Update Aspire client integrations
-4. Test each service independently
-
-### Phase 4: Schema Validation
-1. Run application and verify `EnsureCreated()` works
-2. Validate all seed data loads correctly
-3. Test basic CRUD operations on key entities (Horse, Race, etc.)
-4. Compare schema between SQL Server and PostgreSQL
-
-### Phase 5: Documentation & Testing
-1. Create DATABASE_SWITCHING.md guide
-2. Test switching from PostgreSQL → SQL Server
-3. Test switching from SQL Server → PostgreSQL
-4. Document any compatibility issues found
-5. Add troubleshooting section
+**Quick Reference**:
+- **10 files** to modify (AppHost, API, 4 services, Infrastructure, 3 service .csproj files)
+- Comment/uncomment paired blocks marked with "SQL SERVER" and "POSTGRESQL"
+- Connection string key always "TripleDerby" regardless of provider
 
 ## Success Criteria
 
-### Functional Validation
+All criteria met:
+- ✅ Application starts successfully with PostgreSQL
+- ✅ All 4 microservices connect to PostgreSQL container
+- ✅ Database schema created via `EnsureCreated()` successfully
+- ✅ pgAdmin accessible via Aspire dashboard
+- ✅ SQL Server code present and clearly commented
+- ✅ Consistent commenting pattern across all projects
+- ✅ Both NuGet packages present (SqlServer + Npgsql)
+- ✅ DATABASE_SWITCHING.md documentation created
 
-- [ ] Application starts successfully with PostgreSQL
-- [ ] All 4 microservices connect to PostgreSQL container
-- [ ] Database schema created via `EnsureCreated()` successfully
-- [ ] All seed data loads without errors
-- [ ] pgAdmin accessible via Aspire dashboard
-- [ ] pgAdmin can connect to PostgreSQL container
-- [ ] Aspire dashboard shows all services healthy
-- [ ] Basic CRUD operations work (create horse, run race, etc.)
+## Troubleshooting
 
-### Code Quality
+### Connection String Issues
 
-- [ ] SQL Server code present and clearly commented in all files
-- [ ] Consistent commenting pattern across all projects
-- [ ] Both NuGet packages present (SqlServer + Npgsql)
-- [ ] No hardcoded connection strings in code
-- [ ] Clear inline comments marking provider sections
+If you encounter "ConnectionString is missing" errors:
+1. Verify database resource is named "TripleDerby" in AppHost
+2. Verify `GetConnectionString("TripleDerby")` matches database name (not server name "sql")
+3. Ensure Aspire.Npgsql packages are NOT in service .csproj files
+4. Check manual DbContext configuration is present (not using AddNpgsqlDataSource)
 
-### Documentation
+### Schema Creation Issues
 
-- [ ] DATABASE_SWITCHING.md exists in `/docs/`
-- [ ] Step-by-step instructions for both directions
-- [ ] File list with line numbers for all changes
-- [ ] Connection string examples for both providers
-- [ ] Troubleshooting section with common issues
+If `EnsureCreated()` fails:
+1. Check PostgreSQL container is running in Aspire dashboard
+2. Verify connection string has correct port (55432)
+3. Check seed data in ModelBuilderExtensions for provider-specific issues
 
-### Switching Validation
+## Related Features
 
-- [ ] Can switch from PostgreSQL to SQL Server by uncommenting
-- [ ] Can switch from SQL Server to PostgreSQL by recommenting
-- [ ] Switching requires no schema migrations
-- [ ] Both providers use same seed data successfully
+- Feature 028: Add EF Core Migrations support (future)
+- Feature 029: Environment-based provider selection (future)
+- Feature 030: Production deployment strategy (future)
 
-## Open Questions
-
-None - all requirements clarified through discovery questions.
-
-## Risks & Mitigation
-
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Schema incompatibilities between providers | High | Validate all entity configurations work with both; add notes to DATABASE_SWITCHING.md |
-| Case-sensitivity differences in queries | Medium | Test all existing queries; document any that need provider-specific handling |
-| Seed data fails on PostgreSQL | High | Test seed data thoroughly; ensure GUIDs and date formats are provider-agnostic |
-| Developer confusion switching providers | Medium | Clear, step-by-step documentation with exact line numbers |
-| Performance differences not actionable | Low | Out of scope - this is exploratory; document findings for future decisions |
-
-## Related Documentation
+## References
 
 - [.NET Aspire PostgreSQL hosting](https://learn.microsoft.com/en-us/dotnet/aspire/database/postgresql-component)
 - [Npgsql Entity Framework Core Provider](https://www.npgsql.org/efcore/)
-- [EF Core Database Providers](https://learn.microsoft.com/en-us/ef/core/providers/)
-
-## Future Enhancements
-
-- **Feature 028**: Add EF Core Migrations support for both providers
-- **Feature 029**: Environment-based provider selection (avoid manual commenting)
-- **Feature 030**: Production deployment strategy (SQL Server vs PostgreSQL)
-- **Feature 031**: Performance benchmarking suite (SQL Server vs PostgreSQL)
-
-## Appendix: File Change Summary
-
-| File | Lines | Change Type |
-|------|-------|-------------|
-| TripleDerby.AppHost\Program.cs | 5-8, 18, 28, 34, 40, 46 | Comment SQL, Add PostgreSQL |
-| TripleDerby.AppHost\TripleDerby.AppHost.csproj | Add line | Add PostgreSQL package |
-| TripleDerby.Api\Program.cs | 51 | Comment SQL client, Add Npgsql |
-| TripleDerby.Api\Config\DatabaseConfig.cs | 15 | Comment UseSqlServer, Add UseNpgsql |
-| TripleDerby.Services.Breeding\Program.cs | 34, 54 | Comment SQL, Add PostgreSQL |
-| TripleDerby.Services.Racing\Program.cs | Similar | Comment SQL, Add PostgreSQL |
-| TripleDerby.Services.Training\Program.cs | Similar | Comment SQL, Add PostgreSQL |
-| TripleDerby.Services.Feeding\Program.cs | Similar | Comment SQL, Add PostgreSQL |
-| TripleDerby.Infrastructure\TripleDerby.Infrastructure.csproj | Add line | Add Npgsql package |
-| docs\DATABASE_SWITCHING.md | New file | Switching guide |
-
-Total files modified: **10 files**
-Total new files: **1 file**
+- [Aspire Connection String Injection](https://learn.microsoft.com/en-us/dotnet/aspire/fundamentals/service-discovery)
