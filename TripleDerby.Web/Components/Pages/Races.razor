@@ -63,13 +63,11 @@
     PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
 
     string? errorMessage;
-    bool hasError;
 
     protected async Task RefreshItemsAsync(GridItemsProviderRequest<RacesResult> req)
     {
         loading = true;
         errorMessage = null;
-        hasError = false;
 
         try
         {
@@ -106,7 +104,6 @@
             if (response == null)
             {
                 errorMessage = "Failed to load races data. Please try again.";
-                hasError = true;
                 Logger.LogWarning("Races grid: API returned null response");
                 return;
             }
@@ -117,7 +114,6 @@
         catch (Exception ex)
         {
             errorMessage = "An error occurred while loading races data. Please try again.";
-            hasError = true;
             Logger.LogError(ex, "Races grid: Error loading races data from API");
             races = Enumerable.Empty<RacesResult>().AsQueryable();
             await pagination.SetTotalItemCountAsync(0);

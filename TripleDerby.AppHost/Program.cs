@@ -2,10 +2,23 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
 
-var sql = builder.AddSqlServer("sql", port: 59944)
+// ============================================================================
+// DATABASE PROVIDER CONFIGURATION
+// See docs/DATABASE_SWITCHING.md for switching between SQL Server and PostgreSQL
+// ============================================================================
+
+// SQL SERVER (Commented for local dev)
+// var sql = builder.AddSqlServer("sql", port: 59944)
+//     .WithDataVolume()
+//     .WithLifetime(ContainerLifetime.Persistent)
+//     .AddDatabase("TripleDerby");
+
+// POSTGRESQL (Active for local dev)
+var postgres = builder.AddPostgres("sql", port: 55432)
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent)
-    .AddDatabase("TripleDerby");
+    .WithPgAdmin();
+var sql = postgres.AddDatabase("TripleDerby");
 
 var rabbit = builder.AddRabbitMQ("messaging")
     .WithDataVolume(isReadOnly: false)
