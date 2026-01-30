@@ -27,6 +27,42 @@
     <FluentSpacer Width="25" />
 </FluentToolbar>
 
+@if (HasActiveFilters())
+{
+    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <strong>Active Filters:</strong>
+        @if (!string.IsNullOrWhiteSpace(nameFilter))
+        {
+            <FluentBadge Appearance="Appearance.Accent">
+                Name: @nameFilter
+                <FluentButton Appearance="Appearance.Stealth" @onclick="ClearNameFilter" style="margin-left: 0.25rem;">×</FluentButton>
+            </FluentBadge>
+        }
+        @if (genderFilter.HasValue)
+        {
+            <FluentBadge Appearance="Appearance.Accent">
+                Gender: @(genderFilter.Value ? "Male" : "Female")
+                <FluentButton Appearance="Appearance.Stealth" @onclick="ClearGenderFilter" style="margin-left: 0.25rem;">×</FluentButton>
+            </FluentBadge>
+        }
+        @if (!string.IsNullOrWhiteSpace(colorFilter))
+        {
+            <FluentBadge Appearance="Appearance.Accent">
+                Color: @colorFilter
+                <FluentButton Appearance="Appearance.Stealth" @onclick="ClearColorFilter" style="margin-left: 0.25rem;">×</FluentButton>
+            </FluentBadge>
+        }
+        @if (!string.IsNullOrWhiteSpace(ownerFilter))
+        {
+            <FluentBadge Appearance="Appearance.Accent">
+                Owner: @ownerFilter
+                <FluentButton Appearance="Appearance.Stealth" @onclick="ClearOwnerFilter" style="margin-left: 0.25rem;">×</FluentButton>
+            </FluentBadge>
+        }
+        <FluentButton Appearance="Appearance.Outline" @onclick="ClearAllFilters">Clear All</FluentButton>
+    </div>
+}
+
 @if (!string.IsNullOrEmpty(errorMessage))
 {
     <div style="margin-top: 1rem;">
@@ -53,16 +89,30 @@
             </ColumnOptions>
         </PropertyColumn>
         <TemplateColumn Title="Gender" Sortable="true" SortBy="@sortByGender" Align="Align.Center">
-            <div title="@(context.IsMale ? "Sire" : "Dam")" aria-label="Gender">
-                @if (context.IsMale)
-                {
-                    <FluentIcon Value="@(new TripleDerby.Web.Icons.MaleIcon())" />
-                }
-                else
-                {
-                    <FluentIcon Value="@(new TripleDerby.Web.Icons.FemaleIcon())" />
-                }
-            </div>
+            <ColumnOptions>
+                <div class="search-box">
+                    <FluentSelect TOption="string"
+                                 @bind-Value="genderFilterString"
+                                 @bind-Value:after="HandleGenderFilterChange"
+                                 Style="width: 150px;">
+                        <FluentOption Value="">All</FluentOption>
+                        <FluentOption Value="male">Male</FluentOption>
+                        <FluentOption Value="female">Female</FluentOption>
+                    </FluentSelect>
+                </div>
+            </ColumnOptions>
+            <ChildContent>
+                <div title="@(context.IsMale ? "Sire" : "Dam")" aria-label="Gender">
+                    @if (context.IsMale)
+                    {
+                        <FluentIcon Value="@(new TripleDerby.Web.Icons.MaleIcon())" />
+                    }
+                    else
+                    {
+                        <FluentIcon Value="@(new TripleDerby.Web.Icons.FemaleIcon())" />
+                    }
+                </div>
+            </ChildContent>
         </TemplateColumn>
         <PropertyColumn Title="Color" Property="@(c => c!.Color)" Sortable="true" Align="Align.Start">
             <ColumnOptions>
@@ -110,6 +160,8 @@
     string nameFilter = string.Empty;
     string colorFilter = string.Empty;
     string ownerFilter = string.Empty;
+    bool? genderFilter = null; // null = all, true = male, false = female
+    string genderFilterString = string.Empty; // For FluentSelect binding
 
     // Controls how filters are combined: Or (default) or And
     private LogicalOperator _filterOperator = LogicalOperator.Or;
@@ -311,6 +363,95 @@
         catch (TaskCanceledException) { }
     }
 
+    private void HandleGenderFilterChange()
+    {
+        genderFilter = genderFilterString switch
+        {
+            "male" => true,
+            "female" => false,
+            _ => null
+        };
+
+        _ = InvokeAsync(async () =>
+        {
+            if (dataGrid is not null)
+            {
+                await dataGrid.RefreshDataAsync(true);
+            }
+            else
+            {
+                var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                await RefreshItemsAsync(request);
+            }
+        });
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrWhiteSpace(nameFilter)
+            || genderFilter.HasValue
+            || !string.IsNullOrWhiteSpace(colorFilter)
+            || !string.IsNullOrWhiteSpace(ownerFilter);
+    }
+
+    private void ClearNameFilter()
+    {
+        nameFilter = string.Empty;
+        HandleClearName();
+    }
+
+    private void ClearGenderFilter()
+    {
+        genderFilterString = string.Empty;
+        HandleGenderFilterChange();
+    }
+
+    private void ClearColorFilter()
+    {
+        colorFilter = string.Empty;
+        HandleClearColor();
+    }
+
+    private void ClearOwnerFilter()
+    {
+        ownerFilter = string.Empty;
+        HandleClearOwner();
+    }
+
+    private void ClearAllFilters()
+    {
+        nameFilter = string.Empty;
+        genderFilterString = string.Empty;
+        genderFilter = null;
+        colorFilter = string.Empty;
+        ownerFilter = string.Empty;
+
+        _nameFilterCts?.Cancel();
+        _nameFilterCts?.Dispose();
+        _nameFilterCts = null;
+
+        _colorFilterCts?.Cancel();
+        _colorFilterCts?.Dispose();
+        _colorFilterCts = null;
+
+        _ownerFilterCts?.Cancel();
+        _ownerFilterCts?.Dispose();
+        _ownerFilterCts = null;
+
+        _ = InvokeAsync(async () =>
+        {
+            if (dataGrid is not null)
+            {
+                await dataGrid.RefreshDataAsync(true);
+            }
+            else
+            {
+                var request = new GridItemsProviderRequest<HorseResult> { StartIndex = 0, Count = pagination.ItemsPerPage };
+                await RefreshItemsAsync(request);
+            }
+        });
+    }
+
     protected async Task RefreshItemsAsync(GridItemsProviderRequest<HorseResult> req)
     {
         loading = true;
@@ -356,6 +497,14 @@
                 {
                     Operator = FilterOperator.Contains,
                     Value = nameFilter
+                };
+            }
+            if (genderFilter.HasValue)
+            {
+                filters["IsMale"] = new Filter
+                {
+                    Operator = FilterOperator.Eq,
+                    Value = genderFilter.Value.ToString()
                 };
             }
             if (!string.IsNullOrWhiteSpace(colorFilter))
