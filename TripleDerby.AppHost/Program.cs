@@ -72,30 +72,40 @@ var apiService = builder.AddProject<Projects.TripleDerby_Api>("api")
 
 builder.AddProject<Projects.TripleDerby_Web>("admin")
     .WithReference(apiService)
-    .WaitFor(apiService);
+    .WaitFor(apiService)
+    .WaitFor(otelCollector)
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
 builder.AddProject<Projects.TripleDerby_Services_Breeding>("breeding")
     .WithReference(sql)
     .WaitFor(sql)
     .WithReference(rabbit)
-    .WaitFor(rabbit);
+    .WaitFor(rabbit)
+    .WaitFor(otelCollector)
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
 builder.AddProject<Projects.TripleDerby_Services_Feeding>("feeding")
     .WithReference(sql)
     .WaitFor(sql)
     .WithReference(rabbit)
-    .WaitFor(rabbit);
+    .WaitFor(rabbit)
+    .WaitFor(otelCollector)
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
 builder.AddProject<Projects.TripleDerby_Services_Training>("training")
     .WithReference(sql)
     .WaitFor(sql)
     .WithReference(rabbit)
-    .WaitFor(rabbit);
+    .WaitFor(rabbit)
+    .WaitFor(otelCollector)
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
 builder.AddProject<Projects.TripleDerby_Services_Racing>("racing")
     .WithReference(sql)
     .WaitFor(sql)
     .WithReference(rabbit)
-    .WaitFor(rabbit);
+    .WaitFor(rabbit)
+    .WaitFor(otelCollector)
+    .WithEnvironment("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
 builder.Build().Run();
