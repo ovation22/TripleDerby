@@ -93,12 +93,15 @@ All metrics are prefixed with `triple_derby_` to avoid naming conflicts.
 
 Common labels available for filtering:
 
-- `job`: Service name (api, admin, breeding, feeding, training, racing)
+- `exported_job`: Original service name (api, admin, breeding, feeding, training, racing)
+- `job`: Always "otel-collector" (the Prometheus scrape target)
 - `instance`: Service instance (hostname:port)
 - `http_route`: API route pattern (e.g., `/api/horses/{id}`)
 - `http_request_method`: HTTP method (GET, POST, PUT, DELETE)
 - `http_response_status_code`: Response status code (200, 404, 500, etc.)
 - `error_type`: Exception type (if applicable)
+
+**IMPORTANT**: When using the OTLP Collector pattern, filter by `exported_job` to select specific services. The `job` label will always be "otel-collector" because that's what Prometheus scrapes.
 
 ## How It Works
 
@@ -165,20 +168,198 @@ The service will automatically emit standard ASP.NET Core metrics. No code chang
 
 Access http://localhost:9090 and try these queries:
 
-```promql
-# Request rate across all services
-sum(rate(triple_derby_http_server_request_duration_seconds_count[5m])) by (job)
+#### Basic Service Queries
 
-# 95th percentile latency for API service
+```promql
+# List all services reporting metrics (using runtime metrics that all services export)
+count(triple_derby_process_runtime_dotnet_gc_heap_size_bytes) by (exported_job)
+
+# List HTTP services only
+count(triple_derby_http_server_request_duration_seconds_count) by (exported_job)
+
+# Request rate across HTTP services
+sum(rate(triple_derby_http_server_request_duration_seconds_count[5m])) by (exported_job)
+
+# Request rate for a specific service (API example)
+sum(rate(triple_derby_http_server_request_duration_seconds_count{exported_job="api"}[5m]))
+
+# Active connections for API service
+triple_derby_kestrel_active_connections{exported_job="api"}
+
+# Active requests being processed (Admin service example)
+triple_derby_http_server_active_requests{exported_job="admin"}
+```
+
+#### Worker Service Queries
+
+Worker services (breeding, feeding, training, racing) are background services that process Azure Service Bus messages. They don't expose HTTP endpoints, so they won't have HTTP request metrics. However, they do export several types of metrics:
+
+**1. Runtime Metrics (always available)**
+```promql
+# Check if a worker service is alive and reporting metrics
+up{exported_job="breeding"}
+
+# GC heap size for breeding service
+triple_derby_process_runtime_dotnet_gc_heap_size_bytes{exported_job="breeding"}
+
+# Thread count for feeding service
+triple_derby_process_runtime_dotnet_thread_pool_threads_count{exported_job="feeding"}
+
+# GC collection rate for training service
+rate(triple_derby_process_runtime_dotnet_gc_collections_count{exported_job="training"}[5m])
+
+# Assembly count (useful to detect if service is initializing)
+triple_derby_process_runtime_dotnet_assemblies_count{exported_job="racing"}
+```
+
+**2. HttpClient Metrics (if worker services make outbound HTTP calls)**
+```promql
+# Outbound HTTP requests from breeding service
+sum(rate(triple_derby_http_client_request_duration_seconds_count{exported_job="breeding"}[5m]))
+
+# Outbound HTTP request latency from feeding service
 histogram_quantile(0.95,
-  sum(rate(triple_derby_http_server_request_duration_seconds_bucket{job="api"}[5m])) by (le)
+  sum(rate(triple_derby_http_client_request_duration_seconds_bucket{exported_job="feeding"}[5m])) by (le)
 )
 
-# Error rate percentage
-sum(rate(triple_derby_http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
-/
-sum(rate(triple_derby_http_server_request_duration_seconds_count[5m]))
+# Outbound HTTP errors from training service
+sum(rate(triple_derby_http_client_request_duration_seconds_count{
+  exported_job="training",
+  http_response_status_code=~"5.."
+}[5m]))
 ```
+
+**3. Service Bus Metrics (requires custom instrumentation)**
+
+Worker services would need to add custom metrics to track message processing:
+
+```csharp
+// Example: Add to worker service constructor
+var meter = new Meter("TripleDerby.Services.Breeding");
+var messagesProcessed = meter.CreateCounter<long>("messages_processed_total",
+    description: "Total number of messages processed");
+var messageProcessingDuration = meter.CreateHistogram<double>("message_processing_duration_seconds",
+    description: "Time to process a message");
+```
+
+Then query with:
+```promql
+# Messages processed by breeding service (if custom metric exists)
+rate(triple_derby_messages_processed_total{exported_job="breeding"}[5m])
+
+# Message processing latency (if custom metric exists)
+histogram_quantile(0.95,
+  sum(rate(triple_derby_message_processing_duration_seconds_bucket{exported_job="breeding"}[5m])) by (le)
+)
+```
+
+**Note**: Currently, worker services only export runtime and HttpClient metrics. To monitor Service Bus message processing, you would need to add custom metrics using OpenTelemetry's Meter API as shown above.
+
+#### Latency Percentiles
+
+```promql
+# 95th percentile latency for API service
+histogram_quantile(0.95,
+  sum(rate(triple_derby_http_server_request_duration_seconds_bucket{exported_job="api"}[5m])) by (le)
+)
+
+# 50th, 90th, 99th percentiles across all services
+histogram_quantile(0.50,
+  sum(rate(triple_derby_http_server_request_duration_seconds_bucket[5m])) by (exported_job, le)
+)
+histogram_quantile(0.90,
+  sum(rate(triple_derby_http_server_request_duration_seconds_bucket[5m])) by (exported_job, le)
+)
+histogram_quantile(0.99,
+  sum(rate(triple_derby_http_server_request_duration_seconds_bucket[5m])) by (exported_job, le)
+)
+
+# Per-endpoint latency (Admin service example)
+histogram_quantile(0.95,
+  sum(rate(triple_derby_http_server_request_duration_seconds_bucket{exported_job="admin"}[5m])) by (http_route, le)
+)
+```
+
+#### Error Tracking
+
+```promql
+# Error rate percentage (5XX responses)
+(
+  sum(rate(triple_derby_http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+  /
+  sum(rate(triple_derby_http_server_request_duration_seconds_count[5m]))
+) * 100
+
+# Error count by service
+sum(rate(triple_derby_http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])) by (exported_job)
+
+# 4XX client errors by endpoint
+sum(rate(triple_derby_http_server_request_duration_seconds_count{http_response_status_code=~"4..", exported_job="api"}[5m])) by (http_route)
+
+# Unhandled exceptions by service
+triple_derby_aspnetcore_diagnostics_exceptions{exported_job="api"}
+```
+
+#### Endpoint Analysis
+
+```promql
+# Top 10 most frequently called endpoints (API service)
+topk(10,
+  sum(rate(triple_derby_http_server_request_duration_seconds_count{exported_job="api"}[5m])) by (http_route)
+)
+
+# Slowest endpoints (95th percentile latency)
+topk(10,
+  histogram_quantile(0.95,
+    sum(rate(triple_derby_http_server_request_duration_seconds_bucket{exported_job="api"}[5m])) by (http_route, le)
+  )
+)
+
+# Requests by HTTP method for Admin service
+sum(rate(triple_derby_http_server_request_duration_seconds_count{exported_job="admin"}[5m])) by (http_request_method)
+```
+
+#### Cross-Service Comparisons
+
+```promql
+# Compare request rates across all services
+sum(rate(triple_derby_http_server_request_duration_seconds_count[5m])) by (exported_job)
+
+# Compare median latency across services
+histogram_quantile(0.50,
+  sum(rate(triple_derby_http_server_request_duration_seconds_bucket[5m])) by (exported_job, le)
+)
+
+# Total requests per service (cumulative)
+sum(triple_derby_http_server_request_duration_seconds_count) by (exported_job)
+```
+
+#### System Resource Metrics
+
+```promql
+# .NET Runtime metrics (if available)
+# GC collections
+rate(triple_derby_process_runtime_dotnet_gc_collections_count[5m])
+
+# Thread pool queue length
+triple_derby_process_runtime_dotnet_thread_pool_queue_length
+
+# Memory usage
+triple_derby_process_runtime_dotnet_gc_heap_size_bytes
+```
+
+### Service Name Reference
+
+When filtering by `exported_job`, use these values:
+
+| Service | exported_job Value | Type | Available Metrics |
+|---------|-------------------|------|-------------------|
+| API | `api` | HTTP Service | HTTP requests, runtime metrics |
+| Admin Web | `admin` | HTTP Service | HTTP requests, runtime metrics |
+| Breeding Service | `breeding` | Worker Service | Runtime metrics only (no HTTP) |
+| Feeding Service | `feeding` | Worker Service | Runtime metrics only (no HTTP) |
+| Training Service | `training` | Worker Service | Runtime metrics only (no HTTP) |
+| Racing Service | `racing` | Worker Service | Runtime metrics only (no HTTP) |
 
 ## Troubleshooting
 
