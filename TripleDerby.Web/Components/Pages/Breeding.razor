@@ -1,5 +1,5 @@
 ﻿@page "/breeding"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 @implements IDisposable
 @using System.Linq
 @using TripleDerby.SharedKernel

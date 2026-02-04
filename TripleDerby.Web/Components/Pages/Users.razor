@@ -1,5 +1,5 @@
 ﻿@page "/users"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Linq
 @using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
@@ -21,7 +21,8 @@
                     DisplayMode="DataGridDisplayMode.Table"
                     TGridItem="UserResult"
                     Pagination="pagination"
-                    Loading="loading">
+                    Loading="loading"
+                    ShowHover="true">
         <PropertyColumn Title="Username" Property="@(c => c!.Username)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true Align="Align.Start" />
         <PropertyColumn Title="Email" Property="@(c => c!.Email)" Sortable="true" Align="Align.Start" />
         <TemplateColumn Title="Active" Sortable="true" SortBy="@sortByActive" Align="Align.Center">
