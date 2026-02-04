@@ -1,5 +1,5 @@
 @page "/trainings"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using TripleDerby.SharedKernel
 @using TripleDerby.Web.ApiClients.Abstractions
@@ -25,7 +25,8 @@ else
 {
     <FluentDataGrid Items="@_trainings.AsQueryable()"
                     TGridItem="TrainingsResult"
-                    GridTemplateColumns="1fr 2fr">
+                    GridTemplateColumns="1fr 2fr"
+                    ShowHover="true">
         <PropertyColumn Property="@(t => t.Name)" Title="Name" Sortable="true" InitialSortDirection="SortDirection.Ascending" IsDefaultSortColumn="true" />
         <PropertyColumn Property="@(t => t.Description)" Title="Description" Sortable="true" />
     </FluentDataGrid>

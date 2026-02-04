@@ -1,5 +1,5 @@
 ﻿@page "/horses"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Linq
 @using System.Threading
@@ -200,6 +200,9 @@
     private CancellationTokenSource? _colorFilterCts;
     private CancellationTokenSource? _ownerFilterCts;
     private int _debounceMs = 300; // adjust to taste
+
+    // Cancellation token for data loading - cancel when new request starts
+    private CancellationTokenSource? _loadDataCts;
 
     // Called by the search box after a bind update (clear button triggers this).
     // Must be synchronous to match @bind-Value:after handler signature, so schedule the async refresh.
@@ -454,6 +457,12 @@
 
     protected async Task RefreshItemsAsync(GridItemsProviderRequest<HorseResult> req)
     {
+        // Cancel any previous data loading request (don't dispose yet - let it complete)
+        _loadDataCts?.Cancel();
+
+        _loadDataCts = new CancellationTokenSource();
+        var cancellationToken = _loadDataCts.Token;
+
         loading = true;
         errorMessage = null;
 
@@ -529,7 +538,13 @@
                 request = request with { Filters = filters };
             }
 
-            var response = await HorseApi.FilterAsync(request);
+            var response = await HorseApi.FilterAsync(request, cancellationToken);
+
+            // If cancelled while awaiting, exit early
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
 
             if (response == null)
             {
@@ -541,17 +556,33 @@
             horses = (response.Data ?? Enumerable.Empty<HorseResult>()).AsQueryable();
             await pagination.SetTotalItemCountAsync(response.Total);
         }
+        catch (TaskCanceledException)
+        {
+            // Request was cancelled - this is expected, don't show error or update state
+        }
+        catch (OperationCanceledException)
+        {
+            // Request was cancelled - this is expected, don't show error or update state
+        }
         catch (Exception ex)
         {
-            errorMessage = "An error occurred while loading horses data. Please try again.";
-            Logger.LogError(ex, "Horses grid: Error loading horses data from API");
+            // Only set error if this request wasn't cancelled
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                errorMessage = "An error occurred while loading horses data. Please try again.";
+                Logger.LogError(ex, "Horses grid: Error loading horses data from API");
+            }
             horses = Enumerable.Empty<HorseResult>().AsQueryable();
             await pagination.SetTotalItemCountAsync(0);
         }
         finally
         {
-            loading = false;
-            await InvokeAsync(StateHasChanged);
+            // Only update state if this request wasn't cancelled
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 
@@ -581,5 +612,7 @@
         _colorFilterCts?.Dispose();
         _ownerFilterCts?.Cancel();
         _ownerFilterCts?.Dispose();
+        _loadDataCts?.Cancel();
+        _loadDataCts?.Dispose();
     }
 }

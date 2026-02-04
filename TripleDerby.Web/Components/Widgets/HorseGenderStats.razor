@@ -14,7 +14,7 @@
             <div class="hc-total">
                 @if (loading)
                 {
-                    <span>Loading�</span>
+                    <FluentSkeleton Width="80px" Height="16px" Shimmer="true" />
                 }
                 else
                 {
@@ -30,7 +30,24 @@
     }
     else if (loading)
     {
-        <div class="hc-loading" aria-live="polite">Loading gender stats�</div>
+        <div class="hc-skeleton" aria-live="polite" aria-label="Loading gender stats">
+            <ul class="hc-list" style="grid-template-columns: repeat(2, 1fr);">
+                @for (int i = 0; i < 2; i++)
+                {
+                    <li class="hc-item">
+                        <div class="hc-meta">
+                            <FluentSkeleton Width="15px" Height="15px" Shape="SkeletonShape.Circle" Shimmer="true" />
+                            <div class="hc-labels">
+                                <FluentSkeleton Width="60px" Height="16px" Shimmer="true" />
+                                <FluentSkeleton Width="40px" Height="14px" Shimmer="true" />
+                            </div>
+                            <FluentSkeleton Width="50px" Height="16px" Shimmer="true" style="margin-left: auto;" />
+                        </div>
+                        <FluentSkeleton Width="100%" Height="8px" Shimmer="true" />
+                    </li>
+                }
+            </ul>
+        </div>
     }
     else
     {

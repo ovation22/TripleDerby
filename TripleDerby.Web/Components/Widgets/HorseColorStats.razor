@@ -9,7 +9,7 @@
         <div class="hc-total">
             @if (loading)
             {
-                <span>Loading�</span>
+                <FluentSkeleton Width="80px" Height="16px" Shimmer="true" />
             }
             else
             {
@@ -24,7 +24,24 @@
     }
     else if (loading)
     {
-        <div class="hc-loading" aria-live="polite">Loading color stats�</div>
+        <div class="hc-skeleton" aria-live="polite" aria-label="Loading color stats">
+            <ul class="hc-list" style="grid-template-columns: repeat(@Columns, 1fr);">
+                @for (int i = 0; i < (MaxItems * Columns); i++)
+                {
+                    <li class="hc-item">
+                        <div class="hc-meta">
+                            <FluentSkeleton Width="18px" Height="18px" Shimmer="true" />
+                            <div class="hc-labels">
+                                <FluentSkeleton Width="80px" Height="16px" Shimmer="true" />
+                                <FluentSkeleton Width="50px" Height="14px" Shimmer="true" />
+                            </div>
+                            <FluentSkeleton Width="50px" Height="16px" Shimmer="true" style="margin-left: auto;" />
+                        </div>
+                        <FluentSkeleton Width="100%" Height="8px" Shimmer="true" />
+                    </li>
+                }
+            </ul>
+        </div>
     }
     else
     {

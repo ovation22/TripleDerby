@@ -1,5 +1,5 @@
 ﻿@page "/tracks"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @using System.Linq
 @using FUISort = Microsoft.FluentUI.AspNetCore.Components.SortDirection;
@@ -22,7 +22,8 @@
                     Pagination="pagination"
                     HeaderCellAsButtonWithMenu=true
                     UseMenuService=false
-                    Loading="loading">
+                    Loading="loading"
+                    ShowHover="true">
         <PropertyColumn Property="@(c => c.Name)" Sortable="true" InitialSortDirection=FUISort.Ascending IsDefaultSortColumn=true />
     </FluentDataGrid>
 </div>
