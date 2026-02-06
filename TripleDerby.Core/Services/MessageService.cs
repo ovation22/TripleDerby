@@ -23,7 +23,7 @@ public class MessageService(
     {
         logger.LogInformation("Fetching message request summary across all services");
 
-        // Query counts for each service and status
+        // Query counts for each service and status sequentially (DbContext is not thread-safe)
         var breedingSummary = await GetBreedingSummaryAsync(cancellationToken);
         var feedingSummary = await GetFeedingSummaryAsync(cancellationToken);
         var racingSummary = await GetRacingSummaryAsync(cancellationToken);
@@ -55,7 +55,7 @@ public class MessageService(
             "Fetching all message requests: Page={Page}, Size={Size}, Status={Status}, ServiceType={ServiceType}",
             pagination.Page, pagination.Size, statusFilter, serviceTypeFilter);
 
-        // First, get total counts for each service (lightweight queries)
+        // First, get total counts for each service sequentially (DbContext is not thread-safe)
         var counts = new List<int>();
 
         if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Breeding)
@@ -80,7 +80,7 @@ public class MessageService(
         // Use 2x multiplier for safety since records are distributed across tables
         var bufferSize = (skip + take) * 2;
 
-        // Fetch data from each service with appropriate buffer
+        // Fetch data from each service sequentially (DbContext is not thread-safe)
         var allRequests = new List<MessageRequestSummary>();
 
         if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Breeding)

@@ -132,16 +132,18 @@ else
                     RefreshItems="RefreshItemsAsync"
                     Pagination="@pagination"
                     Loading="@loadingData"
-                    GridTemplateColumns="0.8fr 0.6fr 1fr 2fr 2fr 0.8fr">
-        <PropertyColumn Property="@(r => r.ServiceType)" Title="Service" Sortable="true" />
-            <TemplateColumn Title="Status" Sortable="true" SortBy="@sortByStatus">
+                    GridTemplateColumns="1.5fr 0.8fr 0.6fr 1fr 2fr 2fr 0.8fr"
+                    ShowHover="true">
+        <PropertyColumn Property="@(r => r.Id)" Title="ID" />
+        <PropertyColumn Property="@(r => r.ServiceType)" Title="Service" />
+            <TemplateColumn Title="Status">
                 <ChildContent>
                     <FluentBadge Appearance="@GetStatusAppearance(context.Status)">
                         @context.Status.ToString()
                     </FluentBadge>
                 </ChildContent>
             </TemplateColumn>
-            <PropertyColumn Property="@(r => r.CreatedDate)" Title="Created" Format="g" Sortable="true" />
+            <PropertyColumn Property="@(r => r.CreatedDate)" Title="Created" Format="g" IsDefaultSortColumn=true />
             <PropertyColumn Property="@(r => r.TargetDescription)" Title="Target" />
             <TemplateColumn Title="Failure Reason">
                 <ChildContent>
@@ -177,7 +179,7 @@ else
 @code {
     private MessageRequestsSummaryResult summary = new();
     private IQueryable<MessageRequestSummary>? requests;
-    private PaginationState pagination = new() { ItemsPerPage = 20 };
+    private PaginationState pagination = new() { ItemsPerPage = 10 };
     private FluentDataGrid<MessageRequestSummary>? dataGrid;
     private string statusFilterString = "";
     private string serviceTypeFilterString = "";
@@ -187,9 +189,6 @@ else
 
     private RequestStatus? statusFilter => string.IsNullOrEmpty(statusFilterString) ? null : Enum.Parse<RequestStatus>(statusFilterString);
     private RequestServiceType? serviceTypeFilter => string.IsNullOrEmpty(serviceTypeFilterString) ? null : Enum.Parse<RequestServiceType>(serviceTypeFilterString);
-
-    GridSort<MessageRequestSummary> sortByStatus = GridSort<MessageRequestSummary>
-        .ByAscending(p => p.Status);
 
     protected override async Task OnInitializedAsync()
     {
