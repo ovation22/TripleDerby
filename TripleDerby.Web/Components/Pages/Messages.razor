@@ -1,0 +1,345 @@
+@page "/messages"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel
+@using TripleDerby.SharedKernel.Enums
+@using TripleDerby.SharedKernel.Pagination
+@using TripleDerby.Web.Components.Shared
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject IMessagesApiClient MessagesClient
+@inject IToastService ToastService
+@inject IDialogService DialogService
+
+<PageTitle>Message Queue Management</PageTitle>
+
+<FluentLabel Typo="Typography.H3" Style="margin-bottom: 20px;">Message Queue Management</FluentLabel>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <ErrorWidget ErrorMessage="@errorMessage" OnRetry="HandleRetryAsync" />
+}
+else if (loading)
+{
+    <div aria-live="polite" aria-label="Loading message queue">
+        <FluentGrid>
+            @for (int i = 0; i < 4; i++)
+            {
+                <FluentGridItem xs="12" sm="6" md="3">
+                    <FluentCard>
+                        <FluentSkeleton Width="100%" Height="120px" Shimmer="true" />
+                    </FluentCard>
+                </FluentGridItem>
+            }
+        </FluentGrid>
+    </div>
+}
+else
+{
+    <!-- Summary Cards -->
+    <FluentGrid Style="margin-bottom: 20px;">
+        <FluentGridItem xs="12" sm="6" md="3">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5">🏠 Breeding</FluentLabel>
+                <div style="margin: 10px 0;">
+                    <div>Pending: @summary.Breeding.Pending</div>
+                    <div>In Progress: @summary.Breeding.InProgress</div>
+                    <div>Failed: @summary.Breeding.Failed</div>
+                    <div>Completed: @summary.Breeding.Completed</div>
+                </div>
+                <FluentButton Appearance="Appearance.Accent"
+                              Disabled="@(summary.Breeding.Pending == 0 && summary.Breeding.Failed == 0)"
+                              OnClick="() => ReplayAll(RequestServiceType.Breeding)">
+                    Replay All
+                </FluentButton>
+            </FluentCard>
+        </FluentGridItem>
+        <FluentGridItem xs="12" sm="6" md="3">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5">🥕 Feeding</FluentLabel>
+                <div style="margin: 10px 0;">
+                    <div>Pending: @summary.Feeding.Pending</div>
+                    <div>In Progress: @summary.Feeding.InProgress</div>
+                    <div>Failed: @summary.Feeding.Failed</div>
+                    <div>Completed: @summary.Feeding.Completed</div>
+                </div>
+                <FluentButton Appearance="Appearance.Accent"
+                              Disabled="@(summary.Feeding.Pending == 0 && summary.Feeding.Failed == 0)"
+                              OnClick="() => ReplayAll(RequestServiceType.Feeding)">
+                    Replay All
+                </FluentButton>
+            </FluentCard>
+        </FluentGridItem>
+        <FluentGridItem xs="12" sm="6" md="3">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5">🏁 Racing</FluentLabel>
+                <div style="margin: 10px 0;">
+                    <div>Pending: @summary.Racing.Pending</div>
+                    <div>In Progress: @summary.Racing.InProgress</div>
+                    <div>Failed: @summary.Racing.Failed</div>
+                    <div>Completed: @summary.Racing.Completed</div>
+                </div>
+                <FluentButton Appearance="Appearance.Accent"
+                              Disabled="@(summary.Racing.Pending == 0 && summary.Racing.Failed == 0)"
+                              OnClick="() => ReplayAll(RequestServiceType.Racing)">
+                    Replay All
+                </FluentButton>
+            </FluentCard>
+        </FluentGridItem>
+        <FluentGridItem xs="12" sm="6" md="3">
+            <FluentCard>
+                <FluentLabel Typo="Typography.H5">💪 Training</FluentLabel>
+                <div style="margin: 10px 0;">
+                    <div>Pending: @summary.Training.Pending</div>
+                    <div>In Progress: @summary.Training.InProgress</div>
+                    <div>Failed: @summary.Training.Failed</div>
+                    <div>Completed: @summary.Training.Completed</div>
+                </div>
+                <FluentButton Appearance="Appearance.Accent"
+                              Disabled="@(summary.Training.Pending == 0 && summary.Training.Failed == 0)"
+                              OnClick="() => ReplayAll(RequestServiceType.Training)">
+                    Replay All
+                </FluentButton>
+            </FluentCard>
+        </FluentGridItem>
+    </FluentGrid>
+
+    <!-- Filters -->
+    <FluentToolbar Style="margin-bottom: 20px;">
+        <FluentSelect TOption="string" Label="Status" @bind-Value="statusFilterString" Style="min-width: 150px;">
+            <FluentOption Value="">All</FluentOption>
+            <FluentOption Value="Pending">Pending</FluentOption>
+            <FluentOption Value="InProgress">In Progress</FluentOption>
+            <FluentOption Value="Failed">Failed</FluentOption>
+            <FluentOption Value="Completed">Completed</FluentOption>
+            <FluentOption Value="Cancelled">Cancelled</FluentOption>
+        </FluentSelect>
+        <FluentSelect TOption="string" Label="Service" @bind-Value="serviceTypeFilterString" Style="min-width: 150px; margin-left: 10px;">
+            <FluentOption Value="">All</FluentOption>
+            <FluentOption Value="Breeding">Breeding</FluentOption>
+            <FluentOption Value="Feeding">Feeding</FluentOption>
+            <FluentOption Value="Racing">Racing</FluentOption>
+            <FluentOption Value="Training">Training</FluentOption>
+        </FluentSelect>
+        <FluentButton Appearance="Appearance.Accent" OnClick="HandleFilterChange" Style="margin-left: 10px;">
+            Apply Filter
+        </FluentButton>
+    </FluentToolbar>
+
+    <!-- Data Grid -->
+    <FluentDataGrid @ref="dataGrid"
+                    Items="@requests"
+                    RefreshItems="RefreshItemsAsync"
+                    Pagination="@pagination"
+                    Loading="@loadingData"
+                    GridTemplateColumns="0.8fr 0.6fr 1fr 2fr 2fr 0.8fr">
+        <PropertyColumn Property="@(r => r.ServiceType)" Title="Service" Sortable="true" />
+            <TemplateColumn Title="Status" Sortable="true" SortBy="@sortByStatus">
+                <ChildContent>
+                    <FluentBadge Appearance="@GetStatusAppearance(context.Status)">
+                        @context.Status.ToString()
+                    </FluentBadge>
+                </ChildContent>
+            </TemplateColumn>
+            <PropertyColumn Property="@(r => r.CreatedDate)" Title="Created" Format="g" Sortable="true" />
+            <PropertyColumn Property="@(r => r.TargetDescription)" Title="Target" />
+            <TemplateColumn Title="Failure Reason">
+                <ChildContent>
+                    @if (!string.IsNullOrEmpty(context.FailureReason))
+                    {
+                        <FluentTooltip Anchor="@($"failure-{context.Id}")">
+                            @context.FailureReason
+                        </FluentTooltip>
+                        <span id="@($"failure-{context.Id}")" style="cursor: help;">
+                            @(context.FailureReason.Length > 50 ? context.FailureReason.Substring(0, 47) + "..." : context.FailureReason)
+                        </span>
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </ChildContent>
+            </TemplateColumn>
+            <TemplateColumn Title="Actions">
+                <ChildContent>
+                    <FluentButton Appearance="Appearance.Lightweight"
+                                  Disabled="@(context.Status == RequestStatus.Completed)"
+                                  OnClick="() => ReplayRequest(context.ServiceType, context.Id)">
+                        Replay
+                    </FluentButton>
+                </ChildContent>
+            </TemplateColumn>
+    </FluentDataGrid>
+
+    <FluentPaginator State="@pagination" />
+}
+
+@code {
+    private MessageRequestsSummaryResult summary = new();
+    private IQueryable<MessageRequestSummary>? requests;
+    private PaginationState pagination = new() { ItemsPerPage = 20 };
+    private FluentDataGrid<MessageRequestSummary>? dataGrid;
+    private string statusFilterString = "";
+    private string serviceTypeFilterString = "";
+    private bool loading = true;
+    private bool loadingData = false;
+    private string? errorMessage;
+
+    private RequestStatus? statusFilter => string.IsNullOrEmpty(statusFilterString) ? null : Enum.Parse<RequestStatus>(statusFilterString);
+    private RequestServiceType? serviceTypeFilter => string.IsNullOrEmpty(serviceTypeFilterString) ? null : Enum.Parse<RequestServiceType>(serviceTypeFilterString);
+
+    GridSort<MessageRequestSummary> sortByStatus = GridSort<MessageRequestSummary>
+        .ByAscending(p => p.Status);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSummaryAsync();
+        loading = false;
+    }
+
+    private async Task LoadSummaryAsync()
+    {
+        try
+        {
+            var result = await MessagesClient.GetSummaryAsync();
+            if (result != null)
+            {
+                summary = result;
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Failed to load message queue summary";
+        }
+    }
+
+    protected async Task RefreshItemsAsync(GridItemsProviderRequest<MessageRequestSummary> req)
+    {
+        loadingData = true;
+        errorMessage = null;
+
+        try
+        {
+            var start = req.StartIndex;
+            var count = (req.Count.HasValue && req.Count.Value > 0)
+                ? req.Count.Value
+                : pagination.ItemsPerPage;
+            if (count <= 0) count = pagination.ItemsPerPage > 0 ? pagination.ItemsPerPage : 20;
+
+            var page = (start / count) + 1;
+
+            var paginationRequest = new PaginationRequest
+            {
+                Page = page,
+                Size = count
+            };
+
+            var pagedList = await MessagesClient.GetAllRequestsAsync(
+                paginationRequest, statusFilter, serviceTypeFilter);
+
+            if (pagedList != null)
+            {
+                requests = pagedList.Data.AsQueryable();
+                await pagination.SetTotalItemCountAsync(pagedList.Total);
+            }
+            else
+            {
+                errorMessage = "Failed to load message requests";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Failed to load message requests";
+        }
+        finally
+        {
+            loadingData = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task HandleFilterChange()
+    {
+        if (dataGrid is not null)
+        {
+            await dataGrid.RefreshDataAsync(true);
+        }
+    }
+
+    private async Task HandleRetryAsync()
+    {
+        loading = true;
+        await LoadSummaryAsync();
+        if (dataGrid is not null)
+        {
+            await dataGrid.RefreshDataAsync();
+        }
+        loading = false;
+    }
+
+    private async Task ReplayRequest(RequestServiceType serviceType, Guid id)
+    {
+        try
+        {
+            var success = await MessagesClient.ReplayRequestAsync(serviceType, id);
+            if (success)
+            {
+                ToastService.ShowSuccess("Request replayed successfully");
+                await LoadSummaryAsync();
+                if (dataGrid is not null)
+                {
+                    await dataGrid.RefreshDataAsync();
+                }
+            }
+            else
+            {
+                ToastService.ShowError("Failed to replay request - request not found");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Failed to replay request: {ex.Message}");
+        }
+    }
+
+    private async Task ReplayAll(RequestServiceType serviceType)
+    {
+        var dialog = await DialogService.ShowConfirmationAsync(
+            $"Are you sure you want to replay all failed {serviceType} requests?",
+            "Confirm Replay All",
+            "Yes",
+            "No");
+
+        var result = await dialog.Result;
+        if (result.Cancelled)
+            return;
+
+        try
+        {
+            var count = await MessagesClient.ReplayAllAsync(serviceType);
+            ToastService.ShowSuccess($"Replayed {count} requests");
+            await LoadSummaryAsync();
+            if (dataGrid is not null)
+            {
+                await dataGrid.RefreshDataAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Failed to replay requests: {ex.Message}");
+        }
+    }
+
+    private Appearance GetStatusAppearance(RequestStatus status)
+    {
+        return status switch
+        {
+            RequestStatus.Pending => Appearance.Accent,
+            RequestStatus.InProgress => Appearance.Neutral,
+            RequestStatus.Completed => Appearance.Lightweight,
+            RequestStatus.Failed => Appearance.Lightweight,
+            RequestStatus.Cancelled => Appearance.Lightweight,
+            _ => Appearance.Neutral
+        };
+    }
+}

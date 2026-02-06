@@ -1,7 +1,9 @@
+using Ardalis.Specification;
 using Microsoft.Extensions.Logging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Entities;
+using TripleDerby.Core.Specifications;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Pagination;
@@ -53,44 +55,68 @@ public class MessageService(
             "Fetching all message requests: Page={Page}, Size={Size}, Status={Status}, ServiceType={ServiceType}",
             pagination.Page, pagination.Size, statusFilter, serviceTypeFilter);
 
+        // First, get total counts for each service (lightweight queries)
+        var counts = new List<int>();
+
+        if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Breeding)
+            counts.Add(await GetBreedingCountAsync(statusFilter, cancellationToken));
+
+        if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Feeding)
+            counts.Add(await GetFeedingCountAsync(statusFilter, cancellationToken));
+
+        if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Racing)
+            counts.Add(await GetRaceCountAsync(statusFilter, cancellationToken));
+
+        if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Training)
+            counts.Add(await GetTrainingCountAsync(statusFilter, cancellationToken));
+
+        var totalCount = counts.Sum();
+
+        // Calculate skip based on pagination
+        var skip = (pagination.Page - 1) * pagination.Size;
+        var take = pagination.Size;
+
+        // Calculate buffer size: need to fetch enough records to cover skip + take
+        // Use 2x multiplier for safety since records are distributed across tables
+        var bufferSize = (skip + take) * 2;
+
+        // Fetch data from each service with appropriate buffer
         var allRequests = new List<MessageRequestSummary>();
 
-        // Fetch from each service unless filtered by service type
         if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Breeding)
         {
-            var breedingRequests = await GetBreedingRequestsAsync(statusFilter, cancellationToken);
+            var breedingRequests = await GetBreedingRequestsPagedAsync(statusFilter, bufferSize, cancellationToken);
             allRequests.AddRange(breedingRequests);
         }
 
         if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Feeding)
         {
-            var feedingRequests = await GetFeedingRequestsAsync(statusFilter, cancellationToken);
+            var feedingRequests = await GetFeedingRequestsPagedAsync(statusFilter, bufferSize, cancellationToken);
             allRequests.AddRange(feedingRequests);
         }
 
         if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Racing)
         {
-            var raceRequests = await GetRaceRequestsAsync(statusFilter, cancellationToken);
+            var raceRequests = await GetRaceRequestsPagedAsync(statusFilter, bufferSize, cancellationToken);
             allRequests.AddRange(raceRequests);
         }
 
         if (!serviceTypeFilter.HasValue || serviceTypeFilter == RequestServiceType.Training)
         {
-            var trainingRequests = await GetTrainingRequestsAsync(statusFilter, cancellationToken);
+            var trainingRequests = await GetTrainingRequestsPagedAsync(statusFilter, bufferSize, cancellationToken);
             allRequests.AddRange(trainingRequests);
         }
 
-        // Order by CreatedDate descending
-        var orderedRequests = allRequests.OrderByDescending(r => r.CreatedDate).ToList();
+        // Order by CreatedDate descending, skip to the correct page, and take only what we need
+        var pagedItems = allRequests
+            .OrderByDescending(r => r.CreatedDate)
+            .Skip(skip)
+            .Take(take)
+            .ToList();
 
-        // Apply pagination
-        var totalCount = orderedRequests.Count;
-        var skip = (pagination.Page - 1) * pagination.Size;
-        var pagedItems = orderedRequests.Skip(skip).Take(pagination.Size).ToList();
+        var result = new PagedList<MessageRequestSummary>(pagedItems, totalCount, pagination.Page, pagination.Size);
 
-        logger.LogInformation("Returning {Count} of {Total} message requests", pagedItems.Count, totalCount);
-
-        return new PagedList<MessageRequestSummary>(pagedItems, totalCount, pagination.Page, pagination.Size);
+        return result;
     }
 
     private async Task<ServiceSummary> GetBreedingSummaryAsync(CancellationToken cancellationToken)
@@ -157,21 +183,59 @@ public class MessageService(
         };
     }
 
-    private async Task<List<MessageRequestSummary>> GetBreedingRequestsAsync(
-        RequestStatus? statusFilter,
-        CancellationToken cancellationToken)
+    // Optimized count methods for pagination
+    private async Task<int> GetBreedingCountAsync(RequestStatus? statusFilter, CancellationToken cancellationToken)
     {
-        List<BreedingRequest> requests;
-
         if (statusFilter.HasValue)
         {
             var status = (BreedingRequestStatus)(byte)statusFilter.Value;
-            requests = await repository.ListAsync<BreedingRequest>(r => r.Status == status, cancellationToken);
+            return await repository.CountAsync<BreedingRequest>(r => r.Status == status, cancellationToken);
         }
-        else
+        return await repository.CountAsync<BreedingRequest>(cancellationToken);
+    }
+
+    private async Task<int> GetFeedingCountAsync(RequestStatus? statusFilter, CancellationToken cancellationToken)
+    {
+        if (statusFilter.HasValue)
         {
-            requests = await repository.ListAsync<BreedingRequest>(r => true, cancellationToken);
+            var status = (FeedingRequestStatus)(byte)statusFilter.Value;
+            return await repository.CountAsync<FeedingRequest>(r => r.Status == status, cancellationToken);
         }
+        return await repository.CountAsync<FeedingRequest>(cancellationToken);
+    }
+
+    private async Task<int> GetRaceCountAsync(RequestStatus? statusFilter, CancellationToken cancellationToken)
+    {
+        if (statusFilter.HasValue)
+        {
+            var status = (RaceRequestStatus)(byte)statusFilter.Value;
+            return await repository.CountAsync<RaceRequest>(r => r.Status == status, cancellationToken);
+        }
+        return await repository.CountAsync<RaceRequest>(cancellationToken);
+    }
+
+    private async Task<int> GetTrainingCountAsync(RequestStatus? statusFilter, CancellationToken cancellationToken)
+    {
+        if (statusFilter.HasValue)
+        {
+            var status = (TrainingRequestStatus)(byte)statusFilter.Value;
+            return await repository.CountAsync<TrainingRequest>(r => r.Status == status, cancellationToken);
+        }
+        return await repository.CountAsync<TrainingRequest>(cancellationToken);
+    }
+
+    // Optimized paged retrieval methods - fetch limited records from DB
+    // Buffer size is calculated in GetAllRequestsAsync based on page depth
+    private async Task<List<MessageRequestSummary>> GetBreedingRequestsPagedAsync(
+        RequestStatus? statusFilter,
+        int bufferSize,
+        CancellationToken cancellationToken)
+    {
+        var spec = new MessageRequestSpec<BreedingRequest, BreedingRequestStatus>(
+            bufferSize,
+            statusFilter.HasValue ? (BreedingRequestStatus)(byte)statusFilter.Value : null);
+
+        var requests = await repository.ListAsync(spec, cancellationToken);
 
         return requests.Select(r => new MessageRequestSummary
         {
@@ -187,21 +251,16 @@ public class MessageService(
         }).ToList();
     }
 
-    private async Task<List<MessageRequestSummary>> GetFeedingRequestsAsync(
+    private async Task<List<MessageRequestSummary>> GetFeedingRequestsPagedAsync(
         RequestStatus? statusFilter,
+        int bufferSize,
         CancellationToken cancellationToken)
     {
-        List<FeedingRequest> requests;
+        var spec = new MessageRequestSpec<FeedingRequest, FeedingRequestStatus>(
+            bufferSize,
+            statusFilter.HasValue ? (FeedingRequestStatus)(byte)statusFilter.Value : null);
 
-        if (statusFilter.HasValue)
-        {
-            var status = (FeedingRequestStatus)(byte)statusFilter.Value;
-            requests = await repository.ListAsync<FeedingRequest>(r => r.Status == status, cancellationToken);
-        }
-        else
-        {
-            requests = await repository.ListAsync<FeedingRequest>(r => true, cancellationToken);
-        }
+        var requests = await repository.ListAsync(spec, cancellationToken);
 
         return requests.Select(r => new MessageRequestSummary
         {
@@ -217,21 +276,16 @@ public class MessageService(
         }).ToList();
     }
 
-    private async Task<List<MessageRequestSummary>> GetRaceRequestsAsync(
+    private async Task<List<MessageRequestSummary>> GetRaceRequestsPagedAsync(
         RequestStatus? statusFilter,
+        int bufferSize,
         CancellationToken cancellationToken)
     {
-        List<RaceRequest> requests;
+        var spec = new MessageRequestSpec<RaceRequest, RaceRequestStatus>(
+            bufferSize,
+            statusFilter.HasValue ? (RaceRequestStatus)(byte)statusFilter.Value : null);
 
-        if (statusFilter.HasValue)
-        {
-            var status = (RaceRequestStatus)(byte)statusFilter.Value;
-            requests = await repository.ListAsync<RaceRequest>(r => r.Status == status, cancellationToken);
-        }
-        else
-        {
-            requests = await repository.ListAsync<RaceRequest>(r => true, cancellationToken);
-        }
+        var requests = await repository.ListAsync(spec, cancellationToken);
 
         return requests.Select(r => new MessageRequestSummary
         {
@@ -247,21 +301,16 @@ public class MessageService(
         }).ToList();
     }
 
-    private async Task<List<MessageRequestSummary>> GetTrainingRequestsAsync(
+    private async Task<List<MessageRequestSummary>> GetTrainingRequestsPagedAsync(
         RequestStatus? statusFilter,
+        int bufferSize,
         CancellationToken cancellationToken)
     {
-        List<TrainingRequest> requests;
+        var spec = new MessageRequestSpec<TrainingRequest, TrainingRequestStatus>(
+            bufferSize,
+            statusFilter.HasValue ? (TrainingRequestStatus)(byte)statusFilter.Value : null);
 
-        if (statusFilter.HasValue)
-        {
-            var status = (TrainingRequestStatus)(byte)statusFilter.Value;
-            requests = await repository.ListAsync<TrainingRequest>(r => r.Status == status, cancellationToken);
-        }
-        else
-        {
-            requests = await repository.ListAsync<TrainingRequest>(r => true, cancellationToken);
-        }
+        var requests = await repository.ListAsync(spec, cancellationToken);
 
         return requests.Select(r => new MessageRequestSummary
         {
@@ -274,5 +323,39 @@ public class MessageService(
             TargetDescription = $"Training Request",
             OwnerId = r.OwnerId
         }).ToList();
+    }
+
+    // Simple specification for message requests with optional status filter and Take limit
+    private class MessageRequestSpec<TEntity, TStatus> : Specification<TEntity>
+        where TEntity : class
+        where TStatus : struct, Enum
+    {
+        public MessageRequestSpec(int take, TStatus? statusFilter)
+        {
+            // Apply status filter if provided
+            if (statusFilter.HasValue)
+            {
+                Query.Where(BuildStatusExpression(statusFilter.Value));
+            }
+
+            // Order by CreatedDate descending and take only what we need
+            var orderParam = System.Linq.Expressions.Expression.Parameter(typeof(TEntity), "r");
+            var createdProp = System.Linq.Expressions.Expression.Property(orderParam, "CreatedDate");
+            var orderLambda = System.Linq.Expressions.Expression.Lambda<Func<TEntity, object>>(
+                System.Linq.Expressions.Expression.Convert(createdProp, typeof(object)),
+                orderParam);
+
+            Query.OrderByDescending(orderLambda);
+            Query.Take(take);
+        }
+
+        private static System.Linq.Expressions.Expression<Func<TEntity, bool>> BuildStatusExpression(TStatus status)
+        {
+            var param = System.Linq.Expressions.Expression.Parameter(typeof(TEntity), "r");
+            var statusProp = System.Linq.Expressions.Expression.Property(param, "Status");
+            var statusValue = System.Linq.Expressions.Expression.Constant(status);
+            var equals = System.Linq.Expressions.Expression.Equal(statusProp, statusValue);
+            return System.Linq.Expressions.Expression.Lambda<Func<TEntity, bool>>(equals, param);
+        }
     }
 }
