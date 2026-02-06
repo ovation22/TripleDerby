@@ -133,17 +133,23 @@ public class MessageServiceTests
             new() { Id = Guid.NewGuid(), Status = TrainingRequestStatus.Completed, CreatedDate = DateTimeOffset.UtcNow, OwnerId = Guid.NewGuid(), HorseId = Guid.NewGuid(), TrainingId = 1, SessionId = Guid.NewGuid(), CreatedBy = Guid.NewGuid() }
         };
 
+        // Mock count calls
+        _mockRepository.Setup(r => r.CountAsync<BreedingRequest>(default)).ReturnsAsync(2);
+        _mockRepository.Setup(r => r.CountAsync<FeedingRequest>(default)).ReturnsAsync(2);
+        _mockRepository.Setup(r => r.CountAsync<RaceRequest>(default)).ReturnsAsync(2);
+        _mockRepository.Setup(r => r.CountAsync<TrainingRequest>(default)).ReturnsAsync(2);
+
         _mockRepository
-            .Setup(r => r.ListAsync<BreedingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<BreedingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<BreedingRequest>>(), default))
             .ReturnsAsync(breedingRequests);
         _mockRepository
-            .Setup(r => r.ListAsync<FeedingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<FeedingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<FeedingRequest>>(), default))
             .ReturnsAsync(feedingRequests);
         _mockRepository
-            .Setup(r => r.ListAsync<RaceRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<RaceRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<RaceRequest>>(), default))
             .ReturnsAsync(raceRequests);
         _mockRepository
-            .Setup(r => r.ListAsync<TrainingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<TrainingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<TrainingRequest>>(), default))
             .ReturnsAsync(trainingRequests);
 
         var pagination = new PaginationRequest { Page = 1, Size = 50 };
@@ -176,17 +182,23 @@ public class MessageServiceTests
             new() { Id = Guid.NewGuid(), Status = TrainingRequestStatus.Failed, CreatedDate = DateTimeOffset.UtcNow, OwnerId = Guid.NewGuid(), HorseId = Guid.NewGuid(), TrainingId = 1, SessionId = Guid.NewGuid(), CreatedBy = Guid.NewGuid() }
         };
 
+        // Mock count calls for Failed status filter
+        _mockRepository.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<BreedingRequest, bool>>>(), default)).ReturnsAsync(1);
+        _mockRepository.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<FeedingRequest, bool>>>(), default)).ReturnsAsync(1);
+        _mockRepository.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<RaceRequest, bool>>>(), default)).ReturnsAsync(0);
+        _mockRepository.Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<TrainingRequest, bool>>>(), default)).ReturnsAsync(1);
+
         _mockRepository
-            .Setup(r => r.ListAsync<BreedingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<BreedingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<BreedingRequest>>(), default))
             .ReturnsAsync(breedingRequests);
         _mockRepository
-            .Setup(r => r.ListAsync<FeedingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<FeedingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<FeedingRequest>>(), default))
             .ReturnsAsync(feedingRequests);
         _mockRepository
-            .Setup(r => r.ListAsync<RaceRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<RaceRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<RaceRequest>>(), default))
             .ReturnsAsync(raceRequests);
         _mockRepository
-            .Setup(r => r.ListAsync<TrainingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<TrainingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<TrainingRequest>>(), default))
             .ReturnsAsync(trainingRequests);
 
         var pagination = new PaginationRequest { Page = 1, Size = 50 };
@@ -209,19 +221,22 @@ public class MessageServiceTests
             new() { Id = Guid.NewGuid(), Status = BreedingRequestStatus.Failed, CreatedDate = DateTimeOffset.UtcNow, OwnerId = Guid.NewGuid() }
         };
 
+        // Mock count calls - only Breeding should be queried when filtering by service type
+        _mockRepository.Setup(r => r.CountAsync<BreedingRequest>(default)).ReturnsAsync(2);
+
         _mockRepository
-            .Setup(r => r.ListAsync<BreedingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<BreedingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<BreedingRequest>>(), default))
             .ReturnsAsync(breedingRequests);
 
         // Other services should NOT be called when filtering by Breeding
         _mockRepository
-            .Setup(r => r.ListAsync<FeedingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<FeedingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<FeedingRequest>>(), default))
             .ReturnsAsync(new List<FeedingRequest>());
         _mockRepository
-            .Setup(r => r.ListAsync<RaceRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<RaceRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<RaceRequest>>(), default))
             .ReturnsAsync(new List<RaceRequest>());
         _mockRepository
-            .Setup(r => r.ListAsync<TrainingRequest>(It.IsAny<System.Linq.Expressions.Expression<Func<TrainingRequest, bool>>>(), default))
+            .Setup(r => r.ListAsync(It.IsAny<Ardalis.Specification.ISpecification<TrainingRequest>>(), default))
             .ReturnsAsync(new List<TrainingRequest>());
 
         var pagination = new PaginationRequest { Page = 1, Size = 50 };
