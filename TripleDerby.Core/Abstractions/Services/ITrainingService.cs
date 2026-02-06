@@ -48,6 +48,11 @@ public interface ITrainingService
     Task ReplayTrainingRequest(Guid sessionId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Replays all non-complete training requests.
+    /// </summary>
+    Task<int> ReplayAllNonComplete(int maxDegreeOfParallelism = 10, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets available training options for a horse (3 random options, cached by sessionId).
     /// </summary>
     Task<List<TrainingOptionResult>> GetTrainingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default);

@@ -140,6 +140,48 @@ public class FeedingsController(IFeedingService feedingService) : ControllerBase
         var result = await feedingService.GetFeedingSessionResult(sessionId, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Replay a feeding request by republishing the message.
+    /// TODO: This is an operational/admin action; consider requiring authorization.
+    /// </summary>
+    /// <param name="id">The ID of the feeding request to replay.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    /// 202 Accepted when the request is accepted for processing; 404 if the request was not found.
+    /// </returns>
+    /// <response code="202">Replay accepted.</response>
+    /// <response code="404">Feeding request not found.</response>
+    [HttpPost("requests/{id:guid}/replay")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReplayRequest(Guid id, CancellationToken cancellationToken = default)
+    {
+        var published = await feedingService.ReplayFeedingRequest(id, cancellationToken);
+
+        if (!published)
+            return NotFound();
+
+        return Accepted();
+    }
+
+    /// <summary>
+    /// Replay all non-complete feeding requests.
+    /// TODO: This is an admin/operational endpoint and should be protected in production.
+    /// </summary>
+    /// <param name="maxDegreeOfParallelism">Maximum concurrent publish tasks to use.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>202 Accepted with number of messages published.</returns>
+    [HttpPost("requests/replay-all")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<ActionResult> ReplayAll(
+        [FromQuery] int maxDegreeOfParallelism = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var published = await feedingService.ReplayAllNonComplete(maxDegreeOfParallelism, cancellationToken);
+
+        return Accepted(new { published });
+    }
 }
 
 /// <summary>

@@ -156,28 +156,164 @@ public class FeedingService(
     /// <summary>
     /// Re-publishes a failed feeding request.
     /// </summary>
-    public async Task ReplayFeedingRequest(Guid sessionId, CancellationToken cancellationToken = default)
+    public async Task<bool> ReplayFeedingRequest(Guid sessionId, CancellationToken cancellationToken = default)
     {
-        var request = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
+        if (sessionId == Guid.Empty)
+            throw new ArgumentException("Invalid id", nameof(sessionId));
 
-        if (request == null)
-            throw new KeyNotFoundException($"Feeding request {sessionId} not found");
+        var entity = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
 
-        if (request.Status != FeedingRequestStatus.Failed)
-            throw new InvalidOperationException($"Feeding request {sessionId} is not in Failed status");
+        if (entity is null)
+            return false;
 
-        var message = new FeedingRequested(
-            request.Id,
-            request.HorseId,
-            request.FeedingId,
-            request.SessionId,
-            request.OwnerId,
-            request.CreatedDate
-        );
+        // If the request already completed, don't replay
+        if (entity.Status == FeedingRequestStatus.Completed)
+        {
+            logger.LogInformation("Not replaying FeedingId={Id} because it is already Completed", entity.Id);
+            return false;
+        }
 
-        await messagePublisher.PublishAsync(message, cancellationToken: cancellationToken);
+        // If previously failed, reset to Pending so processors will pick it up.
+        var originalStatus = entity.Status;
+        var originalFailureReason = entity.FailureReason;
+        try
+        {
+            if (entity.Status == FeedingRequestStatus.Failed)
+            {
+                entity.Status = FeedingRequestStatus.Pending;
+                entity.FailureReason = null;
+                entity.ProcessedDate = null;
+                entity.UpdatedDate = timeManager.OffsetUtcNow();
 
-        logger.LogInformation("Replayed feeding request: RequestId={RequestId}", request.Id);
+                await repository.UpdateAsync(entity, cancellationToken);
+
+                logger.LogInformation("Marked FeedingId={Id} as Pending for replay", entity.Id);
+            }
+
+            var msg = new FeedingRequested(
+                entity.Id,
+                entity.HorseId,
+                entity.FeedingId,
+                entity.SessionId,
+                entity.OwnerId,
+                entity.CreatedDate
+            );
+
+            await messagePublisher.PublishAsync(msg, cancellationToken: cancellationToken);
+
+            logger.LogInformation("Replayed FeedingRequested event for FeedingId={Id}", entity.Id);
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("Replay publishing cancelled for FeedingId={Id}", entity.Id);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to replay FeedingRequested event for FeedingId={Id}", entity.Id);
+
+            // Attempt to restore Failed status and record failure reason so it can be retried later
+            try
+            {
+                var fr = await repository.FindAsync<FeedingRequest>(sessionId, cancellationToken);
+                if (fr != null)
+                {
+                    fr.Status = FeedingRequestStatus.Failed;
+                    fr.FailureReason = $"Replay publish failed: {ex.Message}";
+                    fr.ProcessedDate = timeManager.OffsetUtcNow();
+                    fr.UpdatedDate = timeManager.OffsetUtcNow();
+                    await repository.UpdateAsync(fr, cancellationToken);
+                }
+            }
+            catch (Exception updEx)
+            {
+                logger.LogWarning(updEx, "Failed to persist replay-publish-failure metadata for FeedingId={Id}", entity.Id);
+            }
+
+            // Restore original status in-memory (no DB change) for calling code if needed
+            entity.Status = originalStatus;
+            entity.FailureReason = originalFailureReason;
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Replays all non-complete feeding requests.
+    /// </summary>
+    public async Task<int> ReplayAllNonComplete(int maxDegreeOfParallelism = 10, CancellationToken cancellationToken = default)
+    {
+        if (maxDegreeOfParallelism <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism));
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Fetch all FeedingRequests that are not Completed
+        var requests = await repository.ListAsync<FeedingRequest>(fr => fr.Status != FeedingRequestStatus.Completed, cancellationToken);
+
+        if (requests == null || requests.Count == 0)
+        {
+            logger.LogInformation("No non-complete feeding requests found to replay.");
+            return 0;
+        }
+
+        logger.LogInformation("Replaying {Count} non-complete feeding requests (maxConcurrency={Max})", requests.Count, maxDegreeOfParallelism);
+
+        var semaphore = new SemaphoreSlim(maxDegreeOfParallelism, maxDegreeOfParallelism);
+        var tasks = new List<Task>();
+        var publishedCount = 0;
+
+        foreach (var r in requests)
+        {
+            await semaphore.WaitAsync(cancellationToken);
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    // If previously failed, mark Pending before publishing so processors will pick it up
+                    if (r.Status == FeedingRequestStatus.Failed)
+                    {
+                        try
+                        {
+                            r.Status = FeedingRequestStatus.Pending;
+                            r.FailureReason = null;
+                            r.ProcessedDate = null;
+                            r.UpdatedDate = timeManager.OffsetUtcNow();
+                            await repository.UpdateAsync(r, cancellationToken);
+                        }
+                        catch (Exception updateEx)
+                        {
+                            logger.LogWarning(updateEx, "Failed to mark FeedingId={Id} Pending before replay; skipping", r.Id);
+                            return;
+                        }
+                    }
+
+                    var msg = new FeedingRequested(r.Id, r.HorseId, r.FeedingId, r.SessionId, r.OwnerId, r.CreatedDate);
+                    await messagePublisher.PublishAsync(msg, cancellationToken: cancellationToken);
+
+                    Interlocked.Increment(ref publishedCount);
+                    logger.LogInformation("Replayed FeedingRequested for FeedingId={Id}", r.Id);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to replay FeedingRequested for FeedingId={Id}", r.Id);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }, cancellationToken);
+
+            tasks.Add(task);
+        }
+
+        await Task.WhenAll(tasks);
+
+        logger.LogInformation("ReplayAllNonComplete finished. Published {Published} of {Total}", publishedCount, requests.Count);
+
+        return publishedCount;
     }
 
     /// <summary>

@@ -161,6 +161,24 @@ public class TrainingsController(ITrainingService trainingService) : ControllerB
             return BadRequest(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Replay all non-complete training requests.
+    /// TODO: This is an admin/operational endpoint and should be protected in production.
+    /// </summary>
+    /// <param name="maxDegreeOfParallelism">Maximum concurrent publish tasks to use.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>202 Accepted with number of messages published.</returns>
+    [HttpPost("requests/replay-all")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<ActionResult> ReplayAll(
+        [FromQuery] int maxDegreeOfParallelism = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var published = await trainingService.ReplayAllNonComplete(maxDegreeOfParallelism, cancellationToken);
+
+        return Accepted(new { published });
+    }
 }
 
 /// <summary>

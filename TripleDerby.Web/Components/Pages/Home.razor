@@ -54,16 +54,32 @@
                 </FluentCard>
             </FluentGridItem>
             <FluentGridItem xs="12">
-                <FluentCard Height="270px;">
-                    <ErrorBoundary>
-                        <ChildContent>
-                            <HorseLegTypeStats Title="Leg Types" />
-                        </ChildContent>
-                        <ErrorContent>
-                            <ErrorWidget ErrorMessage="An unexpected error occurred in the Leg Type Stats widget." />
-                        </ErrorContent>
-                    </ErrorBoundary>
-                </FluentCard>
+                <FluentGrid>
+                    <FluentGridItem xs="12" sm="6" md="6">
+                        <FluentCard Height="270px;">
+                            <ErrorBoundary>
+                                <ChildContent>
+                                    <HorseLegTypeStats Title="Leg Types" />
+                                </ChildContent>
+                                <ErrorContent>
+                                    <ErrorWidget ErrorMessage="An unexpected error occurred in the Leg Type Stats widget." />
+                                </ErrorContent>
+                            </ErrorBoundary>
+                        </FluentCard>
+                    </FluentGridItem>
+                    <FluentGridItem xs="12" sm="6" md="6">
+                        <FluentCard Height="270px;">
+                            <ErrorBoundary>
+                                <ChildContent>
+                                    <MessageRequestWidget Title="Message Queue" />
+                                </ChildContent>
+                                <ErrorContent>
+                                    <ErrorWidget ErrorMessage="An unexpected error occurred in the Message Queue widget." />
+                                </ErrorContent>
+                            </ErrorBoundary>
+                        </FluentCard>
+                    </FluentGridItem>
+                </FluentGrid>
             </FluentGridItem>
         </FluentGrid>
     </FluentGridItem>

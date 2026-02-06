@@ -27,7 +27,12 @@ public interface IFeedingService
     /// <summary>
     /// Re-publishes a failed feeding request.
     /// </summary>
-    Task ReplayFeedingRequest(Guid sessionId, CancellationToken cancellationToken = default);
+    Task<bool> ReplayFeedingRequest(Guid sessionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Replays all non-complete feeding requests.
+    /// </summary>
+    Task<int> ReplayAllNonComplete(int maxDegreeOfParallelism = 10, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets available feeding options for a horse.

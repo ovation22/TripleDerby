@@ -168,6 +168,82 @@ public class TrainingService(
     }
 
     /// <summary>
+    /// Replays all non-complete training requests.
+    /// </summary>
+    public async Task<int> ReplayAllNonComplete(int maxDegreeOfParallelism = 10, CancellationToken cancellationToken = default)
+    {
+        if (maxDegreeOfParallelism <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism));
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Fetch all TrainingRequests that are not Completed
+        var requests = await repository.ListAsync<TrainingRequest>(tr => tr.Status != TrainingRequestStatus.Completed, cancellationToken);
+
+        if (requests == null || requests.Count == 0)
+        {
+            logger.LogInformation("No non-complete training requests found to replay.");
+            return 0;
+        }
+
+        logger.LogInformation("Replaying {Count} non-complete training requests (maxConcurrency={Max})", requests.Count, maxDegreeOfParallelism);
+
+        var semaphore = new SemaphoreSlim(maxDegreeOfParallelism, maxDegreeOfParallelism);
+        var tasks = new List<Task>();
+        var publishedCount = 0;
+
+        foreach (var r in requests)
+        {
+            await semaphore.WaitAsync(cancellationToken);
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    // If previously failed, mark Pending before publishing so processors will pick it up
+                    if (r.Status == TrainingRequestStatus.Failed)
+                    {
+                        try
+                        {
+                            r.Status = TrainingRequestStatus.Pending;
+                            r.FailureReason = null;
+                            r.ProcessedDate = null;
+                            r.UpdatedDate = timeManager.OffsetUtcNow();
+                            await repository.UpdateAsync(r, cancellationToken);
+                        }
+                        catch (Exception updateEx)
+                        {
+                            logger.LogWarning(updateEx, "Failed to mark TrainingId={Id} Pending before replay; skipping", r.Id);
+                            return;
+                        }
+                    }
+
+                    var msg = new TrainingRequested(r.Id, r.HorseId, r.TrainingId, r.SessionId, r.OwnerId, r.CreatedDate);
+                    await messagePublisher.PublishAsync(msg, cancellationToken: cancellationToken);
+
+                    Interlocked.Increment(ref publishedCount);
+                    logger.LogInformation("Replayed TrainingRequested for TrainingId={Id}", r.Id);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to replay TrainingRequested for TrainingId={Id}", r.Id);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            }, cancellationToken);
+
+            tasks.Add(task);
+        }
+
+        await Task.WhenAll(tasks);
+
+        logger.LogInformation("ReplayAllNonComplete finished. Published {Published} of {Total}", publishedCount, requests.Count);
+
+        return publishedCount;
+    }
+
+    /// <summary>
     /// Gets available training options for a horse.
     /// </summary>
     public async Task<List<TrainingOptionResult>> GetTrainingOptions(Guid horseId, Guid sessionId, CancellationToken cancellationToken = default)

@@ -1,0 +1,48 @@
+.hc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.hc-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.message-widget-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.message-widget-content:hover {
+    background-color: var(--neutral-layer-2);
+}
+
+.service-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.service-label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.badges {
+    display: flex;
+    gap: 6px;
+}
+
+.hc-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}

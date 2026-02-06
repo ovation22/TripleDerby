@@ -81,6 +81,7 @@ public class Program
             builder.Services.AddScoped<IFeedingService, FeedingService>();
             builder.Services.AddScoped<IBreedingService, BreedingService>();
             builder.Services.AddScoped<ITrainingService, TrainingService>();
+            builder.Services.AddScoped<IMessageService, MessageService>();
 
             // Message bus with configuration-driven routing (Feature 021)
             // Provider selected automatically based on available connection strings
