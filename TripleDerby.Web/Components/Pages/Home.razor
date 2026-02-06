@@ -39,6 +39,18 @@
             </FluentNavLink>
         </FluentCard>
     </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="4">
+        <FluentCard Height="210px;">
+            <ErrorBoundary>
+                <ChildContent>
+                    <MessageRequestWidget Title="Message Queue" />
+                </ChildContent>
+                <ErrorContent>
+                    <ErrorWidget ErrorMessage="An unexpected error occurred in the Message Queue widget." />
+                </ErrorContent>
+            </ErrorBoundary>
+        </FluentCard>
+    </FluentGridItem>
     <FluentGridItem xs="12" sm="6">
         <FluentGrid>
             <FluentGridItem xs="12">

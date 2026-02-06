@@ -45,6 +45,9 @@ builder.Services.AddApiClientWithResilience<ITrainingsApiClient, TrainingsApiCli
 builder.Services.AddApiClientWithResilience<IFeedingsApiClient, FeedingsApiClient>(client =>
     client.BaseAddress = new("https+http://api"));
 
+builder.Services.AddApiClientWithResilience<IMessagesApiClient, MessagesApiClient>(client =>
+    client.BaseAddress = new("https+http://api"));
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

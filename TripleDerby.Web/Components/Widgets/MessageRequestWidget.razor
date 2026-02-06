@@ -1,0 +1,135 @@
+@using TripleDerby.Web.ApiClients.Abstractions
+@using TripleDerby.SharedKernel
+@using TripleDerby.Web.Components.Shared
+@inject IMessagesApiClient MessagesClient
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div role="region" aria-label="@Title">
+    <div class="hc-header">
+        <h3 class="hc-title">@Title</h3>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <ErrorWidget ErrorMessage="@errorMessage" OnRetry="HandleRetryAsync" />
+    }
+    else if (loading)
+    {
+        <div class="hc-skeleton" aria-live="polite" aria-label="Loading message queue status">
+            @for (int i = 0; i < 4; i++)
+            {
+                <div class="service-row">
+                    <FluentSkeleton Width="80px" Height="16px" Shimmer="true" />
+                    <FluentSkeleton Width="50px" Height="20px" Shimmer="true" />
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="message-widget-content" @onclick="NavigateToManagement">
+            <div class="service-row">
+                <span class="service-label">🏠 Breeding</span>
+                <div class="badges">
+                    <FluentBadge Appearance="Appearance.Accent">@summary.Breeding.Pending P</FluentBadge>
+                    <FluentBadge Appearance="Appearance.Lightweight" BackgroundColor="var(--error)">@summary.Breeding.Failed F</FluentBadge>
+                </div>
+            </div>
+            <div class="service-row">
+                <span class="service-label">🥕 Feeding</span>
+                <div class="badges">
+                    <FluentBadge Appearance="Appearance.Accent">@summary.Feeding.Pending P</FluentBadge>
+                    <FluentBadge Appearance="Appearance.Lightweight" BackgroundColor="var(--error)">@summary.Feeding.Failed F</FluentBadge>
+                </div>
+            </div>
+            <div class="service-row">
+                <span class="service-label">🏁 Racing</span>
+                <div class="badges">
+                    <FluentBadge Appearance="Appearance.Accent">@summary.Racing.Pending P</FluentBadge>
+                    <FluentBadge Appearance="Appearance.Lightweight" BackgroundColor="var(--error)">@summary.Racing.Failed F</FluentBadge>
+                </div>
+            </div>
+            <div class="service-row">
+                <span class="service-label">💪 Training</span>
+                <div class="badges">
+                    <FluentBadge Appearance="Appearance.Accent">@summary.Training.Pending P</FluentBadge>
+                    <FluentBadge Appearance="Appearance.Lightweight" BackgroundColor="var(--error)">@summary.Training.Failed F</FluentBadge>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Message Queue";
+
+    private MessageRequestsSummaryResult summary = new();
+    private bool loading = true;
+    private string? errorMessage;
+    private PeriodicTimer? timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        StartAutoRefresh();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        loading = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await MessagesClient.GetSummaryAsync();
+            if (result != null)
+            {
+                summary = result;
+            }
+            else
+            {
+                errorMessage = "Failed to load message queue status";
+            }
+        }
+        catch (Exception)
+        {
+            errorMessage = "Failed to load message queue status";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task HandleRetryAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private void StartAutoRefresh()
+    {
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        _ = Task.Run(async () =>
+        {
+            while (await timer.WaitForNextTickAsync())
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadDataAsync();
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    private void NavigateToManagement()
+    {
+        Navigation.NavigateTo("/messages");
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+}
