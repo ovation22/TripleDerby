@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TripleDerby.Core.Abstractions.Data;
-using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Services;
 using TripleDerby.Core.Abstractions.Utilities;
@@ -41,8 +40,6 @@ builder.Services.AddDbContextPool<TripleDerbyContext>(options =>
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<TripleDerbyContext>());
 builder.Services.AddScoped<ITransactionManager, TransactionManager>();
 builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
-builder.Services.AddScoped<IRaceRequestProcessor, RaceRequestProcessor>();
-
 // Racing dependencies (same as API)
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
@@ -57,13 +54,9 @@ builder.Services.AddScoped<IRaceService, RaceService>();
 builder.Services.AddScoped<IRaceRunService, RaceRunService>();
 builder.Services.AddScoped<IRaceExecutor, RaceExecutor>();
 
-// Messaging - Register message bus (publishes and consumes via configured provider)
+// Messaging
 builder.Services.AddMessageBus(builder.Configuration);
-
-// Register message consumer
-builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<RaceRequested, IRaceRequestProcessor>>();
-
-builder.Services.AddHostedService<Worker>();
+builder.Services.AddMessageConsumer<RaceRequested, RaceRequestProcessor, Worker>();
 
 // SQL SERVER (Commented for local dev)
 // builder.AddSqlServerClient(connectionName: "sql");

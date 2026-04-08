@@ -263,13 +263,13 @@ public class GenericMessageConsumerTests
     {
         var configData = new Dictionary<string, string?>
         {
+            ["ConnectionStrings:messaging"] = "amqp://localhost",
             ["MessageBus:Consumer:Queue"] = "test-queue",
             ["MessageBus:Consumer:Concurrency"] = "5",
             ["MessageBus:Consumer:MaxRetries"] = "3",
             ["MessageBus:Consumer:PrefetchCount"] = "10",
             ["MessageBus:RabbitMq:Exchange"] = "test-exchange",
-            ["MessageBus:RabbitMq:RoutingKey"] = "test-key",
-            ["MessageBus:RabbitMq:ConnectionString"] = "amqp://localhost"
+            ["MessageBus:RabbitMq:RoutingKey"] = "test-key"
         };
 
         return new ConfigurationBuilder()

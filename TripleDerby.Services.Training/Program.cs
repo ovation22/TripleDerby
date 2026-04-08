@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TripleDerby.Core.Abstractions.Data;
-using TripleDerby.Core.Abstractions.Messaging;
 using TripleDerby.Core.Abstractions.Repositories;
 using TripleDerby.Core.Abstractions.Utilities;
 using TripleDerby.Infrastructure.Data;
@@ -40,16 +39,11 @@ builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<TripleDerbyCon
 builder.Services.AddScoped<ITransactionManager, TransactionManager>();
 builder.Services.AddScoped<ITripleDerbyRepository, TripleDerbyRepository>();
 builder.Services.AddScoped<ITrainingExecutor, TrainingExecutor>();
-builder.Services.AddScoped<ITrainingRequestProcessor, TrainingRequestProcessor>();
 builder.Services.AddScoped<ITrainingCalculator, TrainingCalculator>();
 
-// Register message bus (publishes and consumes via configured provider)
+// Messaging
 builder.Services.AddMessageBus(builder.Configuration);
-
-// Register message consumer
-builder.Services.AddSingleton<IMessageConsumer, GenericMessageConsumer<TrainingRequested, ITrainingRequestProcessor>>();
-
-builder.Services.AddHostedService<Worker>();
+builder.Services.AddMessageConsumer<TrainingRequested, TrainingRequestProcessor, Worker>();
 builder.Services.AddSingleton<ITimeManager, TimeManager>();
 builder.Services.AddSingleton<IRandomGenerator, RandomGenerator>();
 

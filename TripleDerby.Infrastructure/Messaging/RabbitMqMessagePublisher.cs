@@ -48,7 +48,7 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("RabbitMQ connection string not configured. Set MessageBus:RabbitMq or ConnectionStrings:RabbitMq.");
 
-        _factory = BuildFactory(connectionString);
+        _factory = RabbitMqConnectionStringParser.Parse(connectionString);
 
         // resilience settings
         _factory.AutomaticRecoveryEnabled = true;
@@ -62,34 +62,6 @@ public class RabbitMqMessagePublisher : IMessagePublisher, IAsyncDisposable, IDi
         _initialRetryDelay = TimeSpan.FromMilliseconds(int.TryParse(configuration["MessageBus:Publish:InitialDelayMs"], out var id) ? id : 200);
 
         _logger.LogInformation("RabbitMqMessagePublisher configured for exchange {Exchange}", _exchange);
-    }
-
-    private static ConnectionFactory BuildFactory(string connectionString)
-    {
-        var factory = new ConnectionFactory();
-
-        if (Uri.TryCreate(connectionString, UriKind.Absolute, out var uri) && uri.Scheme is "amqp" or "amqps")
-        {
-            factory.Uri = uri;
-        }
-        else
-        {
-            var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            foreach (var part in parts)
-            {
-                var kv = part.Split('=', 2);
-                if (kv.Length != 2) continue;
-                var k = kv[0].Trim().ToLowerInvariant();
-                var v = kv[1].Trim();
-                if (k is "host" or "hostname") factory.HostName = v;
-                else if (k is "username" or "user") factory.UserName = v;
-                else if (k is "password" or "pwd") factory.Password = v;
-                else if (k is "virtualhost" or "vhost") factory.VirtualHost = v;
-                else if (k == "port" && int.TryParse(v, out var p)) factory.Port = p;
-            }
-        }
-
-        return factory;
     }
 
     private async Task EnsureConnectedAsync()

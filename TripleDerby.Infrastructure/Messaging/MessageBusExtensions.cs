@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TripleDerby.Core.Abstractions.Messaging;
@@ -46,6 +47,55 @@ public static class MessageBusExtensions
             RegisterServiceBus(services);
         }
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a message consumer and its background host for the given message and processor types.
+    /// Uses <see cref="MessageConsumerWorker{TMessage,TProcessor}"/> as the hosted service.
+    /// </summary>
+    /// <typeparam name="TMessage">The message type to consume.</typeparam>
+    /// <typeparam name="TProcessor">
+    /// The processor class that handles <typeparamref name="TMessage"/>.
+    /// Registered as scoped to support per-message dependency injection (e.g. DbContext).
+    /// </typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <remarks>
+    /// Call <see cref="AddMessageBus"/> before calling this method.
+    /// For a named hosted service (better log output, customizable per service),
+    /// use the <c>AddMessageConsumer&lt;TMessage, TProcessor, TWorker&gt;</c> overload instead.
+    /// </remarks>
+    public static IServiceCollection AddMessageConsumer<TMessage, TProcessor>(
+        this IServiceCollection services)
+        where TProcessor : class, IMessageProcessor<TMessage>
+        => services.AddMessageConsumer<TMessage, TProcessor, MessageConsumerWorker<TMessage, TProcessor>>();
+
+    /// <summary>
+    /// Registers a message consumer and its background host for the given message, processor, and worker types.
+    /// </summary>
+    /// <typeparam name="TMessage">The message type to consume.</typeparam>
+    /// <typeparam name="TProcessor">
+    /// The processor class that handles <typeparamref name="TMessage"/>.
+    /// Registered as scoped to support per-message dependency injection (e.g. DbContext).
+    /// </typeparam>
+    /// <typeparam name="TWorker">
+    /// A <see cref="MessageConsumerWorker{TMessage,TProcessor}"/> subclass to use as the hosted service.
+    /// Allows service-specific log names and lifecycle customization.
+    /// </typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <remarks>
+    /// Call <see cref="AddMessageBus"/> before calling this method.
+    /// </remarks>
+    public static IServiceCollection AddMessageConsumer<TMessage, TProcessor, TWorker>(
+        this IServiceCollection services)
+        where TProcessor : class, IMessageProcessor<TMessage>
+        where TWorker : MessageConsumerWorker<TMessage, TProcessor>
+    {
+        services.AddScoped<TProcessor>();
+        services.AddSingleton<IMessageConsumer, GenericMessageConsumer<TMessage, TProcessor>>();
+        services.AddHostedService<TWorker>();
         return services;
     }
 

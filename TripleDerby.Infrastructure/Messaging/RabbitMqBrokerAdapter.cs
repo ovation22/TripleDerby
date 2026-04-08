@@ -30,7 +30,7 @@ public class RabbitMqBrokerAdapter(ILogger<RabbitMqBrokerAdapter> logger) : IMes
         _queueName = config.Queue;
 
         // Parse connection string
-        var factory = BuildConnectionFactory(config.ConnectionString);
+        var factory = RabbitMqConnectionStringParser.Parse(config.ConnectionString);
 
         // Set resilience settings
         factory.AutomaticRecoveryEnabled = true;
@@ -255,57 +255,6 @@ public class RabbitMqBrokerAdapter(ILogger<RabbitMqBrokerAdapter> logger) : IMes
         {
             _channelLock.Release();
         }
-    }
-
-    private static ConnectionFactory BuildConnectionFactory(string connectionString)
-    {
-        var factory = new ConnectionFactory();
-
-        // Try parsing as URI first
-        if (Uri.TryCreate(connectionString, UriKind.Absolute, out var uri) &&
-            (uri.Scheme == "amqp" || uri.Scheme == "amqps"))
-        {
-            factory.Uri = uri;
-        }
-        else
-        {
-            // Parse as key-value pairs
-            var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            foreach (var part in parts)
-            {
-                var kv = part.Split('=', 2);
-                if (kv.Length != 2) continue;
-
-                var key = kv[0].Trim().ToLowerInvariant();
-                var value = kv[1].Trim();
-
-                switch (key)
-                {
-                    case "host":
-                    case "hostname":
-                        factory.HostName = value;
-                        break;
-                    case "username":
-                    case "user":
-                        factory.UserName = value;
-                        break;
-                    case "password":
-                    case "pwd":
-                        factory.Password = value;
-                        break;
-                    case "virtualhost":
-                    case "vhost":
-                        factory.VirtualHost = value;
-                        break;
-                    case "port":
-                        if (int.TryParse(value, out var port))
-                            factory.Port = port;
-                        break;
-                }
-            }
-        }
-
-        return factory;
     }
 
     private static IReadOnlyDictionary<string, object> ConvertHeaders(IDictionary<string, object?>? headers)

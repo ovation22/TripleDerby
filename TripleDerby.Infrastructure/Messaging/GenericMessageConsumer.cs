@@ -105,24 +105,19 @@ public class GenericMessageConsumer<TMessage, TProcessor>(
 
     private MessageBrokerConfig BuildConfiguration()
     {
-        // Read connection string from multiple possible locations
+        // Aspire injects broker connection strings under ConnectionStrings:<resource-name>.
+        // RabbitMQ resource is named "messaging"; Azure Service Bus resource is named "servicebus".
         var connectionString =
-            configuration["MessageBus:RabbitMq:ConnectionString"]
-            ?? configuration["MessageBus:RabbitMq"]
-            ?? configuration["MessageBus__RabbitMq__ConnectionString"]
-            ?? configuration["MessageBus__RabbitMq"]
-            ?? configuration.GetConnectionString("RabbitMq")
-            ?? configuration.GetConnectionString("messaging")
+            configuration.GetConnectionString("messaging")
             ?? configuration.GetConnectionString("servicebus")
             ?? throw new InvalidOperationException(
                 "Message broker connection string not configured. " +
-                "Set MessageBus:RabbitMq:ConnectionString or ConnectionStrings:messaging");
+                "Aspire should inject ConnectionStrings:messaging (RabbitMQ) or ConnectionStrings:servicebus (Azure Service Bus).");
 
         var config = new MessageBrokerConfig
         {
             ConnectionString = connectionString,
             Queue = configuration["MessageBus:Consumer:Queue"]
-                ?? configuration["MessageBus:Queue"]
                 ?? throw new InvalidOperationException("MessageBus:Consumer:Queue not configured"),
             Concurrency = int.TryParse(configuration["MessageBus:Consumer:Concurrency"], out var concurrency)
                 ? concurrency
@@ -135,34 +130,23 @@ public class GenericMessageConsumer<TMessage, TProcessor>(
                 : 10
         };
 
-        // Add RabbitMQ-specific configuration if present
-        var exchange = configuration["MessageBus:RabbitMq:Exchange"]
-            ?? configuration["MessageBus:Exchange"];
+        // RabbitMQ-specific configuration
+        var exchange = configuration["MessageBus:RabbitMq:Exchange"];
         if (!string.IsNullOrWhiteSpace(exchange))
-        {
             config.ProviderSpecific["Exchange"] = exchange;
-        }
 
-        var routingKey = configuration["MessageBus:RabbitMq:RoutingKey"]
-            ?? configuration["MessageBus:RoutingKey"];
+        var routingKey = configuration["MessageBus:RabbitMq:RoutingKey"];
         if (!string.IsNullOrWhiteSpace(routingKey))
-        {
             config.ProviderSpecific["RoutingKey"] = routingKey;
-        }
 
-        var exchangeType = configuration["MessageBus:RabbitMq:ExchangeType"]
-            ?? configuration["MessageBus:ExchangeType"];
+        var exchangeType = configuration["MessageBus:RabbitMq:ExchangeType"];
         if (!string.IsNullOrWhiteSpace(exchangeType))
-        {
             config.ProviderSpecific["ExchangeType"] = exchangeType;
-        }
 
-        // Add Azure Service Bus-specific configuration if present
+        // Azure Service Bus-specific configuration
         var subscriptionName = configuration["MessageBus:ServiceBus:SubscriptionName"];
         if (!string.IsNullOrWhiteSpace(subscriptionName))
-        {
             config.ProviderSpecific["SubscriptionName"] = subscriptionName;
-        }
 
         return config;
     }
