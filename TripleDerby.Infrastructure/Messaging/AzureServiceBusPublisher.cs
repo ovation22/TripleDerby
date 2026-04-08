@@ -1,6 +1,7 @@
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using TripleDerby.Core.Abstractions.Messaging;
@@ -17,6 +18,7 @@ public class AzureServiceBusPublisher : IMessagePublisher, IAsyncDisposable
     private readonly ILogger<AzureServiceBusPublisher> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly string _defaultQueue;
+    private readonly ConcurrentDictionary<string, ServiceBusSender> _senders = new();
 
     public AzureServiceBusPublisher(
         IConfiguration configuration,
@@ -74,8 +76,8 @@ public class AzureServiceBusPublisher : IMessagePublisher, IAsyncDisposable
         sbMessage.ApplicationProperties["MessageType"] = typeof(T).FullName ?? typeof(T).Name;
         sbMessage.ApplicationProperties["Timestamp"] = DateTimeOffset.UtcNow.ToString("O");
 
-        // Send message
-        await using var sender = _client.CreateSender(queueName);
+        // Send message — sender is cached and reused across calls to the same queue
+        var sender = _senders.GetOrAdd(queueName, _client.CreateSender);
 
         try
         {
@@ -99,6 +101,9 @@ public class AzureServiceBusPublisher : IMessagePublisher, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        foreach (var sender in _senders.Values)
+            await sender.DisposeAsync();
+
         await _client.DisposeAsync();
         GC.SuppressFinalize(this);
     }

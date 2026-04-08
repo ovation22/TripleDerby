@@ -8,20 +8,24 @@ namespace TripleDerby.Core.Abstractions.Messaging;
 public interface IMessageBrokerAdapter : IAsyncDisposable
 {
     /// <summary>
-    /// Connects to the message broker using provider-agnostic configuration.
+    /// Configures the adapter and, where possible, establishes the broker connection.
     /// </summary>
     /// <param name="config">The broker configuration including connection string, queue name, and concurrency settings.</param>
-    /// <param name="cancellationToken">Cancellation token to abort the connection attempt.</param>
-    /// <returns>A task that represents the asynchronous connect operation.</returns>
+    /// <param name="cancellationToken">Cancellation token to abort the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     /// <exception cref="InvalidOperationException">Thrown when configuration is invalid or missing required values.</exception>
-    /// <exception cref="TimeoutException">Thrown when connection attempt times out.</exception>
     /// <remarks>
-    /// This method should:
-    /// - Parse the connection string in broker-specific format
-    /// - Establish connection to the broker
-    /// - Declare/verify queue existence
-    /// - Configure quality-of-service settings (prefetch, concurrency)
-    /// - Prepare the adapter for receiving messages
+    /// Implementations are expected to store <paramref name="config"/> and prepare any resources needed
+    /// before <see cref="SubscribeAsync{TMessage}"/> is called.
+    /// <para>
+    /// Eager connection (RabbitMQ): the physical TCP connection and channel are opened here.
+    /// </para>
+    /// <para>
+    /// Deferred connection (Azure Service Bus): the SDK processor is configured here but the
+    /// underlying connection is not opened until <see cref="SubscribeAsync{TMessage}"/> calls
+    /// <c>StartProcessingAsync</c>. This is a deliberate SDK design choice — there is no
+    /// connect-only API on <c>ServiceBusProcessor</c>.
+    /// </para>
     /// </remarks>
     Task ConnectAsync(MessageBrokerConfig config, CancellationToken cancellationToken);
 

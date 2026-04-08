@@ -23,15 +23,21 @@ public class ServiceBusBrokerAdapter(ILogger<ServiceBusBrokerAdapter> logger) : 
     private string? _queueName;
     private int _maxRetries;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// For Azure Service Bus, this method creates the <see cref="ServiceBusClient"/> and configures
+    /// the <see cref="ServiceBusProcessor"/>, but does NOT open a connection to the broker.
+    /// The underlying connection is deferred to <see cref="SubscribeAsync{TMessage}"/>, which calls
+    /// <c>ServiceBusProcessor.StartProcessingAsync</c> — the first point at which the SDK connects.
+    /// This is an SDK constraint: <see cref="ServiceBusProcessor"/> has no standalone connect method.
+    /// </remarks>
     public async Task ConnectAsync(MessageBrokerConfig config, CancellationToken cancellationToken)
     {
         _queueName = config.Queue;
         _maxRetries = config.MaxRetries;
 
-        // Create Service Bus client
         _client = new ServiceBusClient(config.ConnectionString);
 
-        // Create processor with configuration
         _processor = _client.CreateProcessor(
             config.Queue,
             new ServiceBusProcessorOptions
@@ -42,7 +48,7 @@ public class ServiceBusBrokerAdapter(ILogger<ServiceBusBrokerAdapter> logger) : 
             });
 
         logger.LogInformation(
-            "ServiceBusBrokerAdapter connected (Queue: {Queue}, Concurrency: {Concurrency})",
+            "ServiceBusBrokerAdapter configured (Queue: {Queue}, Concurrency: {Concurrency}) — connection deferred to SubscribeAsync",
             config.Queue, config.Concurrency);
 
         await Task.CompletedTask;
