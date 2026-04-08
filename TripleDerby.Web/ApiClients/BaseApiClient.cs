@@ -62,8 +62,10 @@ public abstract class BaseApiClient(HttpClient httpClient, ILogger logger)
 
             if (resp.IsSuccessStatusCode)
             {
-                await using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
-                var data = await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions, cancellationToken);
+                var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+                if (string.IsNullOrWhiteSpace(body))
+                    return new ApiResponse<T>(true, default, null, status);
+                var data = JsonSerializer.Deserialize<T>(body, JsonOptions);
                 return new ApiResponse<T>(true, data, null, status);
             }
 
