@@ -1,3 +1,4 @@
+using System.Text.Json;
 using TripleDerby.SharedKernel;
 using TripleDerby.SharedKernel.Enums;
 using TripleDerby.SharedKernel.Pagination;
@@ -86,17 +87,11 @@ public class MessagesApiClient(HttpClient httpClient, ILogger<MessagesApiClient>
     {
         var resp = await PostAsync<object>($"/api/messages/{serviceType}/replay-all?maxDegreeOfParallelism={maxDegreeOfParallelism}", cancellationToken);
 
-        if (resp.Success && resp.Data != null)
+        if (resp.Success && resp.Data is JsonElement element &&
+            element.TryGetProperty("published", out var publishedEl) &&
+            publishedEl.TryGetInt32(out var published))
         {
-            var publishedProperty = resp.Data.GetType().GetProperty("published");
-            if (publishedProperty != null)
-            {
-                var publishedValue = publishedProperty.GetValue(resp.Data);
-                if (publishedValue != null && int.TryParse(publishedValue.ToString(), out var published))
-                {
-                    return published;
-                }
-            }
+            return published;
         }
 
         Logger.LogError("Unable to replay all requests for {ServiceType}. Status: {Status} Error: {Error}", serviceType, resp.StatusCode, resp.Error);
